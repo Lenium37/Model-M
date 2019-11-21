@@ -1,17 +1,10 @@
 #define DEVIATION_FROM_VERTICAL 8 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 #define ALLOWED_DEVIATON_FROM_IDEALLINIE 5
 
-#define WAIT_TIME_BETWEEN_LINE_DETECTION 25
+#define WAIT_TIME_BETWEEN_LINE_DETECTION 20 // ms
 #define I2C_ADDRESS_OF_SLAVE 8
 #define SPEED_ON_STRAIGHT 1.0 // 1 m/s
 #define SPEED_IN_CURVE 0.5 // 0.5 m/s
-#define ENUM_STEER_LEFT 1.0
-#define ENUM_STEER_STRAIGHT 2.0
-#define ENUM_STEER_RIGHT 3.0
-
-#define PIN_LEFT 3
-#define PIN_RIGHT 4
-
 
 #include <Pixy2.h>
 #include <vector>
@@ -52,13 +45,14 @@ void write_i2c(String s) {
 }
 
 void steer_left(int steer_angle) {
-  if(currently_in_curve)
-    steer_angle = return_map(steer_angle, 0, 38, 0, 45);
-  else
-    steer_angle = return_map(steer_angle, 0, 38, 0, 3);
+  //if(currently_in_curve)
+    steer_angle = return_map(steer_angle, 0, 20, 0, 45);
+  //else
+    //steer_angle = return_map(steer_angle, 0, 20, 0, 3);
+  if(steer_angle > 45)
+    steer_angle = 45;
   debug("steer_left(): " + String(steer_angle));
-  //digitalWrite(PIN_LEFT, HIGH);
-  //digitalWrite(PIN_RIGHT, LOW);
+
   if(steer_angle < 10)
     write_i2c("L0"+String(steer_angle));
   else
@@ -66,13 +60,14 @@ void steer_left(int steer_angle) {
 }
 
 void steer_right(int steer_angle) {
-  if(currently_in_curve)
-    steer_angle = return_map(steer_angle, 0, 38, 0, 45);
-  else
-    steer_angle = return_map(steer_angle, 0, 38, 0, 3);
+  //if(currently_in_curve)
+    steer_angle = return_map(steer_angle, 0, 20, 0, 45);
+  //else
+    //steer_angle = return_map(steer_angle, 0, 20, 0, 3);
+  if(steer_angle > 45)
+    steer_angle = 45;
   debug("steer_right(): " + String(steer_angle));
-  //digitalWrite(PIN_LEFT, LOW);
-  //digitalWrite(PIN_RIGHT, HIGH);
+  
   if(steer_angle < 10)
     write_i2c("R0"+String(steer_angle));
   else
@@ -147,14 +142,10 @@ void preprocess_vectors() {
     select_bottom_two_lines();
 }
 
-/*void receiveEvent(int howMany) {
-  while (0 < Wire.available()) { // loop through all but the last
-    char c = Wire.read(); // receive byte as a character
-    //debug(String(c));         // print the character
-  }
-  //Serial2.println("received message over I2C");
-}*/
-
+// returns the Steigung of a Gerade
+int pitch(int x1, int y1, int x2, int y2) {
+	return (y2 - y1) / (x2 - x1);
+}
 
 void setup()
 {
@@ -221,7 +212,7 @@ void loop()
   // Else preprocess lines and go on
   real_lines.clear();
   
-  if(counter_no_line_detected > 5) {
+  if(counter_no_line_detected > 10) {
     // STOP MOTOR!
     write_i2c("X");
   }
@@ -240,7 +231,7 @@ void loop()
       // STOP MOTOR!
       write_i2c("X");
     }
-    delay(250);
+    delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
   } else {
     counter_no_line_detected = 0;
       //current_lamp_status = 1;
@@ -268,7 +259,7 @@ void loop()
     // if single line is pretty much vertical
     if(l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
       currently_in_curve = false;
-      int mean_x = (l.get_x0() + l.get_x1()) / 2;
+      /*int mean_x = (l.get_x0() + l.get_x1()) / 2;
       debug("mean_x of single line: " + String(mean_x));
       int compare_x = (pixy.frameWidth - 1) / 2 - mean_x;
       if(compare_x < - ALLOWED_DEVIATON_FROM_IDEALLINIE) {
@@ -282,12 +273,12 @@ void loop()
       else {
         debug("Perfectly centered?");
         steer_straight();
-      }   
+      } */  
     }
     // if the single line is not vertical, car in a curve
     else {
       currently_in_curve = true;
-      int mean_x = (l.get_x0() + l.get_x1()) / 2;
+      /*int mean_x = (l.get_x0() + l.get_x1()) / 2;
       int mean_y = (l.get_y0() + l.get_y1()) / 2;
       int compare_x = (pixy.frameWidth - 1) / 2 - mean_x; 
       if(pixel_is_in_lower_right_corner(mean_x, mean_y) || pixel_is_in_lower_left_corner(mean_x, mean_y)) {
@@ -302,8 +293,15 @@ void loop()
         debug("Only seeing outer line in left turn, steer left!");
         //steer_left(l.get_x0() - l.get_x1());
         steer_left(abs(compare_x));
-      }
+      }*/
     }
+    int abs_gradient = abs(l.get_x1() - l.get_x0());
+    if(l.get_x1() > l.get_x0()) {
+    	steer_right(abs_gradient);
+    } else {
+    	steer_left(abs_gradient);
+    }
+
     delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
   }
   else if(real_lines.size() == 2) {
@@ -312,15 +310,21 @@ void loop()
     int ideallinie_start_y = (line1.get_y0() + line2.get_y0()) / 2;
     int ideallinie_end_x = (line1.get_x1() + line2.get_x1()) / 2;
     int ideallinie_end_y = (line1.get_y1() + line2.get_y1()) / 2;
-    int pitch = (ideallinie_end_y - ideallinie_start_y) / (ideallinie_end_x - ideallinie_start_x);
-    if(abs(pitch) > 10)
+    int ideallinie_pitch = (ideallinie_end_y - ideallinie_start_y) / (ideallinie_end_x - ideallinie_start_x);
+    if(abs(ideallinie_pitch) > 10)
       currently_in_curve = true;
     else
       currently_in_curve = false;
       
     debug("Ideallinie from (" + String(ideallinie_start_x) + ", " + String(ideallinie_start_y) + ") to (" + String(ideallinie_end_x) + ", " + String(ideallinie_end_y) + ")");
 
-    int ideallinie_mean_x = (ideallinie_start_x + ideallinie_end_x) / 2;
+    int abs_gradient = abs(ideallinie_start_x + ideallinie_end_x);
+    if(ideallinie_end_x > ideallinie_start_x) {
+    	steer_right(abs_gradient);
+	} else {
+		steer_left(abs_gradient);
+	}
+    /*int ideallinie_mean_x = (ideallinie_start_x + ideallinie_end_x) / 2;
     int compare_x = (pixy.frameWidth - 1) / 2 - ideallinie_mean_x;
     if(compare_x < - ALLOWED_DEVIATON_FROM_IDEALLINIE) {
       debug("Steer to the right!");
@@ -334,7 +338,7 @@ void loop()
       debug("Perfectly centered!");
       steer_straight();
     }
-    debug("");
+    debug("");*/
     delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
   }
    
