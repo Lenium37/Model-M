@@ -11,10 +11,19 @@
 
 #include <Pixy2.h>
 #include <vector>
+#include <string>
 #include <Line.h>
 #include <algorithm> // sort()
 #include <Wire.h> // I2C
 
+struct delayed_steer {
+  unsigned long start_timestamp;
+  unsigned long delay_period;
+  std::string steer_string;
+};
+
+std::vector<delayed_steer> delayed_steers;
+unsigned long currentMillis;
 
 Pixy2 pixy;
 bool current_lamp_status = 0;
@@ -183,6 +192,16 @@ int pitch(int x1, int y1, int x2, int y2) {
 	return (y2 - y1) / (x2 - x1);
 }
 
+void send_delayed_steers() {
+  for(int i = 0; i < delayed_steers.size(); i++) {
+    currentMillis = millis();
+    if(currentMillis - delayed_steers[i].start_timestamp >= delayed_steers[i].delay_period) {
+      write_i2c(steer_string);
+      delayed_steers.erase(delayed_steers.begin() + i);
+    }
+  }
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -214,6 +233,9 @@ void setup()
 
 void loop()
 {
+
+  send_delayed_steers();
+  
   //int8_t i;
   //char buf[128];
   Line line1;
