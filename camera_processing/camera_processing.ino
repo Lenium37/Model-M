@@ -1,11 +1,13 @@
-#define DEVIATION_FROM_VERTICAL 5 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
+#define DEVIATION_FROM_VERTICAL 2 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 #define ALLOWED_DEVIATON_FROM_IDEALLINIE 5
 
 #define WAIT_TIME_BETWEEN_LINE_DETECTION 3 // ms
 #define I2C_ADDRESS_OF_SLAVE 8
+#define I2C_READY_PIN 3
 #define SPEED_ON_STRAIGHT 1.0 // 1 m/s
 #define SPEED_IN_CURVE 0.5 // 0.5 m/s
 //#define STEERING_ANGLE_INTERPOLATION_COUNTER 2
+#define CORRECT_STEERING_AWAY_FROM_SINGLE_LINE 6
 
 #include <Pixy2.h>
 #include <vector>
@@ -52,6 +54,9 @@ int calculate_steer_angle_in_degrees(int num) {
   int angle = return_map(num, 0, 20, 0, 45);
   if(angle > 45)
     angle = 45;
+
+  if(angle > 25)
+    delay(50);
   return angle;
 }
 
@@ -97,6 +102,10 @@ void steer_straight() {
 void steer_interpolated() {
   //int interpolated_angle = (steer_angles_interpolation[0] + steer_angles_interpolation[1] + steer_angles_interpolation[2] + steer_angles_interpolation[3] + steer_angles_interpolation[4]) / 5;
   int interpolated_angle = (steer_angles_interpolation[0] + steer_angles_interpolation[1]) / 2;
+
+  // wait until slave is ready to receive
+  while(digitalRead(I2C_READY_PIN) == LOW);
+    
   if(interpolated_angle > 0) {
     steer_right(interpolated_angle);
   } else if(interpolated_angle < 0) {
@@ -130,10 +139,11 @@ void merge_vectors() {
     for(int j = 0; i < pixy.line.numVectors; j++) { // I know I am comparing every line with itself, maybe will improve it later
       Vector v2 = pixy.line.vectors[j];
       // If v2 starts at the position that v1 ends at, merge them and add to real_lines
-      if(v1.m_x1 == v2.m_x0 && v1.m_y1 == v2.m_y0) {
+      //if(v1.m_x1 == v2.m_x0 && v1.m_y1 == v2.m_y0) {
+      if(v2.m_x0 > v1.m_x1 - 8 && v2.m_x0 < v1.m_x1 + 8) {
         //debug("merging");
         int index = return_min(v1.m_index, v2.m_index);
-        Line new_line(v1.m_x1, v1.m_y1, v2.m_x1, v2.m_y1, index);
+        Line new_line(v1.m_x0, v1.m_y0, v2.m_x1, v2.m_y1, index);
         merged = true;
         real_lines.push_back(new_line);
         //debug("merged two lines at (" + String(v2.m_x0) + ", " + String(v2.m_y0) + ")");
@@ -196,6 +206,8 @@ void setup()
   Wire.begin(); // join i2c bus as master (address optional as master)
   //Wire.begin(8);                // join i2c bus with address #8
   //Wire.onReceive(receiveEvent); // register event
+
+  pinMode(I2C_READY_PIN, INPUT);
   
   Serial2.begin(38400); // Default communication rate of the Bluetooth module
 }
@@ -285,7 +297,7 @@ void loop()
   if(real_lines.size() == 1) {
     Line l = real_lines[0];
     int abs_gradient = abs(l.get_x1() - l.get_x0());
-    int push_car_into_center = 0;
+    bool push_car_into_center = false;
     
     // if single line is pretty much vertical
     if(l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
@@ -309,10 +321,20 @@ void loop()
     else {
       currently_in_curve = true;
     }
+
+    // if Abstand Kameramittelpunkt und Linienmittelpunkt < 15
+    // lenke CORRECT_STEERING_AWAY_FROM_SINGLE_LINE Grad weniger stark
+
+    int line_center = (l.get_x1() + l.get_x0()) / 2;
+    if(line_center >= 30 && line_center <= 50)
+      push_car_into_center = true;
     
     if(l.get_x1() > l.get_x0()) {
     	//steer_right(abs_gradient);
-      steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
+      if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) >= CORRECT_STEERING_AWAY_FROM_SINGLE_LINE)
+        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) - CORRECT_STEERING_AWAY_FROM_SINGLE_LINE;
+      else
+        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
@@ -320,7 +342,10 @@ void loop()
       }
     } else {
     	//steer_left(abs_gradient);
-      steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
+      if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) <= -CORRECT_STEERING_AWAY_FROM_SINGLE_LINE)
+        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) + CORRECT_STEERING_AWAY_FROM_SINGLE_LINE;
+      else
+        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
