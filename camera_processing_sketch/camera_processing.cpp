@@ -1,7 +1,17 @@
+#include <Arduino.h>
+#include <vector>
+#include <string>
+#include <WString.h>
+#include <Pixy2.h>
+#include <Line.h>
+#include <Wire.h> // I2C
+#include <algorithm> // sort()
+
+
 #define DEVIATION_FROM_VERTICAL 2 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 #define ALLOWED_DEVIATON_FROM_IDEALLINIE 5
 
-#define WAIT_TIME_BETWEEN_LINE_DETECTION 3 // ms
+#define WAIT_TIME_BETWEEN_LINE_DETECTION 15 // ms
 #define I2C_ADDRESS_OF_SLAVE 8
 #define I2C_READY_PIN 3
 #define SPEED_ON_STRAIGHT 1.0 // 1 m/s
@@ -9,27 +19,13 @@
 //#define STEERING_ANGLE_INTERPOLATION_COUNTER 2
 #define CORRECT_STEERING_AWAY_FROM_SINGLE_LINE 6
 
-#include <Pixy2.h>
-#include <vector>
-#include <string>
-#include <Line.h>
-#include <algorithm> // sort()
-#include <Wire.h> // I2C
 
-/*class DelayedSteer {
-    public:
-      DelayedSteer(){};
-      ~DelayedSteer(){};
-
-      unsigned long start_timestamp;
-      unsigned long delay_period;
-      //String steer_string;
-};*/
 struct delayed_steer {
   unsigned long start_timestamp;
   unsigned long delay_period;
   String steer_string;
 };
+
 std::vector<delayed_steer> delayed_steers;
 //std::vector<unsigned long> delayed_steers_start_timestamp;
 //std::vector<unsigned long> delayed_steers_delay_period;
@@ -49,6 +45,10 @@ int steer_angles_interpolation_counter = 0;
 void debug(String s) {
   Serial2.println(s);
   // if changing Serial number don't forget to change it in setup() as well!
+}
+
+int return_map(int value_to_map, int in_min, int in_max, int out_min, int out_max) {
+  return (value_to_map - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 int return_min(int i1, int i2) {
@@ -75,25 +75,12 @@ void write_i2c(String s) {
 
 void write_delayed(String s) {
   unsigned long current_millis = millis();
-  Serial.println(current_millis);
-  unsigned long delay_ms = 200;
-  //std::string s1 = s.c_str();
-
-  //DelayedSteer ds;
-  //ds.start_timestamp = millis();
-  //ds.delay_period = delay_ms;
-  //ds.steer_string = "123";
-  //delayed_steers.push_back(ds);
-  
-  //delayed_steers_start_timestamp.push_back(current_millis);
-  //delayed_steers_delay_period.push_back(delay_ms);
-  //delayed_steers_steer_string.push_back(s.c_str());
-  
+  //Serial.println(current_millis);
+  unsigned long delay_ms = 5000;
   delayed_steer ds = {current_millis, delay_ms, s};
   //delayed_steers.push_back({current_millis, delay_ms, s});
   //delayed_steers.push_back({1000, 200, "123"});
   delayed_steers.push_back(ds);
-  //delayed_steers.push_back(delayed_steer());
 }
 
 int calculate_steer_angle_in_degrees(int num) {
@@ -178,16 +165,12 @@ void steer_interpolated() {
   }
 }
 
-int return_map(int value_to_map, int in_min, int in_max, int out_min, int out_max) {
-  return (value_to_map - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
 bool pixel_is_in_lower_left_corner(int x, int y) {
-	return (x < (pixy.frameWidth - 1) / 2 && y > pixy.frameHeight / 2);
+  return (x < (pixy.frameWidth - 1) / 2 && y > pixy.frameHeight / 2);
 }
 
 bool pixel_is_in_lower_right_corner(int x, int y) {
-	return (x > (pixy.frameWidth - 1) / 2 && y > pixy.frameHeight / 2);
+  return (x > (pixy.frameWidth - 1) / 2 && y > pixy.frameHeight / 2);
 }
 
 /**
@@ -243,15 +226,33 @@ void preprocess_vectors() {
 
 // returns the Steigung of a Gerade
 int pitch(int x1, int y1, int x2, int y2) {
-	return (y2 - y1) / (x2 - x1);
+  return (y2 - y1) / (x2 - x1);
 }
 
 void send_delayed_steers() {
+  /*for(delayed_steer ds: delayed_steers) {
+    Serial.print("ds");
+  }*/
+  Serial.println("delayed_steers.size(): " + String(delayed_steers.size()));
   for(int i = 0; i < delayed_steers.size(); i++) {
+    //Serial.println("start_timestamp: " + String(delayed_steers[i].start_timestamp));
+    //Serial.println("delay_period: " + String(delayed_steers[i].delay_period));
+    //Serial.println("steer_string: " + String(delayed_steers[i].steer_string));
+    //Serial.println(millis());
+    if(millis() - delayed_steers[i].start_timestamp >= delayed_steers[i].delay_period) {
+      Serial.println("delayed steer ran out");
+      write_i2c(delayed_steers[i].steer_string);
+      
+      //Serial.print("Sending over I2C:");
+      //Serial.println(delayed_steers[i].steer_string);
+      delayed_steers.erase(delayed_steers.begin() + i);
+    }
+  }
+  /*for(int i = 0; i < delayed_steers.size(); i++) {
   Serial.print("send_delayed_steers");
   Serial.print(i);
   Serial.print("\n");
-    currentMillis = millis();
+    currentMillis = millis();*/
     /*if(currentMillis - delayed_steers_start_timestamp[i] >= delayed_steers_delay_period[i]) {
       //String s = String(delayed_steers_steer_string[i].c_str());
       write_i2c(delayed_steers_steer_string[i].c_str());
@@ -263,12 +264,14 @@ void send_delayed_steers() {
     /*if(currentMillis - delayed_steers[i].start_timestamp >= delayed_steers[i].delay_period) {
       //String s = String(delayed_steers_steer_string[i].c_str());
       write_i2c(delayed_steers[i].steer_string);
+      Serial.print("Sending over I2C:");
+      Serial.println(delayed_steers[i].steer_string);
       //delayed_steers.erase(delayed_steers.begin() + i);
       delayed_steers.erase(delayed_steers.begin() + i);
       //delayed_steers_delay_period.erase(delayed_steers_delay_period.begin() + i);
       //delayed_steers_steer_string.erase(delayed_steers_steer_string.begin() + i);
-    }*/
-  }
+    }
+  }*/
 }
 
 void setup()
@@ -299,13 +302,15 @@ void setup()
   
   Serial2.begin(38400); // Default communication rate of the Bluetooth module
   //delayed_steers.resize(5);
+  Serial.print("capacity of delayed_steers: ");
+  delayed_steers.reserve(100);
+  Serial.println(delayed_steers.capacity());
 }
 
 void loop()
 {
-  delay(500);
-Serial.println(delayed_steers.size());
-  //send_delayed_steers();
+  //Serial.println(delayed_steers.size());
+  send_delayed_steers();
   
   //int8_t i;
   //char buf[128];
@@ -429,7 +434,7 @@ Serial.println(delayed_steers.size());
       push_car_into_center = true;
     
     if(l.get_x1() > l.get_x0()) {
-    	//steer_right(abs_gradient);
+      //steer_right(abs_gradient);
       if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) >= CORRECT_STEERING_AWAY_FROM_SINGLE_LINE)
         steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) - CORRECT_STEERING_AWAY_FROM_SINGLE_LINE;
       else
@@ -440,7 +445,7 @@ Serial.println(delayed_steers.size());
         steer_angles_interpolation_counter = 0;
       }
     } else {
-    	//steer_left(abs_gradient);
+      //steer_left(abs_gradient);
       if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) <= -CORRECT_STEERING_AWAY_FROM_SINGLE_LINE)
         steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) + CORRECT_STEERING_AWAY_FROM_SINGLE_LINE;
       else
@@ -470,22 +475,22 @@ Serial.println(delayed_steers.size());
 
     int abs_gradient = abs(ideallinie_end_x - ideallinie_start_x);
     if(ideallinie_end_x > ideallinie_start_x) {
-    	//steer_right(abs_gradient);
+      //steer_right(abs_gradient);
       steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
         steer_angles_interpolation_counter = 0;
       }
-  	} else {
-  		//steer_left(abs_gradient);
+    } else {
+      //steer_left(abs_gradient);
       steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
         steer_angles_interpolation_counter = 0;
       }
-	  }
+    }
     /*int ideallinie_mean_x = (ideallinie_start_x + ideallinie_end_x) / 2;
     int compare_x = (pixy.frameWidth - 1) / 2 - ideallinie_mean_x;
     if(compare_x < - ALLOWED_DEVIATON_FROM_IDEALLINIE) {
@@ -508,5 +513,6 @@ Serial.println(delayed_steers.size());
 }
 namespace std {
   void __throw_length_error(char const*) {
+  }void __throw_bad_alloc() {
   }
 }
