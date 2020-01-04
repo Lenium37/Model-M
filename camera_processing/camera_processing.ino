@@ -16,13 +16,25 @@
 #include <algorithm> // sort()
 #include <Wire.h> // I2C
 
+/*class DelayedSteer {
+    public:
+      DelayedSteer(){};
+      ~DelayedSteer(){};
+
+      unsigned long start_timestamp;
+      unsigned long delay_period;
+      //String steer_string;
+};*/
 struct delayed_steer {
   unsigned long start_timestamp;
   unsigned long delay_period;
-  std::string steer_string;
+  String steer_string;
 };
-
 std::vector<delayed_steer> delayed_steers;
+//std::vector<unsigned long> delayed_steers_start_timestamp;
+//std::vector<unsigned long> delayed_steers_delay_period;
+//std::vector<std::string> delayed_steers_steer_string;
+//std::vector<DelayedSteer> delayed_steers;
 unsigned long currentMillis;
 
 Pixy2 pixy;
@@ -54,9 +66,34 @@ bool compareLines(Line l1, Line l2) {
 void write_i2c(String s) {
   char buffer[8];
   s.toCharArray(buffer, 8);
+  // wait until slave is ready to receive
+  while(digitalRead(I2C_READY_PIN) == LOW);
   Wire.beginTransmission(I2C_ADDRESS_OF_SLAVE);
   Wire.write(buffer);
   Wire.endTransmission();
+}
+
+void write_delayed(String s) {
+  unsigned long current_millis = millis();
+  Serial.println(current_millis);
+  unsigned long delay_ms = 200;
+  //std::string s1 = s.c_str();
+
+  //DelayedSteer ds;
+  //ds.start_timestamp = millis();
+  //ds.delay_period = delay_ms;
+  //ds.steer_string = "123";
+  //delayed_steers.push_back(ds);
+  
+  //delayed_steers_start_timestamp.push_back(current_millis);
+  //delayed_steers_delay_period.push_back(delay_ms);
+  //delayed_steers_steer_string.push_back(s.c_str());
+  
+  delayed_steer ds = {current_millis, delay_ms, s};
+  //delayed_steers.push_back({current_millis, delay_ms, s});
+  //delayed_steers.push_back({1000, 200, "123"});
+  delayed_steers.push_back(ds);
+  //delayed_steers.push_back(delayed_steer());
 }
 
 int calculate_steer_angle_in_degrees(int num) {
@@ -72,48 +109,65 @@ int calculate_steer_angle_in_degrees(int num) {
 void steer_left(int steer_angle) {
   debug("steer left " + String(steer_angle) + " degrees.");
   if(steer_angle < 10) {
-    if(currently_in_curve)
-      write_i2c("L0"+String(steer_angle)+"C");
-    else
-      write_i2c("L0"+String(steer_angle)+"S");
+    if(currently_in_curve) {
+      //write_i2c("L0"+String(steer_angle)+"C");
+      write_delayed("L0"+String(steer_angle)+"C");
+    }
+    else {
+      //write_i2c("L0"+String(steer_angle)+"S");
+      write_delayed("L0"+String(steer_angle)+"S");
+    }
   }
   else {
-    if(currently_in_curve)
-      write_i2c("L"+String(steer_angle)+"C");
-    else
-      write_i2c("L"+String(steer_angle)+"S");
+    if(currently_in_curve) {
+      //write_i2c("L"+String(steer_angle)+"C");
+      write_delayed("L"+String(steer_angle)+"C");
+    }
+    else {
+      //write_i2c("L"+String(steer_angle)+"C");
+      write_delayed("L"+String(steer_angle)+"C");
+    }
   }
 }
 
 void steer_right(int steer_angle) {
   debug("steer right " + String(steer_angle) + " degrees.");
   if(steer_angle < 10) {
-    if(currently_in_curve)
-      write_i2c("R0"+String(steer_angle)+"C");
-    else
-      write_i2c("R0"+String(steer_angle)+"S");
+    if(currently_in_curve) {
+      //write_i2c("R0"+String(steer_angle)+"C");
+      write_delayed("R0"+String(steer_angle)+"C");
+    }
+    else {
+      //write_i2c("R0"+String(steer_angle)+"S");
+      write_delayed("R0"+String(steer_angle)+"S");
+    }
   } else {
-    if(currently_in_curve)
-      write_i2c("R"+String(steer_angle)+"C");
-    else
-      write_i2c("R"+String(steer_angle)+"S");
+    if(currently_in_curve) {
+      //write_i2c("R"+String(steer_angle)+"C");
+      write_delayed("R"+String(steer_angle)+"C");
+    }
+    else {
+      //write_i2c("R"+String(steer_angle)+"S");
+      write_delayed("R"+String(steer_angle)+"S");
+    }
   }
 }
 
 void steer_straight() {
   debug("steer straight");
-  if(currently_in_curve)
-    write_i2c("S00C");
-  else
-    write_i2c("S00S");
+  if(currently_in_curve) {
+    //write_i2c("S00C");
+    write_delayed("S00C");
+  }
+  else {
+    //write_i2c("S00S");
+    write_delayed("S00S");
+  }
 }
 
 void steer_interpolated() {
   //int interpolated_angle = (steer_angles_interpolation[0] + steer_angles_interpolation[1] + steer_angles_interpolation[2] + steer_angles_interpolation[3] + steer_angles_interpolation[4]) / 5;
   int interpolated_angle = (steer_angles_interpolation[0] + steer_angles_interpolation[1]) / 2;
-
-  // wait until slave is ready to receive
-  while(digitalRead(I2C_READY_PIN) == LOW);
     
   if(interpolated_angle > 0) {
     steer_right(interpolated_angle);
@@ -194,11 +248,26 @@ int pitch(int x1, int y1, int x2, int y2) {
 
 void send_delayed_steers() {
   for(int i = 0; i < delayed_steers.size(); i++) {
+  Serial.print("send_delayed_steers");
+  Serial.print(i);
+  Serial.print("\n");
     currentMillis = millis();
-    if(currentMillis - delayed_steers[i].start_timestamp >= delayed_steers[i].delay_period) {
-      write_i2c(steer_string);
+    /*if(currentMillis - delayed_steers_start_timestamp[i] >= delayed_steers_delay_period[i]) {
+      //String s = String(delayed_steers_steer_string[i].c_str());
+      write_i2c(delayed_steers_steer_string[i].c_str());
+      //delayed_steers.erase(delayed_steers.begin() + i);
+      delayed_steers_start_timestamp.erase(delayed_steers_start_timestamp.begin() + i);
+      delayed_steers_delay_period.erase(delayed_steers_delay_period.begin() + i);
+      delayed_steers_steer_string.erase(delayed_steers_steer_string.begin() + i);
+    }*/
+    /*if(currentMillis - delayed_steers[i].start_timestamp >= delayed_steers[i].delay_period) {
+      //String s = String(delayed_steers_steer_string[i].c_str());
+      write_i2c(delayed_steers[i].steer_string);
+      //delayed_steers.erase(delayed_steers.begin() + i);
       delayed_steers.erase(delayed_steers.begin() + i);
-    }
+      //delayed_steers_delay_period.erase(delayed_steers_delay_period.begin() + i);
+      //delayed_steers_steer_string.erase(delayed_steers_steer_string.begin() + i);
+    }*/
   }
 }
 
@@ -229,12 +298,14 @@ void setup()
   pinMode(I2C_READY_PIN, INPUT);
   
   Serial2.begin(38400); // Default communication rate of the Bluetooth module
+  //delayed_steers.resize(5);
 }
 
 void loop()
 {
-
-  send_delayed_steers();
+  delay(500);
+Serial.println(delayed_steers.size());
+  //send_delayed_steers();
   
   //int8_t i;
   //char buf[128];
@@ -270,6 +341,9 @@ void loop()
   
   if(counter_no_line_detected > 10) {
     // STOP MOTOR!
+    delayed_steers.clear();
+    //delayed_steers_delay_period.clear();
+    //delayed_steers_steer_string.clear();
     write_i2c("XXXX");
     stopped = true;
     debug("stopped car");
@@ -286,6 +360,9 @@ void loop()
     }
     if(counter_no_line_detected > 10) {
       // STOP MOTOR!
+    delayed_steers.clear();
+    //delayed_steers_delay_period.clear();
+    //delayed_steers_steer_string.clear();
       write_i2c("XXXX");
       stopped = true;
       debug("stopped car");
@@ -428,4 +505,8 @@ void loop()
   }
    
   
+}
+namespace std {
+  void __throw_length_error(char const*) {
+  }
 }
