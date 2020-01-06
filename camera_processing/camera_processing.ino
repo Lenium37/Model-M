@@ -1,4 +1,4 @@
-#define DEVIATION_FROM_VERTICAL 2 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
+#define DEVIATION_FROM_VERTICAL 4 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 #define ALLOWED_DEVIATON_FROM_IDEALLINIE 5
 
 #define WAIT_TIME_BETWEEN_LINE_DETECTION 3 // ms
@@ -50,13 +50,19 @@ void write_i2c(String s) {
   Wire.endTransmission();
 }
 
+int calculate_push_away_angle_in_degrees(int distance_line_camera_center) {
+  int angle = return_map(distance_line_camera_center, 0, 20, 20, 0);
+  if(angle < 0)
+    angle = 0;
+
+  return angle;
+}
+
 int calculate_steer_angle_in_degrees(int num) {
   int angle = return_map(num, 0, 20, 0, 45);
   if(angle > 45)
     angle = 45;
 
-  if(angle > 25)
-    delay(50);
   return angle;
 }
 
@@ -300,7 +306,8 @@ void loop()
     bool push_car_into_center = false;
     
     // if single line is pretty much vertical
-    if(l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
+    if(abs(l.get_y1() - l.get_y0()) > 10 && l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
+      push_car_into_center = true;
       currently_in_curve = false;
       // line in left side of view, push car to the right
       /*if((l.get_x1() + l.get_x0()) / 2 < (pixy.frameWidth - 1) / 2) {
@@ -326,13 +333,19 @@ void loop()
     // lenke CORRECT_STEERING_AWAY_FROM_SINGLE_LINE Grad weniger stark
 
     int line_center = (l.get_x1() + l.get_x0()) / 2;
-    if(line_center >= 30 && line_center <= 50)
-      push_car_into_center = true;
-    
+    /*if(line_center >= 30 && line_center <= 50)
+      push_car_into_center = true;*/
+    //Serial.println("push_car_into_center: "+String(push_car_into_center));
+    push_car_into_center = true;
+    if(push_car_into_center) {
+      Serial.println("push degrees into center: " + String(calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2))));
+    }
+    Serial.println("currently_in_curve: "+String(currently_in_curve));
+      
     if(l.get_x1() > l.get_x0()) {
     	//steer_right(abs_gradient);
-      if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) >= CORRECT_STEERING_AWAY_FROM_SINGLE_LINE)
-        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) - CORRECT_STEERING_AWAY_FROM_SINGLE_LINE;
+      if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2)) <= 45)
+        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2));
       else
         steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
@@ -342,8 +355,8 @@ void loop()
       }
     } else {
     	//steer_left(abs_gradient);
-      if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) <= -CORRECT_STEERING_AWAY_FROM_SINGLE_LINE)
-        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) + CORRECT_STEERING_AWAY_FROM_SINGLE_LINE;
+      if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2)) >= 45)
+        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2));
       else
         steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
