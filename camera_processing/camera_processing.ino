@@ -13,7 +13,7 @@
 #include <vector>
 #include <Line.h>
 #include <algorithm> // sort()
-#include <Wire.h> // I2C
+#include <Wire.h> // I2Cs
 
 
 Pixy2 pixy;
@@ -51,7 +51,7 @@ void write_i2c(String s) {
 }
 
 int calculate_push_away_angle_in_degrees(int distance_line_camera_center) {
-  int angle = return_map(distance_line_camera_center, 0, 20, 20, 0);
+  int angle = return_map(distance_line_camera_center, 0, 20, 25, 0);
   if(angle < 0)
     angle = 0;
 
@@ -344,10 +344,14 @@ void loop()
       
     if(l.get_x1() > l.get_x0()) {
     	//steer_right(abs_gradient);
-      if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2)) <= 45)
-        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2));
-      else
+      if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) <= 45) {
+        Serial.println("pushing away from line nach rechts");
+        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+      }
+      else {
+        Serial.println("pushing not away nach rechts");
         steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
+      }
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
@@ -355,10 +359,14 @@ void loop()
       }
     } else {
     	//steer_left(abs_gradient);
-      if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2)) >= 45)
-        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2));
-      else
+      if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) >= -45) {
+        Serial.println("pushing away from line nach links");
+        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+      }
+      else {
         steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
+        Serial.println("pushing not away nach links");
+      }
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
