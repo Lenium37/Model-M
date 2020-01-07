@@ -342,31 +342,46 @@ void loop()
     }
     Serial.println("currently_in_curve: "+String(currently_in_curve));
       
-    if(l.get_x1() > l.get_x0()) {
-    	//steer_right(abs_gradient);
-      if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) <= 45) {
-        Serial.println("pushing away from line nach rechts");
-        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-      }
-      else {
-        Serial.println("pushing not away nach rechts");
-        steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
+    if(l.get_x1() > l.get_x0()) { // line points to the right
+      if(currently_in_curve) {
+        if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) <= 45) {
+          Serial.println("pushing away from line nach rechts");
+          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+        }
+        else {
+          Serial.println("pushing not away nach rechts");
+          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
+        }
+      } else {
+        if(line_center >= (pixy.frameWidth - 1) / 2) { // line on right
+          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+        } else {
+          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+        }
+        
       }
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
         steer_angles_interpolation_counter = 0;
       }
-    } else {
-    	//steer_left(abs_gradient);
-      if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) >= -45) {
-        Serial.println("pushing away from line nach links");
-        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-      }
-      else {
-        steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
-        Serial.println("pushing not away nach links");
-      }
+    } else { // line points to the left
+    	if(currently_in_curve) {
+        if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) >= -45) {
+          Serial.println("pushing away from line nach links");
+          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+        }
+        else {
+          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
+          Serial.println("pushing not away nach links");
+        }
+    	} else {
+        if(line_center <= (pixy.frameWidth - 1) / 2) { // line on left
+          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+        } else {
+          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
+        }
+    	}
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
         steer_interpolated();
