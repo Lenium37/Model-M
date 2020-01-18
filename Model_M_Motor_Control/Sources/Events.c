@@ -29,17 +29,19 @@
 #ifdef __cplusplus
 extern "C" {
 #endif 
+
 extern int Error;
 float Umfang = 0.157; //Meter Umfang
 float Abstand_Mag = 0.01383;
-extern float velocity_Links;
-extern float velocity_Rechts;
-uint16_t Speed_time_Links = 0;
+float velocity_Links;
+float velocity_Rechts;
+extern float velocity_Rechts_avg;
+float Rechts_time = 0;
+float velocity_Rechts_avg = 0.0;
+volatile uint16_t Speed_time_Links = 0;
 uint16_t Speed_time_Rechts = 0;
 double Speed = 0.0;
 double Tick_Time = 0.0;
-double AVG_ARRAY_Links[4];
-double AVG_ARRAY_Rechts[4];
 extern bool PID_Active;
 extern int counter();
 /* User includes (#include below this line is not maintained by Processor Expert) */
@@ -52,8 +54,9 @@ extern bool Serial;
 bool Start_up_Rechts = TRUE;
 bool Start_up_Links  = TRUE;
 int count = 0;
-uint8_t Timer_OVF = 0;
-uint8_t avgcounter = 0;
+volatile uint8_t Counter_OVF = 0;
+uint8_t avg_counter = 0;
+uint32_t TU3_CounterValue = 0;
 /*
  ** ===================================================================
  **     Event       :  Cpu_OnNMIINT (module Events)
@@ -83,48 +86,21 @@ void Cpu_OnNMIINT(void) {
  ** ===================================================================
  */
 void RechtsINT_OnInterrupt(void)
-	{
-			//PID_Active = TRUE;
-			//FC1_Disable();
-
-			RechtsClock_Disable(); //Deaktivieren vom Timer um Zeit zu Speichern
-			double AVG_Speed_Time = 0.0;
-			counter(TRUE);
-			RechtsINT_Disable(); //Interrupt Deaktivieren
-			if (Start_up_Rechts == TRUE)//Beim ersten auslösen des Interrupts nach dem Start den Timer Starten
+{
+			Speed_time_Rechts = TU3_GetCounterValue(TU3_Pointer);
+			TU3_CounterValue = Speed_time_Rechts+(Counter_OVF*65535);
+			Rechts_time = 0.000002*TU3_CounterValue;
+			velocity_Rechts += Abstand_Mag/Rechts_time;
+			avg_counter++;
+			if(avg_counter > 10)
 			{
-				RechtsClock_Enable();
-				Start_up_Rechts = FALSE;
+				velocity_Rechts_avg = velocity_Rechts/10;
+				velocity_Rechts = 0;
+				avg_counter = 0;
 			}
-			if (count <= 1)	  //Ersten Impulse Zählen
-					{
-				count++;
-			}
-			if (count >= 2) //Beim Ersten Impulse auf den Zweiten warten erst dann Zeit Messen
-			{
-				RechtsClock_GetTimeMS(&Speed_time_Rechts);
-				AVG_ARRAY_Rechts[avgcounter] = Speed_time_Rechts;			//Zeit in einem Array Speichern
-				Speed_time_Rechts = 0;					//Ausgelesener Timerwert wieder wieder auf null
-				avgcounter++;							//Array Zähler um eins erhöhen
-				RechtsClock_Reset();
-				RechtsClock_Enable();
-			}
-			if (avgcounter >= 4)//Wenn 4 Impulse gemessen wurden berechne den Mittelwert um Fehler zu vermindern
-					{
-				for (int i = 0; i < 4; i++)
-				{
-					AVG_Speed_Time = AVG_Speed_Time + AVG_ARRAY_Rechts[i];	//Alle Samples addieren
-				}
-				AVG_Speed_Time = AVG_Speed_Time / 4;				//Mittelwert bilden
-				velocity_Rechts = Abstand_Mag / AVG_Speed_Time * 1000;	//Geschwindigkeit berechnen um auf m/s zu kommen muss die Geschwindigkeit * 1000 gerehnet werden
-				avgcounter = 0;							//Array Zähler wieder auf null
-			}
-
-			RechtsINT_Enable();									//Interrupt wieder Starten
-			printf("velocity_Rechts = %d\n",velocity_Rechts);
+			Counter_OVF = 0;
+			TU3_ResetCounter(TU3_Pointer);
 	}
-
-
 /*
  ** ===================================================================
  **     Event       :  FC1_OnInterrupt (module Events)
@@ -142,7 +118,7 @@ void RechtsINT_OnInterrupt(void)
  */
 /* ===================================================================*/
 void FC1_OnInterrupt(void) {
-	Timer_OVF++;
+	//Timer_OVF++;
 }
 
 /*
@@ -268,7 +244,7 @@ void I2C1_OnError(void) {
 */
 void LinksINT_OnInterrupt(void)
 {
-	//PID_Active = TRUE;
+	/*/PID_Active = TRUE;
 			//FC1_Disable();
 			uint8_t AVGMAX = 4;
 			RechtsClock_Disable();  //Deaktivieren vom Timer um Zeit zu Speichern
@@ -306,7 +282,31 @@ void LinksINT_OnInterrupt(void)
 			}
 
 			LinksINT_Enable();									//Interrupt wieder Starten
-			printf("velocity_Links = %d\n",velocity_Links);
+			printf("velocity_Links = %d\n",velocity_Links);*/
+}
+
+/*
+** ===================================================================
+**     Event       :  TU3_OnCounterRestart (module Events)
+**
+**     Component   :  TU3 [TimerUnit_LDD]
+*/
+/*!
+**     @brief
+**         Called if counter overflow/underflow or counter is
+**         reinitialized by modulo or compare register matching.
+**         OnCounterRestart event and Timer unit must be enabled. See
+**         [SetEventMask] and [GetEventMask] methods. This event is
+**         available only if a [Interrupt] is enabled.
+**     @param
+**         UserDataPtr     - Pointer to the user or
+**                           RTOS specific data. The pointer passed as
+**                           the parameter of Init method.
+*/
+/* ===================================================================*/
+void TU3_OnCounterRestart(LDD_TUserData *UserDataPtr)
+{
+   Counter_OVF++;
 }
 
 /* END Events */

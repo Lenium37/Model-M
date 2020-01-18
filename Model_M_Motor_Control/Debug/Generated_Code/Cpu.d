@@ -33,10 +33,8 @@ Generated_Code/Cpu.o: ../Generated_Code/Cpu.c ../Generated_Code/Servo.h \
  ../Generated_Code/LEDpin7.h ../Generated_Code/BitIoLdd7.h \
  ../Generated_Code/MotorLinks_Rev.h ../Generated_Code/PwmLdd4.h \
  ../Generated_Code/MotorRechts_Rev.h ../Generated_Code/PwmLdd6.h \
- ../Generated_Code/RechtsClock.h ../Generated_Code/RealTimeLdd1.h \
- ../Generated_Code/TU3.h ../Generated_Code/LinksINT.h \
- ../Generated_Code/ExtIntLdd2.h ../Generated_Code/Links_Clock.h \
- ../Generated_Code/RealTimeLdd2.h \
+ ../Generated_Code/LinksINT.h ../Generated_Code/ExtIntLdd2.h \
+ ../Generated_Code/TU3.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Sources/Events.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PE_Types.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PE_Error.h \
@@ -88,8 +86,6 @@ Generated_Code/Cpu.o: ../Generated_Code/Cpu.c ../Generated_Code/Servo.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/TU2.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/LinksINT.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/ExtIntLdd2.h \
- /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/Links_Clock.h \
- /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RealTimeLdd2.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/TU3.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/SI.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/BitIoLdd8.h \
@@ -100,8 +96,6 @@ Generated_Code/Cpu.o: ../Generated_Code/Cpu.c ../Generated_Code/Servo.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PwmLdd4.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/MotorRechts_Rev.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PwmLdd6.h \
- /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RechtsClock.h \
- /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RealTimeLdd1.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RechtsINT.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/ExtIntLdd1.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/I2C1.h
@@ -240,19 +234,11 @@ Generated_Code/Cpu.o: ../Generated_Code/Cpu.c ../Generated_Code/Servo.h \
 
 ../Generated_Code/PwmLdd6.h:
 
-../Generated_Code/RechtsClock.h:
-
-../Generated_Code/RealTimeLdd1.h:
-
-../Generated_Code/TU3.h:
-
 ../Generated_Code/LinksINT.h:
 
 ../Generated_Code/ExtIntLdd2.h:
 
-../Generated_Code/Links_Clock.h:
-
-../Generated_Code/RealTimeLdd2.h:
+../Generated_Code/TU3.h:
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Sources/Events.h:
 
@@ -356,10 +342,6 @@ Generated_Code/Cpu.o: ../Generated_Code/Cpu.c ../Generated_Code/Servo.h \
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/ExtIntLdd2.h:
 
-/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/Links_Clock.h:
-
-/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RealTimeLdd2.h:
-
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/TU3.h:
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/SI.h:
@@ -379,10 +361,6 @@ Generated_Code/Cpu.o: ../Generated_Code/Cpu.c ../Generated_Code/Servo.h \
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/MotorRechts_Rev.h:
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PwmLdd6.h:
-
-/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RechtsClock.h:
-
-/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RealTimeLdd1.h:
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RechtsINT.h:
 

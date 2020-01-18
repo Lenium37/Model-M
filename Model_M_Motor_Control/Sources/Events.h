@@ -85,8 +85,6 @@
 #include "TU2.h"
 #include "LinksINT.h"
 #include "ExtIntLdd2.h"
-#include "Links_Clock.h"
-#include "RealTimeLdd2.h"
 #include "TU3.h"
 #include "SI.h"
 #include "BitIoLdd8.h"
@@ -97,8 +95,6 @@
 #include "PwmLdd4.h"
 #include "MotorRechts_Rev.h"
 #include "PwmLdd6.h"
-#include "RechtsClock.h"
-#include "RealTimeLdd1.h"
 #include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "I2C1.h"
@@ -106,6 +102,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif 
+
+LDD_TDeviceData *TU3_Pointer;
 
 /*
 ** ===================================================================
@@ -291,6 +289,27 @@ void LinksINT_OnInterrupt(void);
 **     Returns     : Nothing
 ** ===================================================================
 */
+
+/*
+** ===================================================================
+**     Event       :  TU3_OnCounterRestart (module Events)
+**
+**     Component   :  TU3 [TimerUnit_LDD]
+*/
+/*!
+**     @brief
+**         Called if counter overflow/underflow or counter is
+**         reinitialized by modulo or compare register matching.
+**         OnCounterRestart event and Timer unit must be enabled. See
+**         [SetEventMask] and [GetEventMask] methods. This event is
+**         available only if a [Interrupt] is enabled.
+**     @param
+**         UserDataPtr     - Pointer to the user or
+**                           RTOS specific data. The pointer passed as
+**                           the parameter of Init method.
+*/
+/* ===================================================================*/
+void TU3_OnCounterRestart(LDD_TUserData *UserDataPtr);
 
 /* END Events */
 

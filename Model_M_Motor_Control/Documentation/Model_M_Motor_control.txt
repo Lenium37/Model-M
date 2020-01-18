@@ -273,15 +273,6 @@ Module "MotorRechts_Rev" (component PWM)
                 as a 16-bit unsigned integer number. The method is available only if it is not selected list of predefined 
                 values in <Starting pulse width> property.
 
-Module "RechtsClock" (component FreeCntr32)
-   - RechtsClock_Enable -This method enables the component - the internal clocks are counted.
-   - RechtsClock_Disable -This method disables the component - the internal clocks are not counted.
-   - RechtsClock_Reset -This method clears the counter.
-   - RechtsClock_GetTimeUS -This method returns the time (as a 16-bit unsigned integer) in microseconds since the last 
-                resetting after the last reset.
-   - RechtsClock_GetTimeMS -This method returns the time (as a 16-bit unsigned integer) in milliseconds since the last 
-                resetting after the last reset.
-
 Module "LinksINT"  (component ExtInt)
    - LinksINT_Enable -Enable the component - the external events are accepted. This method is available only if HW module 
                 allows enable/disable of the interrupt.
@@ -289,33 +280,21 @@ Module "LinksINT"  (component ExtInt)
                 allows enable/disable of the interrupt.
    - LinksINT_GetVal -Returns the actual value of the input pin of the component.
 
-Module "Links_Clock" (component FreeCntr32)
-   - Links_Clock_Enable -This method enables the component - the internal clocks are counted.
-   - Links_Clock_Disable -This method disables the component - the internal clocks are not counted.
-   - Links_Clock_Reset -This method clears the counter.
-   - Links_Clock_GetTimeUS -This method returns the time (as a 16-bit unsigned integer) in microseconds since the last 
-                resetting after the last reset.
-   - Links_Clock_GetTimeMS -This method returns the time (as a 16-bit unsigned integer) in milliseconds since the last 
-                resetting after the last reset.
-
 Module "TU3"       (component TimerUnit_LDD)
    - TU3_Init -Initializes the device. Allocates memory for the device data structure, allocates interrupt vectors and sets 
                 interrupt priority, sets pin routing, sets timing, etc. If the property <"Enable in init. code"> is set to 
                 "yes" value then the device is also enabled (see the description of the <Enable> method). In this case the 
                 <Enable> method is not necessary and needn't to be generated. This method can be called only once. Before the 
                 second call of Init the <Deinit> must be called first.
-   - TU3_SetEventMask -Enables/disables event(s). The events contained within the mask are enabled. Events not contained within 
-                the mask are disabled. The component event masks are defined in the PE_Types.h file. Note: Event that are not 
-                generated (See the "Events" tab in the Component inspector) are not handled by this method. In this case the 
-                method returns ERR_PARAM_MASK error code. See also method <GetEventMask>.
-   - TU3_GetEventMask -Returns current events mask. Note: Event that are not generated (See the "Events" tab in the Component 
-                inspector) are not handled by this method. See also method <SetEventMask>.
+   - TU3_Enable -Enables the component - it starts the signal generation. Events may be generated (see SetEventMask). The 
+                method is not available if the counter can't be disabled/enabled by HW.
+   - TU3_Disable -Disables the component - it stops signal generation and events calling. The method is not available if the 
+                counter can't be disabled/enabled by HW.
+   - TU3_ResetCounter -Resets counter. If counter is counting up then it is set to zero. If counter is counting down then 
+                counter is updated to the reload value.   The method is not available if HW doesn't allow resetting of the 
+                counter.
    - TU3_GetCounterValue -Returns the content of counter register. This method can be used both if counter is enabled and if 
                 counter is disabled. The method is not available if HW doesn't allow reading of the counter.
-   - TU3_SetOffsetTicks -Sets the new offset value to channel specified by the parameter ChannelIdx. It is user responsibility 
-                to use value below selected period. This method is available when at least one channel is configured.
-   - TU3_GetOffsetTicks -Returns the number of counter ticks to compare match channel specified by the parameter ChannelIdx. 
-                See also method <SetOffsetTicks>. This method is available when at least one channel is configured.
 
 Module "Cpu"       (component MKL25Z128LK4)
 

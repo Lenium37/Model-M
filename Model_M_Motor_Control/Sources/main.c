@@ -10,8 +10,6 @@
 #include "TU2.h"
 #include "LinksINT.h"
 #include "ExtIntLdd2.h"
-#include "Links_Clock.h"
-#include "RealTimeLdd2.h"
 #include "TU3.h"
 #include "SI.h"
 #include "BitIoLdd8.h"
@@ -22,8 +20,6 @@
 #include "PwmLdd4.h"
 #include "MotorRechts_Rev.h"
 #include "PwmLdd6.h"
-#include "RechtsClock.h"
-#include "RealTimeLdd1.h"
 #include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "I2C1.h"
@@ -137,6 +133,7 @@ uint16_t Links = 61650;
 uint16_t Rechts = 59860;
 float velocity_Links = 0.0;
 float velocity_Rechts = 0.0;
+float velocity_Rechts_avg;
 int Error = 0;
 uint8_t Magnenten = 8;
 extern double AVG_ARRAY_Links[];
@@ -160,25 +157,7 @@ long map(long x, long in_min, long in_max, long out_min, long out_max) {
 }
 void counter(bool Stop) //Wenn kein Interrupt mehr nach 30 Ticks ausgelöst wird dann ist die Geschwindigkeit gleich null oder der Speedsensor hat ein Error
 {
-	int Counter_reset = 10;
-	if (Stop == TRUE) {
-		Tick = 0;
-	} else {
-		Tick++;
-	}
-	if (Tick > Counter_reset) {
-		velocity_Links = 0.0;
-		velocity_Rechts = 0.0;
-		avgcounter = 0;
-		PID_Active = FALSE; //PID Regler ausschalten damit dieser nicht bei Speedsensor Error weiter Regelt.
-		Tick = 0;
-		//FC1_Disable();
-		//RechtsClock_Disable();
-		for (int i = 0; i < 12; i++) {
-			AVG_ARRAY_Links[i] = 0;
-			AVG_ARRAY_Rechts[i] = 0;
-		}
-	}
+
 }
 uint16_t Regler_P(float Soll, float Ist, int Kp) {
 	float Speed_diff = Soll - Ist;
@@ -555,9 +534,9 @@ int main(void) {
 		uint16_t Break_Time_Speed = map(Speed, 0, 65535, 50, 25);
 
 
-		if (Angle > 20)
+		if (Angle > 15&&velocity_Rechts_avg > 1.5)
 		{
-			//(Break(Speed + 10000,Break_Time_Speed);
+			Break(Speed + 10000,300);
 		}
 
 			if (data[3] == 'S') {

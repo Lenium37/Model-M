@@ -40,7 +40,6 @@ C_SRCS += \
 ../Generated_Code/LEDpin6.c \
 ../Generated_Code/LEDpin7.c \
 ../Generated_Code/LinksINT.c \
-../Generated_Code/Links_Clock.c \
 ../Generated_Code/MotorLinks.c \
 ../Generated_Code/MotorLinks_Rev.c \
 ../Generated_Code/MotorRechts.c \
@@ -52,9 +51,6 @@ C_SRCS += \
 ../Generated_Code/PwmLdd3.c \
 ../Generated_Code/PwmLdd4.c \
 ../Generated_Code/PwmLdd6.c \
-../Generated_Code/RealTimeLdd1.c \
-../Generated_Code/RealTimeLdd2.c \
-../Generated_Code/RechtsClock.c \
 ../Generated_Code/RechtsINT.c \
 ../Generated_Code/SI.c \
 ../Generated_Code/SW1.c \
@@ -108,7 +104,6 @@ OBJS += \
 ./Generated_Code/LEDpin6.o \
 ./Generated_Code/LEDpin7.o \
 ./Generated_Code/LinksINT.o \
-./Generated_Code/Links_Clock.o \
 ./Generated_Code/MotorLinks.o \
 ./Generated_Code/MotorLinks_Rev.o \
 ./Generated_Code/MotorRechts.o \
@@ -120,9 +115,6 @@ OBJS += \
 ./Generated_Code/PwmLdd3.o \
 ./Generated_Code/PwmLdd4.o \
 ./Generated_Code/PwmLdd6.o \
-./Generated_Code/RealTimeLdd1.o \
-./Generated_Code/RealTimeLdd2.o \
-./Generated_Code/RechtsClock.o \
 ./Generated_Code/RechtsINT.o \
 ./Generated_Code/SI.o \
 ./Generated_Code/SW1.o \
@@ -176,7 +168,6 @@ C_DEPS += \
 ./Generated_Code/LEDpin6.d \
 ./Generated_Code/LEDpin7.d \
 ./Generated_Code/LinksINT.d \
-./Generated_Code/Links_Clock.d \
 ./Generated_Code/MotorLinks.d \
 ./Generated_Code/MotorLinks_Rev.d \
 ./Generated_Code/MotorRechts.d \
@@ -188,9 +179,6 @@ C_DEPS += \
 ./Generated_Code/PwmLdd3.d \
 ./Generated_Code/PwmLdd4.d \
 ./Generated_Code/PwmLdd6.d \
-./Generated_Code/RealTimeLdd1.d \
-./Generated_Code/RealTimeLdd2.d \
-./Generated_Code/RechtsClock.d \
 ./Generated_Code/RechtsINT.d \
 ./Generated_Code/SI.d \
 ./Generated_Code/SW1.d \

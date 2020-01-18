@@ -47,10 +47,8 @@
 - \subpage BitIoLdd7
 - \subpage PwmLdd4
 - \subpage PwmLdd6
-- \subpage TU3
-- \subpage RealTimeLdd1
 - \subpage ExtIntLdd2
-- \subpage RealTimeLdd2
+- \subpage TU3
 
 */
 
