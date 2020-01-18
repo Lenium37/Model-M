@@ -8,15 +8,23 @@
 #include "MotorLinks.h"
 #include "PwmLdd2.h"
 #include "TU2.h"
+#include "LinksINT.h"
+#include "ExtIntLdd2.h"
+#include "Links_Clock.h"
+#include "RealTimeLdd2.h"
 #include "TU3.h"
-#include "FC1.h"
-#include "FreeCntrLdd1.h"
 #include "SI.h"
 #include "BitIoLdd8.h"
 #include "Send_OK.h"
 #include "LEDpin7.h"
 #include "BitIoLdd7.h"
-#include "EInt1.h"
+#include "MotorLinks_Rev.h"
+#include "PwmLdd4.h"
+#include "MotorRechts_Rev.h"
+#include "PwmLdd6.h"
+#include "RechtsClock.h"
+#include "RealTimeLdd1.h"
+#include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "I2C1.h"
 #include "MotorRechts.h"
@@ -66,6 +74,11 @@
 uint16_t value;
 uint16_t value2;
 uint16_t Pixel[128];
+uint8_t prev_angle = 0;
+uint16_t Programmtime;
+int Curve = 0;
+int Break_time = 0;
+uint16_t Break_period = 0;
 
 //Routine Auswertung
 uint16_t Pixel[128];
@@ -94,11 +107,9 @@ uint8_t array_pos = 0;
 uint8_t startup = 1;
 int SerVal = 0;
 extern uint8_t avgcounter;
+uint16_t StartMotor = 50000;
 //PID
-float Speed_error = 0.0;
-float Speed_error_prev = 0.0;
-float PID_p = 0;
-uint16_t PIDval = 0;
+uint16_t P_VAL = 0;
 
 float Regel = 0;
 float PID_p, PID_d, PID_i = 0;
@@ -124,108 +135,77 @@ uint8_t LinienBreite[10];
 uint16_t Mitte = 60750;
 uint16_t Links = 61650;
 uint16_t Rechts = 59860;
-float velocity = 0.0;
+float velocity_Links = 0.0;
+float velocity_Rechts = 0.0;
 int Error = 0;
 uint8_t Magnenten = 8;
-extern double AVG_ARRAY[];
+extern double AVG_ARRAY_Links[];
+extern double AVG_ARRAY_Rechts[];
 float RadUmfang = 157.08; //mm
-uint16_t  DreiLinien = 0;
-uint16_t  VierLinien = 0;
-bool Start = TRUE;
+uint16_t DreiLinien = 0;
+uint16_t VierLinien = 0;
+bool Start = FALSE;
 bool Serial = FALSE;
 bool Serialline = FALSE;
-long map(long x, long in_min, long in_max, long out_min, long out_max)
-{
+bool Break_Curve = FALSE;
+byte Break_Active = 0;
+bool DRIVE = TRUE;
+int Break_Timer = 0;
+uint16_t Winkel_prev_L = 0;
+uint16_t Winkel_prev_R = 0;
+uint16_t Lenkung_Regler = 0;
+uint16_t Programmcounter = 0;
+long map(long x, long in_min, long in_max, long out_min, long out_max) {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 void counter(bool Stop) //Wenn kein Interrupt mehr nach 30 Ticks ausgelöst wird dann ist die Geschwindigkeit gleich null oder der Speedsensor hat ein Error
 {
 	int Counter_reset = 10;
-	if (Stop == TRUE)
-	{
+	if (Stop == TRUE) {
 		Tick = 0;
-	}
-	else
-	{
+	} else {
 		Tick++;
 	}
-	if (Tick > Counter_reset)
-	{
-		velocity = 0.0;
+	if (Tick > Counter_reset) {
+		velocity_Links = 0.0;
+		velocity_Rechts = 0.0;
 		avgcounter = 0;
 		PID_Active = FALSE; //PID Regler ausschalten damit dieser nicht bei Speedsensor Error weiter Regelt.
 		Tick = 0;
-		FC1_Disable();
-		for (int i = 0; i < 12; i++)
-		{
-			AVG_ARRAY[i] = 0;
+		//FC1_Disable();
+		//RechtsClock_Disable();
+		for (int i = 0; i < 12; i++) {
+			AVG_ARRAY_Links[i] = 0;
+			AVG_ARRAY_Rechts[i] = 0;
 		}
 	}
 }
-uint16_t Regler_P(float Soll, float Ist, float Kp_val)
-{
-	int Start = 10000;
-	uint16_t Kp = 0;
-	float Speed_diff = Soll / 10 - Ist;
-
-	if (Speed_diff < 0.1 || Speed_diff > -0.1)
-	{
-		Kp = 10;
-	}
-	if (Speed_diff > 0.1 || Speed_diff < -0.1)
-	{
-		Kp = Kp_val;
-	}
-	if (EN_Get() == 0)
-	{
-		Kp = 0;
-	}
-
-	if (PID_p >= 63000)
-	{
-		PID_p = 63000;
-	}
-	if (Soll == 0)
-	{
-		PID_p = 0;
-		//Start = 0;
-	}
-	else
-	{
-		PID_p += (Speed_diff * Kp); //+Start;
-		PID_p = PID_p;
-	}
-	PIDval = PID_p;
-	if (Serial == TRUE)
-	{
-		printf("PIDval: %d \n", PIDval);
-	}
-	//return PIDval;
+uint16_t Regler_P(float Soll, float Ist, int Kp) {
+	float Speed_diff = Soll - Ist;
+	return P_VAL += Speed_diff * Kp;
 }
 
-uint8_t char_int(char Zeichen)
-{
+uint8_t char_int(char Zeichen) {
 	uint8_t Wert = 0;
-	switch (Zeichen)
-	{
+	switch (Zeichen) {
 	case '0':
 		Wert = 0;
-	break;
+		break;
 	case '1':
 		Wert = 1;
-	break;
+		break;
 	case '2':
 		Wert = 2;
-	break;
+		break;
 	case '3':
 		Wert = 3;
-	break;
+		break;
 	case '4':
 		Wert = 4;
-	break;
+		break;
 	case '5':
 		Wert = 5;
-	break;
+		break;
 	case '6':
 		Wert = 6;
 		break;
@@ -241,12 +221,11 @@ uint8_t char_int(char Zeichen)
 	}
 	return Wert;
 }
-int Cal_Angle(uint8_t Ten, uint8_t Zero)
-{
+int Cal_Angle(uint8_t Ten, uint8_t Zero) {
+
 	return Ten * 10 + Zero;
 }
-void Send(char Data, uint8_t Block_send)
-{
+void Send(char Data, uint8_t Block_send) {
 	byte err_send;
 	word ret_send;
 	/* Set slave address */
@@ -258,32 +237,25 @@ void Send(char Data, uint8_t Block_send)
 	/* Send bytes in master mode */
 	err_send = I2C1_SendBlock(&Data, Block_send, &ret_send);
 	if (Serial == TRUE) {
-		if (err_send == ERR_OK)
-		{
+		if (err_send == ERR_OK) {
 			printf("ERR_OK\n");
 		}
-		if (err_send == ERR_SPEED)
-		{
+		if (err_send == ERR_SPEED) {
 			printf("ERR_SPEED\n");
 		}
-		if (err_send == ERR_DISABLED)
-		{
+		if (err_send == ERR_DISABLED) {
 			printf("ERR_DISABLED\n");
 		}
-		if (err_send == ERR_BUSY)
-		{
+		if (err_send == ERR_BUSY) {
 			printf("ERR_BUSY\n");
 		}
-		if (err_send == ERR_BUSOFF)
-		{
+		if (err_send == ERR_BUSOFF) {
 			printf("ERR_BUSOFF\n");
 		}
-		if (err_send == ERR_TXFULL)
-		{
+		if (err_send == ERR_TXFULL) {
 			printf("ERR_TXFULL\n");
 		}
-		if (err_send == ERR_ARBITR)
-		{
+		if (err_send == ERR_ARBITR) {
 			printf("ERR_ARBITR\n");
 		}
 	}
@@ -297,22 +269,19 @@ void Send(char Data, uint8_t Block_send)
 	 ERR_ARBITR - Arbitration lost (only when interrupt service is disabled and in master mode)
 	 */
 	/* Wait for communication complete */
-	while (!flags_send)
-	{
+	while (!flags_send) {
 		int count = 0;
 		while (!flags_rev) /* Wait for full buffer */
 		{
 			count++;
-			if (count > 3000)
-			{
+			if (count > 3000) {
 				flags_rev = TRUE; /* Clear flags */
 			}
 			//Send('R',1);
 		}
 	}
 }
-void Rec()
-{
+void Rec() {
 	flags_rev = FALSE; /* Clear flags */
 	errFlags_rev = FALSE;
 	int count = 0;
@@ -321,9 +290,9 @@ void Rec()
 		Send_OK_On();
 		//printf("Angle: %d, %d\n", Angle,SerVal);
 		count++;
-		if (count > 30000)
-		{
+		if (count > 30000) {
 			flags_rev = TRUE; /* Clear flags*/
+			count = 0;
 		}
 		//Send('R',1);
 	}
@@ -335,50 +304,46 @@ void Rec()
 	err_rev = 100;
 	uint8_t Ten = char_int(data[1]);
 	uint8_t Zero = char_int(data[2]);
-	Angle = Cal_Angle(Ten, Zero);
+	prev_angle = Angle;
+	if (data[0] != 'X' || data[1] != 'X' || data[2] != 'X' || data[3] != 'X') {
+		Angle = Cal_Angle(Ten, Zero);
+	}
+	if (data[0] == 'X' || data[1] == 'X' || data[2] == 'X' || data[3] == 'X') {
+		Angle = prev_angle;
+	}
 	SerVal = map(Angle, 0, 45, 0, 819); //819 //3277 //max 62258 min 58981; 819 sind 45° , mitte 60619
-	//printf("Data: %c%c%c\n",data[0],data[1],data[2]);
+	//printf("Data: %c%c%c\n",data[0],data[1],data[2],data[3]);
 	//printf("Angle: %d, %d\n", Angle,SerVal);
 	//if(data[1] == 'L'||data[1]=='R'||data[1]=='S'||data[2] == 'L'||data[2]=='R'||data[2]=='S')
 	//{
 	I2C1_ClearRxBuf();
 	//}
-	if (Serial == TRUE)
-	{
-		if (err_rev == ERR_OK)
-		{
+	if (Serial == TRUE) {
+		if (err_rev == ERR_OK) {
 			printf("ERR_OK\n");
 		}
-		if (err_rev == ERR_SPEED)
-		{
+		if (err_rev == ERR_SPEED) {
 			printf("ERR_SPEED\n");
 		}
-		if (err_rev == ERR_DISABLED)
-		{
+		if (err_rev == ERR_DISABLED) {
 			printf("ERR_DISABLED\n");
 		}
-		if (err_rev == ERR_BUSY)
-		{
+		if (err_rev == ERR_BUSY) {
 			printf("ERR_BUSY\n");
 		}
-		if (err_rev == ERR_BUSOFF)
-		{
+		if (err_rev == ERR_BUSOFF) {
 			printf("ERR_BUSOFF\n");
 		}
-		if (err_rev == ERR_RXEMPTY)
-		{
+		if (err_rev == ERR_RXEMPTY) {
 			printf("ERR_RXEMPTY\n");
 		}
-		if (err_rev == ERR_OVERRUN)
-		{
+		if (err_rev == ERR_OVERRUN) {
 			printf("ERR_OVERRUN\n");
 		}
-		if (err_rev == ERR_ARBITR)
-		{
+		if (err_rev == ERR_ARBITR) {
 			printf("ERR_ARBITR\n");
 		}
-		if (err_rev == ERR_NOTAVAIL)
-		{
+		if (err_rev == ERR_NOTAVAIL) {
 			printf("ERR_NOTAVAIL\n");
 		}
 	}
@@ -394,62 +359,51 @@ void Rec()
 	 ERR_NOTAVAIL - Method is not available in current mode - see the comment in the generated code.
 	 */
 }
-int Linien_zeahlen(uint8_t array_laenge, uint8_t MinBreite,uint8_t MaxBreite)
-{
+int Linien_zeahlen(uint8_t array_laenge, uint8_t MinBreite, uint8_t MaxBreite) {
 	uint8_t Linienbreite = 0;
 	uint8_t Linienerkannt = 0;
-	for (int i = 0; i < array_laenge + 1; i++)
-	{
-		if (i == array_laenge && pre_null == 1)
-		{
+	for (int i = 0; i < array_laenge + 1; i++) {
+		if (i == array_laenge && pre_null == 1) {
 			anzahl_linien++;
 			Pixel_Null[anzahl_linien] = anzahl_null_bar;
 			anzahl_null_bar = 0;
 		}
-		if (Pixel_Auswertung[i] == 1 && pre_null == 1)
-		{
+		if (Pixel_Auswertung[i] == 1 && pre_null == 1) {
 			anzahl_linien++;
 			Pixel_Null[anzahl_linien] = anzahl_null_bar;
 			anzahl_null_bar = 0;
 			pre_null = 0;
 		}
-		if (Pixel_Auswertung[i] == 0)
-		{
+		if (Pixel_Auswertung[i] == 0) {
 			anzahl_null_bar++;
 
 			pre_null = 1;
 		}
 	}
 	null_diff = 0;
-	for (int i = 2; i < anzahl_linien; i++)
-	{
-		if(Pixel_Null[i] >= MinBreite && Pixel_Null[i] <= MaxBreite)
-					{
-						Linienerkannt++;
-					}
+	for (int i = 2; i < anzahl_linien; i++) {
+		if (Pixel_Null[i] >= MinBreite && Pixel_Null[i] <= MaxBreite) {
+			Linienerkannt++;
+		}
 		null_diff = null_diff + Pixel_Null[i];
 	}
-	if(Linienerkannt == 4)
-	{
+	if (Linienerkannt == 4) {
 		VierLinien++;
-		if(VierLinien >=3)
-		{
-		LED4_On();
-		LED3_Off();
-		VierLinien = 0;
-			}
+		if (VierLinien >= 3) {
+			LED4_On();
+			LED3_Off();
+			VierLinien = 0;
+		}
 	}
-	if(Linienerkannt == 3)
-	{
+	if (Linienerkannt == 3) {
 		DreiLinien++;
-		if(DreiLinien >=3)
-				{
+		if (DreiLinien >= 3) {
 			LED4_Off();
 			LED3_On();
 			DreiLinien = 0;
-				}
-	}if(Linienerkannt>4||Linienerkannt<3)
-	{
+		}
+	}
+	if (Linienerkannt > 4 || Linienerkannt < 3) {
 		LED4_Off();
 		LED3_Off();
 	}
@@ -461,87 +415,73 @@ int Linien_zeahlen(uint8_t array_laenge, uint8_t MinBreite,uint8_t MaxBreite)
 	anzahl_linien = 0;
 	Linienerkannt = 0;
 }
-int Auswertung(uint8_t array_laenge, uint16_t Black_Threshold)
-{
-	for (int i = 0; i < array_laenge; i++)
-	{
-		if (Pixel[i] > Black_Threshold)
-		{
+int Auswertung(uint8_t array_laenge, uint16_t Black_Threshold) {
+	for (int i = 0; i < array_laenge; i++) {
+		if (Pixel[i] > Black_Threshold) {
 			Pixel_Auswertung[i] = 1;
 			anzahl_eins++;
 			erkennung_rechts == 1;
-			if (erkennung_links == 1)
-			{
+			if (erkennung_links == 1) {
 				Linke_Linie = anzahl_null;
 				anzahl_null = 0;
 				erkennung_links = 0;
 			}
-		}
-		else
-		{
+		} else {
 			Pixel_Auswertung[i] = 0;
 			anzahl_null++;
-			if (erkennung_rechts == 1 && i == array_laenge - 1)
-			{
+			if (erkennung_rechts == 1 && i == array_laenge - 1) {
 				Rechte_Linie = anzahl_null;
 				erkennung_rechts = 0;
 			}
 		}
-		if (Serialline == TRUE)
-			{
-					printf("%d", Pixel_Auswertung[i]);
+		if (Serialline == TRUE) {
+			printf("%d", Pixel_Auswertung[i]);
 
-			}
+		}
 	}
 	printf("\n");
 	Rechte_Linie = Rechte_Linie - null_diff;
 	erkennung_links = 1;
 	erkennung_rechts = 1;
-	Linien_zeahlen(array_laenge, 4,7);
+	Linien_zeahlen(array_laenge, 4, 7);
 }
-uint16_t Threshold_cal()
-{
+uint16_t Threshold_cal() {
 	uint16_t Threshold = 0;
 	uint16_t PixelVal = 0;
 	uint16_t MinVal = 65535;
 	uint16_t MaxVal = 0;
-	for (int i = 1; i < 126; i++)
-	{
+	for (int i = 1; i < 126; i++) {
 		PixelVal = Pixel[i];
 		//printf("%d\n",PixelVal);
-		if (MinVal < PixelVal)
-		{
+		if (MinVal < PixelVal) {
 			MinVal = MinVal;
-		}
-		else
-		{
+		} else {
 			MinVal = PixelVal;
 		}
-		if (MaxVal > PixelVal)
-		{
+		if (MaxVal > PixelVal) {
 			MaxVal = MaxVal;
-		}
-		else
-		{
+		} else {
 			MaxVal = PixelVal;
 		}
 
 	}
 	Threshold = (MaxVal - MinVal) / 2;
-	printf("Max: %d\n", MaxVal);
-	printf("Min: %d\n", MinVal);
+	//printf("Max: %d\n", MaxVal);
+	//printf("Min: %d\n", MinVal);
 	return Threshold;
 }
-void LineKamera()
-{
+uint16_t Lenkung(uint16_t Winkel_prev, uint16_t Winkel) {
+	uint16_t Winkeldiff;
+	return Winkeldiff = Winkel - Winkel_prev;
+}
+void LineKamera() {
 	uint8_t GetVal;
 	bool Start;
 	uint16_t ADC_Wert = 0;
 	uint16_t Threshold = 0;
-	for (int i = 0; i < 128*2; i++)
-	{
+	for (int i = 0; i < 128 * 2; i++) {
 		if (i == 0)              //Kommunikation gestartet?
-		{
+				{
 			//SI_On();                 //Einschalten von SI PTD7
 			SI_PutVal(TRUE);
 			Start = TRUE;
@@ -557,14 +497,14 @@ void LineKamera()
 		pulse++;                   //1 = LOW pulse 2 = High Pulse = Eine Periode
 
 		if (pulse == 2)                     //Wenn CLK auf High lese ADC aus
-		{
+				{
 			(void) Potis_MeasureChan(TRUE, 2);
 			(void) Potis_GetChanValue16(2, &ADC_Wert);
 			Pixel[array_pos] = ADC_Wert; //Schreibe Aktuellen Analogwert in das Array
 			array_pos++;                    //Position des Arrays inkrementieren
 			pulse = 0;                      //Periode Vorbei
 			if (array_pos == 128)             //Alle 129 Werte ausgelesen
-			{
+					{
 				array_pos = 0;                 //Array position wieder auf null
 				startup = 0;
 			}
@@ -573,107 +513,105 @@ void LineKamera()
 	Threshold = Threshold_cal();
 	Auswertung(128, Threshold);
 }
-int main(void)
-{
+void Break(uint16_t Rev_Speed, uint16_t Block_Time) {
+
+			MotorRechts_SetRatio16(0);
+			MotorLinks_SetRatio16(0);
+			MotorRechts_Rev_SetRatio16(Rev_Speed);
+			MotorLinks_Rev_SetRatio16(Rev_Speed);
+		    WAIT1_Waitms(Block_Time);
+		    MotorRechts_Rev_SetRatio16(0);
+		    MotorLinks_Rev_SetRatio16(0);
+}
+int main(void) {
 	CLK_Init();
 	PE_low_level_init();
+	//RechtsClock_Enable();
 
-for (;;)
-{
+	for (;;) {
 
 		(void) Potis_MeasureChan(TRUE, 0);
 		(void) Potis_GetChanValue16(0, &value);
 		(void) Potis_MeasureChan(TRUE, 1);
 		(void) Potis_GetChanValue16(1, &value2);
-		//value = map(value, 0, 65535, 0,15);
-		//PID(value,velocity,15,-15,TRUE);
-		//Regler_P(value, velocity, 1000);
-
 		Rec();
 		//LineKamera();
-		if (Serial == TRUE)
-		{
-			printf("IST_Speed = %0.2f Soll_Speed = %d m/s\n", velocity, value);
+		if (Serial == TRUE) {
+			printf("IST_Rechts = %0.2f,IST_Links = %0.2f Soll_Speed = %d m/s\n",
+					velocity_Links, velocity_Rechts, value);
 		}
-
+		//printf("Soll_Speed = %d \n",value);
 		counter(FALSE);
-		if(value > 45000)
-		{
-			value = 45000;
+		if (value > StartMotor) {
+			value = StartMotor;
 		}
-		uint16_t Maxspeed = 45000 - value;
-		int Slow = 45000-Maxspeed*1/8;
-		Maxspeed = 45000-Maxspeed;
-		//printf("Counter = %d\n",Slow);
-		//Angle = 45 - Angle;
-		int Speed = map(Angle,0,45,Maxspeed,Slow);
-		printf("Counter = %d\n",Speed);
-		//Angle
-		//PIDval = map(PIDval,0,65535,10000,65535);
-		//MotorRechts_SetRatio16(65535 - PIDval);
-		//MotorLinks_SetRatio16(65535 - PIDval);
-		//Start der Räder 45000 schneller = Kleiner
-		if (data[3] == 'S')
-		{
-			//value = value+4000; 				//Eigetlich für die Kruve aber die Geschwindigkeit wird in der kurve erhöht deswegen bei S lamgsamer
-			MotorRechts_SetRatio16(Speed);
-			MotorLinks_SetRatio16(Speed);
-		}
-		if (data[3] == 'C')
-		{
+		uint16_t Maxspeed = StartMotor - value;
+		uint16_t Slow = StartMotor - Maxspeed * 1 / 2;
+		Maxspeed = StartMotor - Maxspeed;
+		uint16_t Speed = map(Angle, 0, 45, Maxspeed, Slow);
+		uint16_t LR_diff = map(Angle, 0, 45, 0, 8000);
+		uint16_t LR_diff_innen = map(Angle, 0, 45, 0, 4000);
+		Speed = map(Speed, 0, 65535, 65535, 0);
+		uint16_t Break_Time_Speed = map(Speed, 0, 65535, 50, 25);
 
-			MotorRechts_SetRatio16(Speed);
-			MotorLinks_SetRatio16(Speed);
+
+		if (Angle > 20)
+		{
+			//(Break(Speed + 10000,Break_Time_Speed);
 		}
 
-		//SerVal = value2;
-		//SerVal = map(value2,0,65535,62258,59800);
-		//printf("\n %d",SerVal);
-		//printf("PID_total: %d\n",SerVal);
+			if (data[3] == 'S') {
+				MotorRechts_SetRatio16(Speed);
+				MotorLinks_SetRatio16(Speed);
+			}
+			if (data[3] == 'C') {
+				if (data[0] == 'L') {
+					MotorRechts_SetRatio16(Speed - LR_diff_innen);
+					MotorLinks_SetRatio16(Speed + LR_diff);
+				}
+				if (data[0] == 'R') {
+					MotorRechts_SetRatio16(Speed - LR_diff_innen);
+					MotorLinks_SetRatio16(Speed + LR_diff);
+				}
+			}
 		MotorLinks_Enable();
 		MotorRechts_Enable();
-		if (TasterA_GetVal() == 1 && SW1_GetVal() == 0)
-		{
+
+		if (TasterA_GetVal() == 1 && SW1_GetVal() == 0) {
 			Start = TRUE;
 		}
-		if (TasterB_GetVal() == 1)
-		{
+		if (TasterB_GetVal() == 1) {
 			Start = FALSE;
 		}
-		if (data[1] == 'D' && Start == TRUE)
-		{
+		if (data[1] == 'D' && Start == TRUE && Start == TRUE) {
 			LED1_On();
 			EN_On();
 		}
-		if (data[1] == 'X' || Start == FALSE)
-		{
+		if (data[1] == 'X' || Start == FALSE) {
+			//Break_Active = 1;
+			Break(Speed,1000);
 			LED1_Off();
 			EN_Off();
 		}
 
-		if (data[0] == 'L')
-		{
-
+		if (data[0] == 'L') {
 			int diff2 = map(SerVal, 0, 819, Mitte, Links); //max 62258 min 58981; 819 sind 45° , mitte 60619
 			Servo_SetRatio16(diff2);
 			Servo_Enable();
+			//Winkel_prev_L = diff2;
 		}
-		if (data[0] == 'R')
-		{
+		if (data[0] == 'R') {
 			int diff = map(SerVal, 0, 819, Mitte, Rechts);
 			Servo_SetRatio16(diff);
 			Servo_Enable();
+			//Winkel_prev_R = diff;
 		}
-		if (data[0] == 'S')
-		{
+		if (data[0] == 'S') {
 			Servo_SetRatio16(Mitte); //3276 //62306 1639
 		}
-		// Servo_SetRatio16(60750);//60750mitte 61650 Links 59860 Rechts
-		//61528 Links
-		if (SW1_GetVal() == 1 && SW2_GetVal() == 1 && SW3_GetVal() == 1&& SW4_GetVal() == 1)
-		{
-			while (TasterA_GetVal() == 1)
-			{
+		if (SW1_GetVal() == 1 && SW2_GetVal() == 1 && SW3_GetVal() == 1
+				&& SW4_GetVal() == 1) {
+			while (TasterA_GetVal() == 1) {
 				LED2_On();
 				(void) Potis_MeasureChan(TRUE, 1);
 				(void) Potis_GetChanValue16(1, &value2);
@@ -686,7 +624,30 @@ for (;;)
 			}
 			LED2_Off();
 		}
-		//LineKamera();
+		LineKamera();
+		Programmcounter++;
+		if (Programmcounter >= 150) {
+			if (data[0] == '0' && data[1] == '0' && data[2] == '0'
+					&& data[3] == '0') {
+				data[0] = 'X';
+				data[1] = 'X';
+				data[2] = 'X';
+				data[3] = 'X';
+				//Break_Active = 1;
+				Break(Speed,1000);
+				LED1_Off();
+				EN_Off();
+			}
+			Programmcounter = 0;
+		}
+		data[0] = '0';
+		data[1] = '0';
+		data[2] = '0';
+		data[3] = '0';
+		/*RechtsClock_GetTimeMS(&Programmtime);
+		 printf("Zeit = %d ms \n",Programmtime);
+		 RechtsClock_Reset();
+		 RechtsClock_Enable();*/
 	}
 
 	/*** Don't write any code pass this line, or it will be deleted during code generation. ***/

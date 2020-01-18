@@ -40,13 +40,17 @@
 - \subpage BitsIoLdd5
 - \subpage BitsIoLdd6
 - \subpage BitIoLdd6
-- \subpage TU3
-- \subpage FreeCntrLdd1
 - \subpage ExtIntLdd1
 - \subpage IntI2cLdd1
 - \subpage IO1
 - \subpage BitIoLdd8
 - \subpage BitIoLdd7
+- \subpage PwmLdd4
+- \subpage PwmLdd6
+- \subpage TU3
+- \subpage RealTimeLdd1
+- \subpage ExtIntLdd2
+- \subpage RealTimeLdd2
 
 */
 

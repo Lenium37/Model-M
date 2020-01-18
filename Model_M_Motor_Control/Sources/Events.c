@@ -32,11 +32,14 @@ extern "C" {
 extern int Error;
 float Umfang = 0.157; //Meter Umfang
 float Abstand_Mag = 0.01383;
-extern float velocity;
-uint16_t Speed_time = 0;
+extern float velocity_Links;
+extern float velocity_Rechts;
+uint16_t Speed_time_Links = 0;
+uint16_t Speed_time_Rechts = 0;
 double Speed = 0.0;
 double Tick_Time = 0.0;
-double AVG_ARRAY[4];
+double AVG_ARRAY_Links[4];
+double AVG_ARRAY_Rechts[4];
 extern bool PID_Active;
 extern int counter();
 /* User includes (#include below this line is not maintained by Processor Expert) */
@@ -46,7 +49,8 @@ extern bool errFlags_rev;
 extern bool flags_send;
 
 extern bool Serial;
-bool Start_up = TRUE;
+bool Start_up_Rechts = TRUE;
+bool Start_up_Links  = TRUE;
 int count = 0;
 uint8_t Timer_OVF = 0;
 uint8_t avgcounter = 0;
@@ -68,9 +72,9 @@ void Cpu_OnNMIINT(void) {
 }
 /*
  ** ===================================================================
- **     Event       :  EInt1_OnInterrupt (module Events)
+ **     Event       :  RechtsINT_OnInterrupt (module Events)
  **
- **     Component   :  EInt1 [ExtInt]
+ **     Component   :  RechtsINT [ExtInt]
  **     Description :
  **         This event is called when an active signal edge/level has
  **         occurred.
@@ -78,54 +82,48 @@ void Cpu_OnNMIINT(void) {
  **     Returns     : Nothing
  ** ===================================================================
  */
-void EInt1_OnInterrupt(void) {
-	PID_Active = TRUE;
-	FC1_Disable(); //Deaktivieren vom Timer um Zeit zu Speichern
-	double AVG_Speed_Time = 0.0;
-	counter(TRUE);
-	EInt1_Disable(); //Interrupt Deaktivieren
-	if (Start_up == TRUE)//Beim ersten auslösen des Interrupts nach dem Start den Timer Starten
+void RechtsINT_OnInterrupt(void)
 	{
-		FC1_Enable();
-		Start_up = FALSE;
-	}
-	if (count <= 1)	  //Ersten Impulse Zählen
-			{
-		count++;
-	}
-	if (count >= 2) //Beim Ersten Impulse auf den Zweiten warten erst dann Zeit Messen
-			{
-		FC1_GetCounterValue(&Speed_time); //Timer Wert holen
+			//PID_Active = TRUE;
+			//FC1_Disable();
 
-		if (Timer_OVF != 0) //Wenn der Timer einen Overflow hat anzahl diser Multiplizieren
-				{
-			//Speed = Speed_time*Timer_OVF*2.666/1000; //Timerwert mal Overflow mal Schrittzeit und durch 1000 um auf milisekuden zu kommen
-			if (Serial == TRUE) {
-				printf("OVF = %d\n", Timer_OVF);		  //Timer OVF print
+			RechtsClock_Disable(); //Deaktivieren vom Timer um Zeit zu Speichern
+			double AVG_Speed_Time = 0.0;
+			counter(TRUE);
+			RechtsINT_Disable(); //Interrupt Deaktivieren
+			if (Start_up_Rechts == TRUE)//Beim ersten auslösen des Interrupts nach dem Start den Timer Starten
+			{
+				RechtsClock_Enable();
+				Start_up_Rechts = FALSE;
 			}
-		} else//Wenn Kein Overflow dann den Faktor nicht mit einbeziehen sonst ist das Ergebnis immer gleich 0
-		{
-			Speed = Speed_time * 2.666 / 1000;
-		}
-		AVG_ARRAY[avgcounter] = Speed;			//Zeit in einem Array Speichern
-		Timer_OVF = 0;						//Timer_OVF wieder auf null netzen
-		Speed_time = 0;			//Ausgelesener Timerwert wieder wieder auf null
-		avgcounter++;							//Array Zähler um eins erhöhen
-		FC1_Reset();								//Timer zurücksetzen
-		FC1_Enable();								//Erstdann wieder aktivieren
-	}
-	if (avgcounter >= 4)//Wenn 12 Impulse gemessen wurden berechne den Mittelwert um Fehler zu vermindern
+			if (count <= 1)	  //Ersten Impulse Zählen
+					{
+				count++;
+			}
+			if (count >= 2) //Beim Ersten Impulse auf den Zweiten warten erst dann Zeit Messen
 			{
-		for (int i = 0; i < 4; i++) {
-			AVG_Speed_Time = AVG_Speed_Time + AVG_ARRAY[i];	//Alle Samples addieren
-		}
-		AVG_Speed_Time = AVG_Speed_Time / 4;				//Mittelwert bilden
-		velocity = Abstand_Mag / AVG_Speed_Time * 1000;	//Geschwindigkeit berechnen um auf m/s zu kommen muss die Geschwindigkeit * 1000 gerehnet werden um auf m/s zu kommen
-		avgcounter = 0;							//Array Zähler wieder auf null
+				RechtsClock_GetTimeMS(&Speed_time_Rechts);
+				AVG_ARRAY_Rechts[avgcounter] = Speed_time_Rechts;			//Zeit in einem Array Speichern
+				Speed_time_Rechts = 0;					//Ausgelesener Timerwert wieder wieder auf null
+				avgcounter++;							//Array Zähler um eins erhöhen
+				RechtsClock_Reset();
+				RechtsClock_Enable();
+			}
+			if (avgcounter >= 4)//Wenn 4 Impulse gemessen wurden berechne den Mittelwert um Fehler zu vermindern
+					{
+				for (int i = 0; i < 4; i++)
+				{
+					AVG_Speed_Time = AVG_Speed_Time + AVG_ARRAY_Rechts[i];	//Alle Samples addieren
+				}
+				AVG_Speed_Time = AVG_Speed_Time / 4;				//Mittelwert bilden
+				velocity_Rechts = Abstand_Mag / AVG_Speed_Time * 1000;	//Geschwindigkeit berechnen um auf m/s zu kommen muss die Geschwindigkeit * 1000 gerehnet werden
+				avgcounter = 0;							//Array Zähler wieder auf null
+			}
+
+			RechtsINT_Enable();									//Interrupt wieder Starten
+			printf("velocity_Rechts = %d\n",velocity_Rechts);
 	}
 
-	EInt1_Enable();									//Interrupt wieder Starten
-}
 
 /*
  ** ===================================================================
@@ -254,6 +252,61 @@ void I2C1_OnFullRxBuf(void) {
  */
 void I2C1_OnError(void) {
 	errFlags_rev = TRUE;
+}
+
+/*
+** ===================================================================
+**     Event       :  LinksINT_OnInterrupt (module Events)
+**
+**     Component   :  LinksINT [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void LinksINT_OnInterrupt(void)
+{
+	//PID_Active = TRUE;
+			//FC1_Disable();
+			uint8_t AVGMAX = 4;
+			RechtsClock_Disable();  //Deaktivieren vom Timer um Zeit zu Speichern
+			double AVG_Speed_Time = 0.0;
+			counter(TRUE);
+			LinksINT_Disable(); //Interrupt Deaktivieren
+			if (Start_up_Links == TRUE)//Beim ersten auslösen des Interrupts nach dem Start den Timer Starten
+			{
+				//FC1_Enable();
+				RechtsClock_Enable();
+				Start_up_Links = FALSE;
+			}
+			if (count <= 1)	  //Ersten Impulse Zählen
+					{
+				count++;
+			}
+			if (count >= 2) //Beim Ersten Impulse auf den Zweiten warten erst dann Zeit Messen
+			{
+				RechtsClock_GetTimeMS(&Speed_time_Links);
+				AVG_ARRAY_Links[avgcounter] = Speed_time_Links;			//Zeit in einem Array Speichern
+				Speed_time_Links = 0;			//Ausgelesener Timerwert wieder wieder auf null
+				avgcounter++;							//Array Zähler um eins erhöhen
+				RechtsClock_Reset();
+				RechtsClock_Enable();
+			}
+			if (avgcounter >= AVGMAX)//Wenn 4 Impulse gemessen wurden berechne den Mittelwert um Fehler zu vermindern
+					{
+				for (int i = 0; i < AVGMAX; i++)
+				{
+					AVG_Speed_Time = AVG_Speed_Time + AVG_ARRAY_Links[i];	//Alle Samples addieren
+				}
+				AVG_Speed_Time = AVG_Speed_Time / AVGMAX;				//Mittelwert bilden
+				velocity_Links = Abstand_Mag / AVG_Speed_Time * 1000;	//Geschwindigkeit berechnen um auf m/s zu kommen muss die Geschwindigkeit * 1000 gerehnet werden
+				avgcounter = 0;							//Array Zähler wieder auf null
+			}
+
+			LinksINT_Enable();									//Interrupt wieder Starten
+			printf("velocity_Links = %d\n",velocity_Links);
 }
 
 /* END Events */

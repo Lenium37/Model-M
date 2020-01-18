@@ -83,15 +83,23 @@
 #include "IO1.h"
 #include "TU1.h"
 #include "TU2.h"
+#include "LinksINT.h"
+#include "ExtIntLdd2.h"
+#include "Links_Clock.h"
+#include "RealTimeLdd2.h"
 #include "TU3.h"
-#include "FC1.h"
-#include "FreeCntrLdd1.h"
 #include "SI.h"
 #include "BitIoLdd8.h"
 #include "Send_OK.h"
 #include "LEDpin7.h"
 #include "BitIoLdd7.h"
-#include "EInt1.h"
+#include "MotorLinks_Rev.h"
+#include "PwmLdd4.h"
+#include "MotorRechts_Rev.h"
+#include "PwmLdd6.h"
+#include "RechtsClock.h"
+#include "RealTimeLdd1.h"
+#include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "I2C1.h"
 
@@ -134,9 +142,9 @@ void Cpu_OnNMIINT(void);
 
 /*
 ** ===================================================================
-**     Event       :  EInt1_OnInterrupt (module Events)
+**     Event       :  RechtsINT_OnInterrupt (module Events)
 **
-**     Component   :  EInt1 [ExtInt]
+**     Component   :  RechtsINT [ExtInt]
 **     Description :
 **         This event is called when an active signal edge/level has
 **         occurred.
@@ -163,12 +171,12 @@ void Cpu_OnNMIINT(void);
 /* ===================================================================*/
 void FC1_OnInterrupt(void);
 
-void EInt1_OnInterrupt(void);
+void RechtsINT_OnInterrupt(void);
 /*
 ** ===================================================================
-**     Event       :  EInt1_OnInterrupt (module Events)
+**     Event       :  RechtsINT_OnInterrupt (module Events)
 **
-**     Component   :  EInt1 [ExtInt]
+**     Component   :  RechtsINT [ExtInt]
 **     Description :
 **         This event is called when an active signal edge/level has
 **         occurred.
@@ -269,6 +277,20 @@ void I2C1_OnFullRxBuf(void);
 ** ===================================================================
 */
 void I2C1_OnError(void);
+
+void LinksINT_OnInterrupt(void);
+/*
+** ===================================================================
+**     Event       :  LinksINT_OnInterrupt (module Events)
+**
+**     Component   :  LinksINT [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
 
 /* END Events */
 
