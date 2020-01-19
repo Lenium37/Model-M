@@ -83,21 +83,27 @@
 #include "IO1.h"
 #include "TU1.h"
 #include "TU2.h"
+#include "LinksINT.h"
+#include "ExtIntLdd2.h"
 #include "TU3.h"
-#include "FC1.h"
-#include "FreeCntrLdd1.h"
 #include "SI.h"
 #include "BitIoLdd8.h"
 #include "Send_OK.h"
 #include "LEDpin7.h"
 #include "BitIoLdd7.h"
-#include "EInt1.h"
+#include "MotorLinks_Rev.h"
+#include "PwmLdd4.h"
+#include "MotorRechts_Rev.h"
+#include "PwmLdd6.h"
+#include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "I2C1.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif 
+
+LDD_TDeviceData *TU3_Pointer;
 
 /*
 ** ===================================================================
@@ -134,9 +140,9 @@ void Cpu_OnNMIINT(void);
 
 /*
 ** ===================================================================
-**     Event       :  EInt1_OnInterrupt (module Events)
+**     Event       :  RechtsINT_OnInterrupt (module Events)
 **
-**     Component   :  EInt1 [ExtInt]
+**     Component   :  RechtsINT [ExtInt]
 **     Description :
 **         This event is called when an active signal edge/level has
 **         occurred.
@@ -163,12 +169,12 @@ void Cpu_OnNMIINT(void);
 /* ===================================================================*/
 void FC1_OnInterrupt(void);
 
-void EInt1_OnInterrupt(void);
+void RechtsINT_OnInterrupt(void);
 /*
 ** ===================================================================
-**     Event       :  EInt1_OnInterrupt (module Events)
+**     Event       :  RechtsINT_OnInterrupt (module Events)
 **
-**     Component   :  EInt1 [ExtInt]
+**     Component   :  RechtsINT [ExtInt]
 **     Description :
 **         This event is called when an active signal edge/level has
 **         occurred.
@@ -269,6 +275,41 @@ void I2C1_OnFullRxBuf(void);
 ** ===================================================================
 */
 void I2C1_OnError(void);
+
+void LinksINT_OnInterrupt(void);
+/*
+** ===================================================================
+**     Event       :  LinksINT_OnInterrupt (module Events)
+**
+**     Component   :  LinksINT [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+
+/*
+** ===================================================================
+**     Event       :  TU3_OnCounterRestart (module Events)
+**
+**     Component   :  TU3 [TimerUnit_LDD]
+*/
+/*!
+**     @brief
+**         Called if counter overflow/underflow or counter is
+**         reinitialized by modulo or compare register matching.
+**         OnCounterRestart event and Timer unit must be enabled. See
+**         [SetEventMask] and [GetEventMask] methods. This event is
+**         available only if a [Interrupt] is enabled.
+**     @param
+**         UserDataPtr     - Pointer to the user or
+**                           RTOS specific data. The pointer passed as
+**                           the parameter of Init method.
+*/
+/* ===================================================================*/
+void TU3_OnCounterRestart(LDD_TUserData *UserDataPtr);
 
 /* END Events */
 

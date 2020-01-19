@@ -2,10 +2,10 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
  ../Generated_Code/PE_LDD.h ../Generated_Code/PE_Types.h \
  ../Generated_Code/PE_Error.h ../Generated_Code/PE_Const.h \
  ../Generated_Code/Servo.h ../Generated_Code/IO_Map.h \
- /Users/moritzklerkx/Desktop/Test/Test/Static_Code/IO_Map/MKL25Z4.h \
+ /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Static_Code/IO_Map/MKL25Z4.h \
  ../Generated_Code/PwmLdd1.h ../Generated_Code/TU1.h \
  ../Generated_Code/TPM_PDD.h \
- /Users/moritzklerkx/Desktop/Test/Test/Static_Code/PDD/PDD_Types.h \
+ /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Static_Code/PDD/PDD_Types.h \
  ../Generated_Code/Cpu.h ../Generated_Code/MotorLinks.h \
  ../Generated_Code/PwmLdd2.h ../Generated_Code/TU2.h \
  ../Generated_Code/MotorRechts.h ../Generated_Code/PwmLdd3.h \
@@ -26,14 +26,16 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
  ../Generated_Code/BitsIoLdd5.h ../Generated_Code/TasterB.h \
  ../Generated_Code/BitsIoLdd6.h ../Generated_Code/CLK.h \
  ../Generated_Code/LEDpin6.h ../Generated_Code/BitIoLdd6.h \
- ../Generated_Code/WAIT1.h ../Generated_Code/TU3.h \
- ../Generated_Code/FC1.h ../Generated_Code/FreeCntrLdd1.h \
- ../Generated_Code/EInt1.h ../Generated_Code/ExtIntLdd1.h \
- ../Generated_Code/PORT_PDD.h ../Generated_Code/I2C1.h \
- ../Generated_Code/IntI2cLdd1.h ../Generated_Code/CsIO1.h \
- ../Generated_Code/IO1.h ../Generated_Code/SI.h \
+ ../Generated_Code/WAIT1.h ../Generated_Code/RechtsINT.h \
+ ../Generated_Code/ExtIntLdd1.h ../Generated_Code/PORT_PDD.h \
+ ../Generated_Code/I2C1.h ../Generated_Code/IntI2cLdd1.h \
+ ../Generated_Code/CsIO1.h ../Generated_Code/IO1.h ../Generated_Code/SI.h \
  ../Generated_Code/BitIoLdd8.h ../Generated_Code/Send_OK.h \
- ../Generated_Code/LEDpin7.h ../Generated_Code/BitIoLdd7.h
+ ../Generated_Code/LEDpin7.h ../Generated_Code/BitIoLdd7.h \
+ ../Generated_Code/MotorLinks_Rev.h ../Generated_Code/PwmLdd4.h \
+ ../Generated_Code/MotorRechts_Rev.h ../Generated_Code/PwmLdd6.h \
+ ../Generated_Code/LinksINT.h ../Generated_Code/ExtIntLdd2.h \
+ ../Generated_Code/TU3.h
 
 ../Generated_Code/PE_LDD.h:
 
@@ -47,7 +49,7 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
 
 ../Generated_Code/IO_Map.h:
 
-/Users/moritzklerkx/Desktop/Test/Test/Static_Code/IO_Map/MKL25Z4.h:
+/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Static_Code/IO_Map/MKL25Z4.h:
 
 ../Generated_Code/PwmLdd1.h:
 
@@ -55,7 +57,7 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
 
 ../Generated_Code/TPM_PDD.h:
 
-/Users/moritzklerkx/Desktop/Test/Test/Static_Code/PDD/PDD_Types.h:
+/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Static_Code/PDD/PDD_Types.h:
 
 ../Generated_Code/Cpu.h:
 
@@ -139,13 +141,7 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
 
 ../Generated_Code/WAIT1.h:
 
-../Generated_Code/TU3.h:
-
-../Generated_Code/FC1.h:
-
-../Generated_Code/FreeCntrLdd1.h:
-
-../Generated_Code/EInt1.h:
+../Generated_Code/RechtsINT.h:
 
 ../Generated_Code/ExtIntLdd1.h:
 
@@ -168,3 +164,17 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
 ../Generated_Code/LEDpin7.h:
 
 ../Generated_Code/BitIoLdd7.h:
+
+../Generated_Code/MotorLinks_Rev.h:
+
+../Generated_Code/PwmLdd4.h:
+
+../Generated_Code/MotorRechts_Rev.h:
+
+../Generated_Code/PwmLdd6.h:
+
+../Generated_Code/LinksINT.h:
+
+../Generated_Code/ExtIntLdd2.h:
+
+../Generated_Code/TU3.h:

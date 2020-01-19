@@ -22,11 +22,9 @@ C_SRCS += \
 ../Generated_Code/CLK.c \
 ../Generated_Code/Cpu.c \
 ../Generated_Code/CsIO1.c \
-../Generated_Code/EInt1.c \
 ../Generated_Code/EN.c \
 ../Generated_Code/ExtIntLdd1.c \
-../Generated_Code/FC1.c \
-../Generated_Code/FreeCntrLdd1.c \
+../Generated_Code/ExtIntLdd2.c \
 ../Generated_Code/I2C1.c \
 ../Generated_Code/IO1.c \
 ../Generated_Code/IntI2cLdd1.c \
@@ -41,13 +39,19 @@ C_SRCS += \
 ../Generated_Code/LEDpin5.c \
 ../Generated_Code/LEDpin6.c \
 ../Generated_Code/LEDpin7.c \
+../Generated_Code/LinksINT.c \
 ../Generated_Code/MotorLinks.c \
+../Generated_Code/MotorLinks_Rev.c \
 ../Generated_Code/MotorRechts.c \
+../Generated_Code/MotorRechts_Rev.c \
 ../Generated_Code/PE_LDD.c \
 ../Generated_Code/Potis.c \
 ../Generated_Code/PwmLdd1.c \
 ../Generated_Code/PwmLdd2.c \
 ../Generated_Code/PwmLdd3.c \
+../Generated_Code/PwmLdd4.c \
+../Generated_Code/PwmLdd6.c \
+../Generated_Code/RechtsINT.c \
 ../Generated_Code/SI.c \
 ../Generated_Code/SW1.c \
 ../Generated_Code/SW2.c \
@@ -82,11 +86,9 @@ OBJS += \
 ./Generated_Code/CLK.o \
 ./Generated_Code/Cpu.o \
 ./Generated_Code/CsIO1.o \
-./Generated_Code/EInt1.o \
 ./Generated_Code/EN.o \
 ./Generated_Code/ExtIntLdd1.o \
-./Generated_Code/FC1.o \
-./Generated_Code/FreeCntrLdd1.o \
+./Generated_Code/ExtIntLdd2.o \
 ./Generated_Code/I2C1.o \
 ./Generated_Code/IO1.o \
 ./Generated_Code/IntI2cLdd1.o \
@@ -101,13 +103,19 @@ OBJS += \
 ./Generated_Code/LEDpin5.o \
 ./Generated_Code/LEDpin6.o \
 ./Generated_Code/LEDpin7.o \
+./Generated_Code/LinksINT.o \
 ./Generated_Code/MotorLinks.o \
+./Generated_Code/MotorLinks_Rev.o \
 ./Generated_Code/MotorRechts.o \
+./Generated_Code/MotorRechts_Rev.o \
 ./Generated_Code/PE_LDD.o \
 ./Generated_Code/Potis.o \
 ./Generated_Code/PwmLdd1.o \
 ./Generated_Code/PwmLdd2.o \
 ./Generated_Code/PwmLdd3.o \
+./Generated_Code/PwmLdd4.o \
+./Generated_Code/PwmLdd6.o \
+./Generated_Code/RechtsINT.o \
 ./Generated_Code/SI.o \
 ./Generated_Code/SW1.o \
 ./Generated_Code/SW2.o \
@@ -142,11 +150,9 @@ C_DEPS += \
 ./Generated_Code/CLK.d \
 ./Generated_Code/Cpu.d \
 ./Generated_Code/CsIO1.d \
-./Generated_Code/EInt1.d \
 ./Generated_Code/EN.d \
 ./Generated_Code/ExtIntLdd1.d \
-./Generated_Code/FC1.d \
-./Generated_Code/FreeCntrLdd1.d \
+./Generated_Code/ExtIntLdd2.d \
 ./Generated_Code/I2C1.d \
 ./Generated_Code/IO1.d \
 ./Generated_Code/IntI2cLdd1.d \
@@ -161,13 +167,19 @@ C_DEPS += \
 ./Generated_Code/LEDpin5.d \
 ./Generated_Code/LEDpin6.d \
 ./Generated_Code/LEDpin7.d \
+./Generated_Code/LinksINT.d \
 ./Generated_Code/MotorLinks.d \
+./Generated_Code/MotorLinks_Rev.d \
 ./Generated_Code/MotorRechts.d \
+./Generated_Code/MotorRechts_Rev.d \
 ./Generated_Code/PE_LDD.d \
 ./Generated_Code/Potis.d \
 ./Generated_Code/PwmLdd1.d \
 ./Generated_Code/PwmLdd2.d \
 ./Generated_Code/PwmLdd3.d \
+./Generated_Code/PwmLdd4.d \
+./Generated_Code/PwmLdd6.d \
+./Generated_Code/RechtsINT.d \
 ./Generated_Code/SI.d \
 ./Generated_Code/SW1.d \
 ./Generated_Code/SW2.d \
@@ -188,7 +200,7 @@ C_DEPS += \
 Generated_Code/%.o: ../Generated_Code/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross ARM C Compiler'
-	arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -D"PRINTF_FLOAT_ENABLE" -D"SCANF_FLOAT_ENABLE" -I"/Users/moritzklerkx/Desktop/Zeug/Test/Test/Static_Code/PDD" -I"/Users/moritzklerkx/Desktop/Zeug/Test/Test/Static_Code/IO_Map" -I"/Users/moritzklerkx/Desktop/Zeug/Test/Test/Sources" -I"/Users/moritzklerkx/Desktop/Zeug/Test/Test/Generated_Code" -std=c99 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
+	arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -D"PRINTF_FLOAT_ENABLE" -D"SCANF_FLOAT_ENABLE" -I"/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Static_Code/PDD" -I"/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Static_Code/IO_Map" -I"/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Sources" -I"/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code" -std=c99 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -c -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
