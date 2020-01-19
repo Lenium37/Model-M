@@ -1,13 +1,18 @@
-#define DEVIATION_FROM_VERTICAL 4 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
+#define DEVIATION_FROM_VERTICAL 3 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 #define ALLOWED_DEVIATON_FROM_IDEALLINIE 5
 
-#define WAIT_TIME_BETWEEN_LINE_DETECTION 3 // ms
+#define WAIT_TIME_BETWEEN_LINE_DETECTION 0 // ms
 #define I2C_ADDRESS_OF_SLAVE 8
 #define I2C_READY_PIN 3
+#define PIN_RELAY 6
+#define PIN_LED_1 7
+#define PIN_LED_2 8
+#define PIN_LED_3 9
+#define PIN_BATTERY_VOLTAGE 15
 #define SPEED_ON_STRAIGHT 1.0 // 1 m/s
 #define SPEED_IN_CURVE 0.5 // 0.5 m/s
 //#define STEERING_ANGLE_INTERPOLATION_COUNTER 2
-#define CORRECT_STEERING_AWAY_FROM_SINGLE_LINE 6
+//#define CORRECT_STEERING_AWAY_FROM_SINGLE_LINE 6
 
 #include <Pixy2.h>
 #include <vector>
@@ -24,9 +29,11 @@ int counter_no_line_detected = 0;
 bool stopped = false;
 int steer_angles_interpolation[2];
 int steer_angles_interpolation_counter = 0;
+float voltage_of_battery = 10;
+int batter_low_counter = 0;
 
 void debug(String s) {
-  Serial2.println(s);
+  Serial1.println(s);
   // if changing Serial number don't forget to change it in setup() as well!
 }
 
@@ -39,10 +46,12 @@ int return_min(int i1, int i2) {
 
 // Compares Lines and returns true if Line1 has the smaller m_y0
 bool compareLines(Line l1, Line l2) {
-    return (l1.get_y0() < l2.get_y0());
+    //return (l1.get_y0() < l2.get_y0());
+    return (abs(l1.get_x1() - l1.get_x0()) + abs(l1.get_y1() - l1.get_y0()) > abs(l2.get_x1() - l2.get_x0()) + abs(l2.get_y1() - l2.get_y0()));
 }
 
 void write_i2c(String s) {
+  debug(s);
   char buffer[8];
   s.toCharArray(buffer, 8);
   Wire.beginTransmission(I2C_ADDRESS_OF_SLAVE);
@@ -51,9 +60,17 @@ void write_i2c(String s) {
 }
 
 int calculate_push_away_angle_in_degrees(int distance_line_camera_center) {
-  int angle = return_map(distance_line_camera_center, 0, 20, 25, 0);
+  int angle = return_map(distance_line_camera_center, 0, 20, 25, 0); // 0, 20, 25, 0
   if(angle < 0)
     angle = 0;
+
+  return angle;
+}
+
+int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
+  int angle = return_map(distance_from_ideallinie, 0, 10, 0, 10); // 0, 10, 0, 10
+  if(angle > 10)
+    angle = 10;
 
   return angle;
 }
@@ -67,7 +84,12 @@ int calculate_steer_angle_in_degrees(int num) {
 }
 
 void steer_left(int steer_angle) {
-  debug("steer left " + String(steer_angle) + " degrees.");
+  //debug("steer left " + String(steer_angle) + " degrees.");
+  if(steer_angle == 0) {
+    debug("#############");
+    debug("ANGLE 00!");
+    debug("###########");
+  }
   if(steer_angle < 10) {
     if(currently_in_curve)
       write_i2c("L0"+String(steer_angle)+"C");
@@ -83,7 +105,7 @@ void steer_left(int steer_angle) {
 }
 
 void steer_right(int steer_angle) {
-  debug("steer right " + String(steer_angle) + " degrees.");
+  //debug("steer right " + String(steer_angle) + " degrees.");
   if(steer_angle < 10) {
     if(currently_in_curve)
       write_i2c("R0"+String(steer_angle)+"C");
@@ -147,7 +169,7 @@ void merge_vectors() {
       Vector v2 = pixy.line.vectors[j];
       // If v2 starts at the position that v1 ends at, merge them and add to real_lines
       //if(v1.m_x1 == v2.m_x0 && v1.m_y1 == v2.m_y0) {
-      if(v2.m_x0 > v1.m_x1 - 8 && v2.m_x0 < v1.m_x1 + 8) {
+      if(v2.m_x0 > v1.m_x1 - 4 && v2.m_x0 < v1.m_x1 + 4 && v2.m_y0 > v1.m_y1 - 4 && v2.m_y0 < v1.m_y1 + 4) {
         //debug("merging");
         int index = return_min(v1.m_index, v2.m_index);
         Line new_line(v1.m_x0, v1.m_y0, v2.m_x1, v2.m_y1, index);
@@ -173,6 +195,14 @@ void merge_vectors() {
   }
 }
 
+void add_all_lines_to_real_lines() {
+  for(int i = 0; i < pixy.line.numVectors; i++) {
+    Vector v1 = pixy.line.vectors[i];
+    Line new_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1, v1.m_index);
+    real_lines.push_back(new_line);
+  }
+}
+
 void flip_falling_lines() {
   for(int i = 0; i < real_lines.size(); i++) {
     if(real_lines[i].get_y0() < real_lines[i].get_y1()) {
@@ -185,17 +215,61 @@ void flip_falling_lines() {
   }
 }
 
+bool multiple_lines_on_left_side() {
+  bool found_one_line_already = false;
+  for(int i = 0; i < real_lines.size(); i++) {
+    if(real_lines[i].get_x0() < pixy.frameWidth / 2) {
+      if(found_one_line_already)
+        return true;
+      else
+        found_one_line_already = true;
+    }
+  }
+  return false;
+}
+
+bool multiple_lines_on_right_side() {
+  return false; 
+ }
+
+void only_choose_line_with_lowest_y_on_left() {
+  
+}
+
+void only_choose_line_with_lowest_y_on_right() {
+
+}
+
+void only_one_line_per_side() {
+  if(multiple_lines_on_left_side()) {
+    only_choose_line_with_lowest_y_on_left();
+  }
+  if(multiple_lines_on_right_side()) {
+    only_choose_line_with_lowest_y_on_right();
+  }
+}
+
 void select_bottom_two_lines() {
+  sort(real_lines.begin(), real_lines.end(), compareLines);
+  real_lines.erase(real_lines.begin()+2, real_lines.end());
+}
+
+void select_two_longest_lines() {
   sort(real_lines.begin(), real_lines.end(), compareLines);
   real_lines.erase(real_lines.begin()+2, real_lines.end());
 }
 
 void preprocess_vectors() {
   real_lines.clear();
-  merge_vectors();
+  //merge_vectors();
+  add_all_lines_to_real_lines();
+  
+  //only_one_line_per_side();
   //flip_falling_lines();
-  if(real_lines.size() > 2)
+  if(real_lines.size() > 2) {
     select_bottom_two_lines();
+    //select_two_longest_lines();
+  }
 }
 
 // returns the Steigung of a Gerade
@@ -207,18 +281,22 @@ void setup()
 {
   Serial.begin(115200);
   Serial.print("Starting...\n");
+  pinMode(PIN_RELAY, OUTPUT);
+  
+  voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
+  debug(String(voltage_of_battery));
+  if(voltage_of_battery < 6.25) {
+    debug("voltage of battery too low on startup");
+    digitalWrite(PIN_RELAY, LOW);
+  } else {
+    digitalWrite(PIN_RELAY, HIGH);
+  }
 
   pixy.init();
   // change to the line_tracking program.  Note, changeProg can use partial strings, so for example,
   // you can change to the line_tracking program by calling changeProg("line") instead of the whole
   // string changeProg("line_tracking")
   Serial.println(pixy.changeProg("line"));
-  pixy.setLamp(0, 0);
-  delay(100);
-  pixy.setLamp(1, 1);
-  delay(100);
-  pixy.setLamp(0, 0);
-  delay(100);
   current_lamp_status = 1;
   pixy.setLamp(current_lamp_status, current_lamp_status);
   Serial.print("Turned on lamps...\n");
@@ -228,8 +306,16 @@ void setup()
   //Wire.onReceive(receiveEvent); // register event
 
   pinMode(I2C_READY_PIN, INPUT);
+  pinMode(PIN_BATTERY_VOLTAGE, INPUT);
   
-  Serial2.begin(38400); // Default communication rate of the Bluetooth module
+  pinMode(PIN_LED_1, OUTPUT);
+  digitalWrite(PIN_LED_1, LOW);
+  pinMode(PIN_LED_2, OUTPUT);
+  digitalWrite(PIN_LED_2, LOW);
+  pinMode(PIN_LED_3, OUTPUT);
+  digitalWrite(PIN_LED_3, LOW);
+  
+  Serial1.begin(38400); // Default communication rate of the Bluetooth module
 }
 
 void loop()
@@ -263,8 +349,25 @@ void loop()
 
   // If no vectors are detected, turn on hazard lights
   // Else preprocess lines and go on
+
+  voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
+  debug(String(voltage_of_battery));
+  if(voltage_of_battery < 6.25) {
+    batter_low_counter++;
+    if(batter_low_counter > 500) {
+      debug("voltage of battery too low");
+      digitalWrite(PIN_RELAY, LOW);
+      //delay(1000);
+      return;
+    }
+  }
+    
+
+  
   real_lines.clear();
-  debug("Pixy lines: " + String(pixy.line.numVectors));
+  //debug("Pixy lines: " + String(pixy.line.numVectors));
+  if(currently_in_curve)
+    debug("currently in curve");
   
   if(counter_no_line_detected > 30) {
     // STOP MOTOR!
@@ -272,7 +375,7 @@ void loop()
     stopped = true;
     debug("stopped car");
   }
-    
+
   if(pixy.line.numVectors == 0) {
     counter_no_line_detected++;
     if(current_lamp_status == 0) {
@@ -282,16 +385,16 @@ void loop()
       current_lamp_status = 0;
       pixy.setLamp(current_lamp_status, current_lamp_status);
     }
-    if(counter_no_line_detected > 30) {
+    /*if(counter_no_line_detected > 30) {
       // STOP MOTOR!
       write_i2c("XXXX");
       stopped = true;
       debug("stopped car");
-    }
+    }*/
     delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
   } else {
-    if(stopped) {
-      write_i2c("DDDD");
+    if(stopped != false) {
+      //write_i2c("DDDD");
       stopped = false;
     }
     counter_no_line_detected = 0;
@@ -320,7 +423,9 @@ void loop()
     bool push_car_into_center = false;
     
     // if single line is pretty much vertical
-    if(abs(l.get_y1() - l.get_y0()) > 10 && l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
+    //if(abs(l.get_y1() - l.get_y0()) > 10 && l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
+    //if(abs(l.get_y1() - l.get_y0()) > 10 && abs(l.get_x1() - l.get_x0()) > DEVIATION_FROM_VERTICAL) {
+    if(pitch(l.get_x0(), l.get_y0(), l.get_x1(), l.get_y1()) > 10) {
       currently_in_curve = false;
     }
     // if the single line is not vertical, car in a curve
@@ -335,6 +440,8 @@ void loop()
       //Serial.println("push degrees into center: " + String(calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2))));
     }
     //Serial.println("currently_in_curve: "+String(currently_in_curve));
+    if(currently_in_curve)
+      debug("currently in curve.");
       
     if(l.get_x1() > l.get_x0()) { // line points to the right
       if(currently_in_curve) {
@@ -405,11 +512,14 @@ void loop()
     else
       currently_in_curve = false;
       
-    debug("Ideallinie from (" + String(ideallinie_start_x) + ", " + String(ideallinie_start_y) + ") to (" + String(ideallinie_end_x) + ", " + String(ideallinie_end_y) + ")");
+    //debug("Ideallinie from (" + String(ideallinie_start_x) + ", " + String(ideallinie_start_y) + ") to (" + String(ideallinie_end_x) + ", " + String(ideallinie_end_y) + ")");
 
     int abs_gradient = abs(ideallinie_end_x - ideallinie_start_x);
+    
     if(ideallinie_end_x > ideallinie_start_x) {
     	//steer_right(abs_gradient);
+      //if(currently_in_curve)
+        //abs_gradient = 0; // = abs_gradient * 10 / 50;
       steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
@@ -418,6 +528,8 @@ void loop()
       }
   	} else {
   		//steer_left(abs_gradient);
+      //if(currently_in_curve)
+        //abs_gradient = 0; // = abs_gradient * 10 / 50;
       steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
       steer_angles_interpolation_counter++;
       if(steer_angles_interpolation_counter > 2) {
@@ -425,8 +537,18 @@ void loop()
         steer_angles_interpolation_counter = 0;
       }
 	  }
+   
     /*int ideallinie_mean_x = (ideallinie_start_x + ideallinie_end_x) / 2;
-    int compare_x = (pixy.frameWidth - 1) / 2 - ideallinie_mean_x;
+    int distance_to_ideallinie_mean_x = abs(ideallinie_mean_x - ((pixy.frameWidth - 1) / 2));
+
+    if(ideallinie_mean_x >= (pixy.frameWidth - 1) / 2) { // idealline_mean_x on the right, steer towards it
+      steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_pull_towards_ideallinie_in_degrees(distance_to_ideallinie_mean_x);
+    } else {
+      steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_pull_towards_ideallinie_in_degrees(distance_to_ideallinie_mean_x);
+    }*/
+
+    
+    /*int compare_x = (pixy.frameWidth - 1) / 2 - ideallinie_mean_x;
     if(compare_x < - ALLOWED_DEVIATON_FROM_IDEALLINIE) {
       debug("Steer to the right!");
       steer_right(abs(compare_x));
@@ -438,8 +560,8 @@ void loop()
     else {
       debug("Perfectly centered!");
       steer_straight();
-    }
-    debug("");*/
+    }*/
+    debug("");
     delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
   }
    
