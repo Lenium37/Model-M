@@ -49,6 +49,8 @@
 - \subpage PwmLdd6
 - \subpage ExtIntLdd2
 - \subpage TU3
+- \subpage TU4
+- \subpage RealTimeLdd1
 
 */
 

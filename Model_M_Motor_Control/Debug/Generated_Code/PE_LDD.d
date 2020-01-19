@@ -35,7 +35,9 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
  ../Generated_Code/MotorLinks_Rev.h ../Generated_Code/PwmLdd4.h \
  ../Generated_Code/MotorRechts_Rev.h ../Generated_Code/PwmLdd6.h \
  ../Generated_Code/LinksINT.h ../Generated_Code/ExtIntLdd2.h \
- ../Generated_Code/TU3.h
+ ../Generated_Code/TU3.h ../Generated_Code/FC321.h \
+ ../Generated_Code/RealTimeLdd1.h ../Generated_Code/TU4.h \
+ ../Generated_Code/LPTMR_PDD.h
 
 ../Generated_Code/PE_LDD.h:
 
@@ -178,3 +180,11 @@ Generated_Code/PE_LDD.o: ../Generated_Code/PE_LDD.c \
 ../Generated_Code/ExtIntLdd2.h:
 
 ../Generated_Code/TU3.h:
+
+../Generated_Code/FC321.h:
+
+../Generated_Code/RealTimeLdd1.h:
+
+../Generated_Code/TU4.h:
+
+../Generated_Code/LPTMR_PDD.h:

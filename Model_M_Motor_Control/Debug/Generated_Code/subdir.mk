@@ -25,6 +25,7 @@ C_SRCS += \
 ../Generated_Code/EN.c \
 ../Generated_Code/ExtIntLdd1.c \
 ../Generated_Code/ExtIntLdd2.c \
+../Generated_Code/FC321.c \
 ../Generated_Code/I2C1.c \
 ../Generated_Code/IO1.c \
 ../Generated_Code/IntI2cLdd1.c \
@@ -51,6 +52,7 @@ C_SRCS += \
 ../Generated_Code/PwmLdd3.c \
 ../Generated_Code/PwmLdd4.c \
 ../Generated_Code/PwmLdd6.c \
+../Generated_Code/RealTimeLdd1.c \
 ../Generated_Code/RechtsINT.c \
 ../Generated_Code/SI.c \
 ../Generated_Code/SW1.c \
@@ -62,6 +64,7 @@ C_SRCS += \
 ../Generated_Code/TU1.c \
 ../Generated_Code/TU2.c \
 ../Generated_Code/TU3.c \
+../Generated_Code/TU4.c \
 ../Generated_Code/TasterA.c \
 ../Generated_Code/TasterB.c \
 ../Generated_Code/Vectors.c \
@@ -89,6 +92,7 @@ OBJS += \
 ./Generated_Code/EN.o \
 ./Generated_Code/ExtIntLdd1.o \
 ./Generated_Code/ExtIntLdd2.o \
+./Generated_Code/FC321.o \
 ./Generated_Code/I2C1.o \
 ./Generated_Code/IO1.o \
 ./Generated_Code/IntI2cLdd1.o \
@@ -115,6 +119,7 @@ OBJS += \
 ./Generated_Code/PwmLdd3.o \
 ./Generated_Code/PwmLdd4.o \
 ./Generated_Code/PwmLdd6.o \
+./Generated_Code/RealTimeLdd1.o \
 ./Generated_Code/RechtsINT.o \
 ./Generated_Code/SI.o \
 ./Generated_Code/SW1.o \
@@ -126,6 +131,7 @@ OBJS += \
 ./Generated_Code/TU1.o \
 ./Generated_Code/TU2.o \
 ./Generated_Code/TU3.o \
+./Generated_Code/TU4.o \
 ./Generated_Code/TasterA.o \
 ./Generated_Code/TasterB.o \
 ./Generated_Code/Vectors.o \
@@ -153,6 +159,7 @@ C_DEPS += \
 ./Generated_Code/EN.d \
 ./Generated_Code/ExtIntLdd1.d \
 ./Generated_Code/ExtIntLdd2.d \
+./Generated_Code/FC321.d \
 ./Generated_Code/I2C1.d \
 ./Generated_Code/IO1.d \
 ./Generated_Code/IntI2cLdd1.d \
@@ -179,6 +186,7 @@ C_DEPS += \
 ./Generated_Code/PwmLdd3.d \
 ./Generated_Code/PwmLdd4.d \
 ./Generated_Code/PwmLdd6.d \
+./Generated_Code/RealTimeLdd1.d \
 ./Generated_Code/RechtsINT.d \
 ./Generated_Code/SI.d \
 ./Generated_Code/SW1.d \
@@ -190,6 +198,7 @@ C_DEPS += \
 ./Generated_Code/TU1.d \
 ./Generated_Code/TU2.d \
 ./Generated_Code/TU3.d \
+./Generated_Code/TU4.d \
 ./Generated_Code/TasterA.d \
 ./Generated_Code/TasterB.d \
 ./Generated_Code/Vectors.d \

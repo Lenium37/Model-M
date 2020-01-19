@@ -35,7 +35,9 @@ Generated_Code/Vectors.o: ../Generated_Code/Vectors.c \
  ../Generated_Code/MotorLinks_Rev.h ../Generated_Code/PwmLdd4.h \
  ../Generated_Code/MotorRechts_Rev.h ../Generated_Code/PwmLdd6.h \
  ../Generated_Code/LinksINT.h ../Generated_Code/ExtIntLdd2.h \
- ../Generated_Code/TU3.h \
+ ../Generated_Code/TU3.h ../Generated_Code/FC321.h \
+ ../Generated_Code/RealTimeLdd1.h ../Generated_Code/TU4.h \
+ ../Generated_Code/LPTMR_PDD.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Sources/Events.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PE_Types.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PE_Error.h \
@@ -88,6 +90,9 @@ Generated_Code/Vectors.o: ../Generated_Code/Vectors.c \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/LinksINT.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/ExtIntLdd2.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/TU3.h \
+ /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/FC321.h \
+ /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RealTimeLdd1.h \
+ /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/TU4.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/SI.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/BitIoLdd8.h \
  /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/Send_OK.h \
@@ -241,6 +246,14 @@ Generated_Code/Vectors.o: ../Generated_Code/Vectors.c \
 
 ../Generated_Code/TU3.h:
 
+../Generated_Code/FC321.h:
+
+../Generated_Code/RealTimeLdd1.h:
+
+../Generated_Code/TU4.h:
+
+../Generated_Code/LPTMR_PDD.h:
+
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Sources/Events.h:
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/PE_Types.h:
@@ -344,6 +357,12 @@ Generated_Code/Vectors.o: ../Generated_Code/Vectors.c \
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/ExtIntLdd2.h:
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/TU3.h:
+
+/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/FC321.h:
+
+/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/RealTimeLdd1.h:
+
+/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/TU4.h:
 
 /Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Generated_Code/SI.h:
 

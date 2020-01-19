@@ -11,6 +11,9 @@
 #include "LinksINT.h"
 #include "ExtIntLdd2.h"
 #include "TU3.h"
+#include "FC321.h"
+#include "RealTimeLdd1.h"
+#include "TU4.h"
 #include "SI.h"
 #include "BitIoLdd8.h"
 #include "Send_OK.h"
@@ -73,7 +76,7 @@ uint16_t Pixel[128];
 uint8_t prev_angle = 0;
 uint16_t Programmtime;
 int Curve = 0;
-int Break_time = 0;
+word Break_time = 0;
 uint16_t Break_period = 0;
 
 //Routine Auswertung
@@ -145,14 +148,26 @@ bool Start = FALSE;
 bool Serial = FALSE;
 bool Serialline = FALSE;
 bool Break_Curve = FALSE;
-byte Break_Active = 0;
+bool Break_Active = FALSE;
 bool DRIVE = TRUE;
+bool Regler_Active = TRUE;
 int Break_Timer = 0;
 uint16_t Winkel_prev_L = 0;
 uint16_t Winkel_prev_R = 0;
 uint16_t Lenkung_Regler = 0;
 uint16_t Programmcounter = 0;
-long map(long x, long in_min, long in_max, long out_min, long out_max) {
+double map(double x, double in_min, double in_max, double out_min, double out_max) {
+	double Result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	if(out_max > out_min) {
+		if(Result > out_max)
+			return out_max;
+	} else {
+		if(Result < out_max)
+			return out_max;
+	}
+	return Result;
+}
+long map_long(long x, long in_min, long in_max, long out_min, long out_max) {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 void counter(bool Stop) //Wenn kein Interrupt mehr nach 30 Ticks ausgelöst wird dann ist die Geschwindigkeit gleich null oder der Speedsensor hat ein Error
@@ -160,8 +175,20 @@ void counter(bool Stop) //Wenn kein Interrupt mehr nach 30 Ticks ausgelöst wird
 
 }
 uint16_t Regler_P(float Soll, float Ist, int Kp) {
+if(Regler_Active == TRUE)
+{
 	float Speed_diff = Soll - Ist;
-	return P_VAL += Speed_diff * Kp;
+	P_VAL += Speed_diff * Kp;
+	if(P_VAL <1000)
+		{
+			P_VAL = 1000;
+		}
+	if(P_VAL>65300)
+	{
+		P_VAL = 65300;
+	}
+	return P_VAL;
+	}
 }
 
 uint8_t char_int(char Zeichen) {
@@ -196,6 +223,9 @@ uint8_t char_int(char Zeichen) {
 		break;
 	case '9':
 		Wert = 9;
+		break;
+	default :
+		Wert = 0;
 		break;
 	}
 	return Wert;
@@ -290,8 +320,8 @@ void Rec() {
 	if (data[0] == 'X' || data[1] == 'X' || data[2] == 'X' || data[3] == 'X') {
 		Angle = prev_angle;
 	}
-	SerVal = map(Angle, 0, 45, 0, 819); //819 //3277 //max 62258 min 58981; 819 sind 45° , mitte 60619
-	//printf("Data: %c%c%c\n",data[0],data[1],data[2],data[3]);
+	SerVal = map_long(Angle, 0, 45, 0, 819); //819 //3277 //max 62258 min 58981; 819 sind 45° , mitte 60619
+	printf("Data: %c%c%c\n",data[0],data[1],data[2],data[3]);
 	//printf("Angle: %d, %d\n", Angle,SerVal);
 	//if(data[1] == 'L'||data[1]=='R'||data[1]=='S'||data[2] == 'L'||data[2]=='R'||data[2]=='S')
 	//{
@@ -493,18 +523,37 @@ void LineKamera() {
 	Auswertung(128, Threshold);
 }
 void Break(uint16_t Rev_Speed, uint16_t Block_Time) {
-
-			MotorRechts_SetRatio16(0);
-			MotorLinks_SetRatio16(0);
+	if(Break_Active == TRUE)
+	{
+			Regler_Active = FALSE;
+			FC321_Enable();
+			FC321_GetTimeMS(&Break_time);
+			if(Break_time>Block_Time)
+			{
+				printf("Break: %d \n",Break_time);
+				Break_Active = FALSE;
+			    MotorRechts_Rev_SetRatio16(0);
+			    MotorLinks_Rev_SetRatio16(0);
+				FC321_Disable();
+				FC321_Reset();
+				if(data[1] == 'X'||Start == FALSE)
+				{
+					EN_Off();
+				}
+				Regler_Active = TRUE;
+			}
+			MotorRechts_SetRatio16(100);
+			MotorLinks_SetRatio16(100);
 			MotorRechts_Rev_SetRatio16(Rev_Speed);
 			MotorLinks_Rev_SetRatio16(Rev_Speed);
-		    WAIT1_Waitms(Block_Time);
-		    MotorRechts_Rev_SetRatio16(0);
-		    MotorLinks_Rev_SetRatio16(0);
+	}
 }
 int main(void) {
 	CLK_Init();
 	PE_low_level_init();
+	FC321_Disable();
+	FC321_Reset();
+	uint16_t Kp_drive = 0;
 	//RechtsClock_Enable();
 
 	for (;;) {
@@ -520,37 +569,79 @@ int main(void) {
 					velocity_Links, velocity_Rechts, value);
 		}
 		//printf("Soll_Speed = %d \n",value);
-		counter(FALSE);
-		if (value > StartMotor) {
+		//counter(FALSE);
+		/*if (value > StartMotor) {
 			value = StartMotor;
-		}
-		uint16_t Maxspeed = StartMotor - value;
-		uint16_t Slow = StartMotor - Maxspeed * 1 / 2;
-		Maxspeed = StartMotor - Maxspeed;
-		uint16_t Speed = map(Angle, 0, 45, Maxspeed, Slow);
-		uint16_t LR_diff = map(Angle, 0, 45, 0, 8000);
-		uint16_t LR_diff_innen = map(Angle, 0, 45, 0, 4000);
-		Speed = map(Speed, 0, 65535, 65535, 0);
-		uint16_t Break_Time_Speed = map(Speed, 0, 65535, 50, 25);
+		}*/
+		//printf("Speed %d\n",Angle);
+		uint16_t Maxspeed = value;
+		uint16_t Slow = Maxspeed * 1 / 4;
+		uint16_t Speed = map_long(Angle, 0, 45, Maxspeed, Slow);
+		//printf("Speed %d\n",Speed);
+		double Speed_Ms = map(Speed,0,65535,0.0,6.0);
+		//printf("Speed_Ms %f\n",Speed_Ms);
+		uint16_t LR_diff = map_long(Angle, 0, 45, 0, 8000);
+		uint16_t LR_diff_innen = map_long(Angle, 0, 45, 0, 4000);
+		//uint16_t Break_Time_Speed = map_long(Speed, 0, 65535, 50, 25);
+        uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,6.0,0,65535);
 
+		uint32_t Speed_regulated = Regler_P(Speed_Ms,velocity_Rechts_avg,Kp_drive);
+		Break(AVG_Rechts_int,Break_period);
+		printf("Regler = %d \n",Speed_regulated);
 
-		if (Angle > 15&&velocity_Rechts_avg > 1.5)
-		{
-			Break(Speed + 10000,300);
-		}
-
-			if (data[3] == 'S') {
-				MotorRechts_SetRatio16(Speed);
-				MotorLinks_SetRatio16(Speed);
+			if (data[3] == 'S'&&Break_Active == FALSE) {
+				Kp_drive = 1000;
+				MotorRechts_SetRatio16(Speed_regulated);
+				MotorLinks_SetRatio16(Speed_regulated);
 			}
 			if (data[3] == 'C') {
-				if (data[0] == 'L') {
-					MotorRechts_SetRatio16(Speed - LR_diff_innen);
-					MotorLinks_SetRatio16(Speed + LR_diff);
+				Kp_drive = 100;
+				if (velocity_Rechts_avg > Speed_Ms+1)
+						{
+						    Kp_drive = 0;
+							Break_period = 50;
+							Break_Active = TRUE;
+						}
+				if (data[0] == 'L'&&Break_Active == FALSE) {
+					if(65300 - Speed_regulated < LR_diff)
+					{
+						MotorRechts_SetRatio16(65300);
+					}else
+					{
+						MotorRechts_SetRatio16(Speed_regulated+LR_diff);
+					}
+
+					if(100 + Speed_regulated < LR_diff_innen)
+					{
+						MotorLinks_SetRatio16(100);
+					}else
+					{
+						MotorLinks_SetRatio16(Speed_regulated-LR_diff_innen);
+					}
+
+					//MotorRechts_SetRatio16(Speed_regulated+LR_diff);
+					//MotorLinks_SetRatio16(Speed_regulated-LR_diff_innen);
 				}
-				if (data[0] == 'R') {
-					MotorRechts_SetRatio16(Speed - LR_diff_innen);
-					MotorLinks_SetRatio16(Speed + LR_diff);
+				if (data[0] == 'R'&&Break_Active == FALSE) {
+
+					if(65300 - Speed_regulated < LR_diff)
+					{
+						MotorLinks_SetRatio16(65300);
+					}else
+					{
+						MotorLinks_SetRatio16(Speed_regulated+LR_diff);
+					}
+
+					if(100 + Speed_regulated < LR_diff_innen)
+					{
+						MotorRechts_SetRatio16(100);
+					}else
+					{
+						MotorRechts_SetRatio16(Speed_regulated-LR_diff_innen);
+					}
+
+					//MotorRechts_SetRatio16(Speed_regulated-LR_diff_innen);
+					//MotorLinks_SetRatio16(Speed_regulated+LR_diff);
 				}
 			}
 		MotorLinks_Enable();
@@ -562,25 +653,29 @@ int main(void) {
 		if (TasterB_GetVal() == 1) {
 			Start = FALSE;
 		}
-		if (data[1] == 'D' && Start == TRUE && Start == TRUE) {
+		if (Start == TRUE) {
+			if(data[0] == 'L' || data[0] == 'R'|| data[0] == 'S')
+			{
 			LED1_On();
 			EN_On();
+			}
 		}
 		if (data[1] == 'X' || Start == FALSE) {
-			//Break_Active = 1;
-			Break(Speed,1000);
+
+			Kp_drive = 0;
+			Break_Active = TRUE;
+			Break_period = 1000;
 			LED1_Off();
-			EN_Off();
 		}
 
 		if (data[0] == 'L') {
-			int diff2 = map(SerVal, 0, 819, Mitte, Links); //max 62258 min 58981; 819 sind 45° , mitte 60619
+			int diff2 = map_long(SerVal, 0, 819, Mitte, Links); //max 62258 min 58981; 819 sind 45° , mitte 60619
 			Servo_SetRatio16(diff2);
 			Servo_Enable();
 			//Winkel_prev_L = diff2;
 		}
 		if (data[0] == 'R') {
-			int diff = map(SerVal, 0, 819, Mitte, Rechts);
+			int diff = map_long(SerVal, 0, 819, Mitte, Rechts);
 			Servo_SetRatio16(diff);
 			Servo_Enable();
 			//Winkel_prev_R = diff;
@@ -595,7 +690,7 @@ int main(void) {
 				(void) Potis_MeasureChan(TRUE, 1);
 				(void) Potis_GetChanValue16(1, &value2);
 				uint16_t SerVal;
-				SerVal = map(value2, 0, 65535, 62258, 59800);
+				SerVal = map_long(value2, 0, 65535, 62258, 59800);
 				Servo_SetRatio16(SerVal);
 				Mitte = SerVal;
 				Links = Mitte + 819;
@@ -603,7 +698,7 @@ int main(void) {
 			}
 			LED2_Off();
 		}
-		LineKamera();
+		//LineKamera();
 		Programmcounter++;
 		if (Programmcounter >= 150) {
 			if (data[0] == '0' && data[1] == '0' && data[2] == '0'
@@ -613,16 +708,19 @@ int main(void) {
 				data[2] = 'X';
 				data[3] = 'X';
 				//Break_Active = 1;
-				Break(Speed,1000);
+				Break_Active = TRUE;
+				Break_period = 1000;
+				Regler_Active = FALSE;
+				Speed_regulated = 1000;
 				LED1_Off();
 				EN_Off();
 			}
 			Programmcounter = 0;
 		}
-		data[0] = '0';
-		data[1] = '0';
-		data[2] = '0';
-		data[3] = '0';
+		//data[0] = '0';
+		//data[1] = '0';
+		//data[2] = '0';
+		//data[3] = '0';
 		/*RechtsClock_GetTimeMS(&Programmtime);
 		 printf("Zeit = %d ms \n",Programmtime);
 		 RechtsClock_Reset();
