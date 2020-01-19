@@ -266,7 +266,15 @@ void setup()
   Serial.begin(115200);
   Serial.print("Starting...\n");
   pinMode(PIN_RELAY, OUTPUT);
-  digitalWrite(PIN_RELAY, HIGH);
+  
+  voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
+  debug(String(voltage_of_battery));
+  if(voltage_of_battery < 6.25) {
+    debug("voltage of battery too low on startup");
+    digitalWrite(PIN_RELAY, LOW);
+  } else {
+    digitalWrite(PIN_RELAY, HIGH);
+  }
 
   pixy.init();
   // change to the line_tracking program.  Note, changeProg can use partial strings, so for example,
