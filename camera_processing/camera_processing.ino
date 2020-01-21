@@ -1,5 +1,4 @@
-#define DEVIATION_FROM_VERTICAL 3 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
-#define ALLOWED_DEVIATON_FROM_IDEALLINIE 5
+#define DEVIATION_FROM_VERTICAL 5 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 
 #define WAIT_TIME_BETWEEN_LINE_DETECTION 0 // ms
 #define I2C_ADDRESS_OF_SLAVE 8
@@ -9,10 +8,8 @@
 #define PIN_LED_2 8
 #define PIN_LED_3 9
 #define PIN_BATTERY_VOLTAGE 15
-#define SPEED_ON_STRAIGHT 1.0 // 1 m/s
-#define SPEED_IN_CURVE 0.5 // 0.5 m/s
-//#define STEERING_ANGLE_INTERPOLATION_COUNTER 2
-//#define CORRECT_STEERING_AWAY_FROM_SINGLE_LINE 6
+//#define SPEED_ON_STRAIGHT 1.0 // 1 m/s
+//#define SPEED_IN_CURVE 0.5 // 0.5 m/s
 
 #include <Pixy2.h>
 #include <vector>
@@ -31,23 +28,11 @@ int steer_angles_interpolation[2];
 int steer_angles_interpolation_counter = 0;
 float voltage_of_battery = 10;
 int batter_low_counter = 0;
+int last_steer_angle = 0;
 
 void debug(String s) {
   Serial1.println(s);
   // if changing Serial number don't forget to change it in setup() as well!
-}
-
-int return_min(int i1, int i2) {
-  if(i1 <= i2)
-    return i1;
-  else
-    return i2;  
-}
-
-// Compares Lines and returns true if Line1 has the smaller m_y0
-bool compareLines(Line l1, Line l2) {
-    //return (l1.get_y0() < l2.get_y0());
-    return (abs(l1.get_x1() - l1.get_x0()) + abs(l1.get_y1() - l1.get_y0()) > abs(l2.get_x1() - l2.get_x0()) + abs(l2.get_y1() - l2.get_y0()));
 }
 
 void write_i2c(String s) {
@@ -59,37 +44,29 @@ void write_i2c(String s) {
   Wire.endTransmission();
 }
 
-int calculate_push_away_angle_in_degrees(int distance_line_camera_center) {
-  int angle = return_map(distance_line_camera_center, 0, 20, 25, 0); // 0, 20, 25, 0
-  if(angle < 0)
-    angle = 0;
-
-  return angle;
-}
-
 int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
-  int angle = return_map(distance_from_ideallinie, 0, 10, 0, 10); // 0, 10, 0, 10
-  if(angle > 10)
-    angle = 10;
-
-  return angle;
-}
-
-int calculate_steer_angle_in_degrees(int num) {
-  int angle = return_map(num, 0, 20, 0, 45);
+  //int angle = return_map(distance_from_ideallinie, 0, 77, 0, 45); // can go from 0 to 77 but it is probably wise to steer 45 degrees much earlier (maybe around 40?)
+  //int angle = return_map(distance_from_ideallinie, 0, 38, 0, 45); // works quite good
+  int angle = return_map(distance_from_ideallinie, 0, 30, 0, 45);
   if(angle > 45)
     angle = 45;
 
   return angle;
 }
 
+int offset_depending_on_y_position(int y_position) {
+  //debug("y_position: " + String(y_position));
+  int offset = return_map(y_position, 0, 51, 28, 38); // 0 und 51 sind die min/max-Werte für Y, entsprechend mappen auf track_width/2 ganz unten und ganz oben
+  if(offset < 28)
+    offset = 28;
+  else if(offset > 38)
+    offset = 38;
+
+  return offset;
+}
+
 void steer_left(int steer_angle) {
   //debug("steer left " + String(steer_angle) + " degrees.");
-  if(steer_angle == 0) {
-    debug("#############");
-    debug("ANGLE 00!");
-    debug("###########");
-  }
   if(steer_angle < 10) {
     if(currently_in_curve)
       write_i2c("L0"+String(steer_angle)+"C");
@@ -148,14 +125,6 @@ int return_map(int value_to_map, int in_min, int in_max, int out_min, int out_ma
   return (value_to_map - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-bool pixel_is_in_lower_left_corner(int x, int y) {
-	return (x < (pixy.frameWidth - 1) / 2 && y > pixy.frameHeight / 2);
-}
-
-bool pixel_is_in_lower_right_corner(int x, int y) {
-	return (x > (pixy.frameWidth - 1) / 2 && y > pixy.frameHeight / 2);
-}
-
 /**
  * If the Pixy 2 detects an intersection, combine the two vectors to just one.
  * TODO: What happens if there are 3 or more lines at one intersection?
@@ -195,86 +164,31 @@ void merge_vectors() {
   }
 }
 
-void add_all_lines_to_real_lines() {
+int length_of_line(int x0, int y0, int x1, int y1) {
+  return (x0 + y0 + x1 + y1);
+}
+
+void add_longest_line_to_real_lines() {
+  int length_of_longest_line = 0;
+  int index_of_longest_line = 0;
   for(int i = 0; i < pixy.line.numVectors; i++) {
     Vector v1 = pixy.line.vectors[i];
-    Line new_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1, v1.m_index);
-    real_lines.push_back(new_line);
-  }
-}
-
-void flip_falling_lines() {
-  for(int i = 0; i < real_lines.size(); i++) {
-    if(real_lines[i].get_y0() < real_lines[i].get_y1()) {
-      Line inverted_line(real_lines[i].get_x0(), real_lines[i].get_y1(), real_lines[i].get_x1(), real_lines[i].get_y0(), real_lines[i].get_index());
-      real_lines[i] = inverted_line;
-      Serial.println("####################");
-      Serial.println("INVERTED LINE");
-      Serial.println("####################");
+    if(length_of_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1) > length_of_longest_line) {
+      length_of_longest_line = length_of_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1);
+      index_of_longest_line = i;
     }
   }
-}
-
-bool multiple_lines_on_left_side() {
-  bool found_one_line_already = false;
-  for(int i = 0; i < real_lines.size(); i++) {
-    if(real_lines[i].get_x0() < pixy.frameWidth / 2) {
-      if(found_one_line_already)
-        return true;
-      else
-        found_one_line_already = true;
-    }
-  }
-  return false;
-}
-
-bool multiple_lines_on_right_side() {
-  return false; 
- }
-
-void only_choose_line_with_lowest_y_on_left() {
-  
-}
-
-void only_choose_line_with_lowest_y_on_right() {
-
-}
-
-void only_one_line_per_side() {
-  if(multiple_lines_on_left_side()) {
-    only_choose_line_with_lowest_y_on_left();
-  }
-  if(multiple_lines_on_right_side()) {
-    only_choose_line_with_lowest_y_on_right();
-  }
-}
-
-void select_bottom_two_lines() {
-  sort(real_lines.begin(), real_lines.end(), compareLines);
-  real_lines.erase(real_lines.begin()+2, real_lines.end());
-}
-
-void select_two_longest_lines() {
-  sort(real_lines.begin(), real_lines.end(), compareLines);
-  real_lines.erase(real_lines.begin()+2, real_lines.end());
+  Vector longest_vector = pixy.line.vectors[index_of_longest_line];
+  Line longest_line(longest_vector.m_x0, longest_vector.m_y0, longest_vector.m_x1, longest_vector.m_y1, longest_vector.m_index);
+  real_lines.push_back(longest_line);
 }
 
 void preprocess_vectors() {
   real_lines.clear();
   //merge_vectors();
-  add_all_lines_to_real_lines();
+  if(pixy.line.numVectors > 0)
+    add_longest_line_to_real_lines();
   
-  //only_one_line_per_side();
-  //flip_falling_lines();
-  if(real_lines.size() > 2) {
-    select_bottom_two_lines();
-    //select_two_longest_lines();
-  }
-}
-
-// returns the Steigung of a Gerade
-int pitch(int x1, int y1, int x2, int y2) {
-	return (y2 - y1) / (x2 - x1);
 }
 
 void setup()
@@ -320,35 +234,9 @@ void setup()
 
 void loop()
 {
-  //int8_t i;
-  //char buf[128];
   Line line1;
   Line line2;
   pixy.line.getAllFeatures();
-  
-  // if zero lines
-    // stop and blink hazard lights. maybe look left, then look right. If no line in sight: stop and blink hazard lights.
-  
-  // if only one line
-    // determine if it is more on the left or more on the right and from that steer back into lane
-
-  // if two lines
-    // calculate Ideallinie and calculate deviation from it.
-    // maybe calculate the mean of start_X and end_x of Ideallinie and compare that to pixy.frameWidth/2 (frameWidth should be 79 in line detection mode)
-    // if the calculated x is to the left of the middle, steer left. Else steer right.
-
-  // if more than two lines
-    // get the two lines with the lowest starting point (on the camera)
-    // maybe not the best for turns but will probably work out for now
-
-  // think of something for intersections
-    // probably throw away all lines that are very horizontal, calculate pitch for that (if close to 0, line is horizontal)
-
-  // if Steigung of Ideallinie big
-    // probably in curve, not on straight (= steer harder)
-
-  // If no vectors are detected, turn on hazard lights
-  // Else preprocess lines and go on
 
   voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
   debug(String(voltage_of_battery));
@@ -361,15 +249,13 @@ void loop()
       return;
     }
   }
-    
-
   
   real_lines.clear();
   //debug("Pixy lines: " + String(pixy.line.numVectors));
   if(currently_in_curve)
     debug("currently in curve");
   
-  if(counter_no_line_detected > 30) {
+  if(counter_no_line_detected > 100) {
     // STOP MOTOR!
     write_i2c("XXXX");
     stopped = true;
@@ -385,7 +271,7 @@ void loop()
       current_lamp_status = 0;
       pixy.setLamp(current_lamp_status, current_lamp_status);
     }
-    /*if(counter_no_line_detected > 30) {
+    /*if(counter_no_line_detected > 100) {
       // STOP MOTOR!
       write_i2c("XXXX");
       stopped = true;
@@ -398,8 +284,6 @@ void loop()
       stopped = false;
     }
     counter_no_line_detected = 0;
-    //current_lamp_status = 1;
-    //pixy.setLamp(current_lamp_status, current_lamp_status);
     if(pixy.line.numVectors > 1) {
       preprocess_vectors();
     }
@@ -409,160 +293,86 @@ void loop()
       real_lines.push_back(l);
     }
   }
-  //debug("real_lines.size(): " + String(real_lines.size()));
+  
 
-  if(real_lines.size() == 2) {
-    line1 = real_lines[0];
-    line2 = real_lines[1];
-    debug("Found " + String(real_lines.size()) + " lines");
-  } else { debug("Found " + String(real_lines.size()) + " line(s)"); }
+  debug("real_lines.size(): " + String(real_lines.size()));
+
 
   if(real_lines.size() == 1) {
     Line l = real_lines[0];
-    int abs_gradient = abs(l.get_x1() - l.get_x0());
-    bool push_car_into_center = false;
+    int end_point_of_line_x = 0;
+    int end_point_of_line_y = 0;
+    if(l.get_y1() <= l.get_y0()) { // hope for the best if line is horizontal
+      end_point_of_line_x = l.get_x1();
+      end_point_of_line_y = l.get_y1();
+    } else /*if(l.get_y1() > l.get_y0())*/ {
+      end_point_of_line_x = l.get_x0();
+      end_point_of_line_y = l.get_y0();
+    }
     
-    // if single line is pretty much vertical
-    //if(abs(l.get_y1() - l.get_y0()) > 10 && l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
-    //if(abs(l.get_y1() - l.get_y0()) > 10 && abs(l.get_x1() - l.get_x0()) > DEVIATION_FROM_VERTICAL) {
-    if(pitch(l.get_x0(), l.get_y0(), l.get_x1(), l.get_y1()) > 10) {
+    int goal_x = 0;
+
+    if(abs(l.get_x1() - l.get_x0()) <= DEVIATION_FROM_VERTICAL) { // line is straight
       currently_in_curve = false;
+      if((l.get_x1() + l.get_x0()) / 2 <= 39) // middle of line is on the left
+        goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
+      else // middle of line is on the right
+        goal_x = end_point_of_line_x - offset_depending_on_y_position(end_point_of_line_y);
     }
-    // if the single line is not vertical, car in a curve
-    else {
+    else { // line is not straight
       currently_in_curve = true;
-    }
-    
-    int line_center = (l.get_x1() + l.get_x0()) / 2;
-    push_car_into_center = true;
-    
-    if(push_car_into_center) {
-      //Serial.println("push degrees into center: " + String(calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2))));
-    }
-    //Serial.println("currently_in_curve: "+String(currently_in_curve));
-    if(currently_in_curve)
-      debug("currently in curve.");
-      
-    if(l.get_x1() > l.get_x0()) { // line points to the right
-      if(currently_in_curve) {
-        if(push_car_into_center && calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) <= 45) {
-          //Serial.println("pushing away from line nach rechts");
-          //Serial.println("debug1");
-          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-        }
-        else {
-          //Serial.println("pushing not away nach rechts");
-          //Serial.println("debug2");
-          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
-        }
-      } else {
-        if(line_center >= (pixy.frameWidth - 1) / 2) { // line on right
-          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-          //Serial.println("debug3");
-        } else {
-          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-          //Serial.println("debug4");
-        }
-        
-      }
-      steer_angles_interpolation_counter++;
-      if(steer_angles_interpolation_counter > 2) {
-        steer_interpolated();
-        steer_angles_interpolation_counter = 0;
-      }
-    } else { // line points to the left or completely straight
-    	if(currently_in_curve) {
-        if(push_car_into_center && -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2))) >= -45) {
-          //Serial.println("pushing away from line nach links");
-          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-          //Serial.println("debug5");
-        }
-        else {
-          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
-          //Serial.println("pushing not away nach links");
-          //Serial.println("debug6");
-        }
-    	} else {
-        if(line_center <= (pixy.frameWidth - 1) / 2) { // line on left
-          steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient) + calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-          //Serial.println("debug7");
-        } else {
-          steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient) - calculate_push_away_angle_in_degrees(abs(line_center - ((pixy.frameWidth - 1) / 2)));
-          //Serial.println("debug8");
-        }
-    	}
-      steer_angles_interpolation_counter++;
-      if(steer_angles_interpolation_counter > 2) {
-        steer_interpolated();
-        steer_angles_interpolation_counter = 0;
+      if(l.get_y1() <= l.get_y0()) { // normalfall, (x1, y1) ist endpunkt
+        if(l.get_x1() < l.get_x0()) // line steigs to the left
+          goal_x = end_point_of_line_x - offset_depending_on_y_position(end_point_of_line_y);
+        else // line steigs to the right
+          goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
+      } 
+      else { // line inverted, switch the steigungsvergleich around
+        if(l.get_x0() < l.get_x1()) // line steigs to the left
+          goal_x = end_point_of_line_x - offset_depending_on_y_position(end_point_of_line_y);
+        else // line steigs to the right
+          goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
       }
     }
 
-    delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
-  }
-  else if(real_lines.size() == 2) {
-    Serial.println("Generating Ideallinie");
-    int ideallinie_start_x = (line1.get_x0() + line2.get_x0()) / 2;
-    int ideallinie_start_y = (line1.get_y0() + line2.get_y0()) / 2;
-    int ideallinie_end_x = (line1.get_x1() + line2.get_x1()) / 2;
-    int ideallinie_end_y = (line1.get_y1() + line2.get_y1()) / 2;
-    int ideallinie_pitch = (ideallinie_end_y - ideallinie_start_y) / (ideallinie_end_x - ideallinie_start_x);
-    if(abs(ideallinie_pitch) > 10)
-      currently_in_curve = true;
+    // goal_x max: 116 (78 + 38)
+    // goal_x realistic max: 106 (78 + 28)
+    // goal_x min: -38 (0 - 38)
+    // goal_x realisitc min: -33 (0 - 33 (geschaetzt bei y irgendwo in der Mitte))
+
+    int distance_from_ideallinie = abs(goal_x - (pixy.frameWidth / 2)); // min: 0, max: ~77
+    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(distance_from_ideallinie);
+
+    debug("goal_x: " + String(goal_x));
+    debug("end_point_of_line_x: " + String(end_point_of_line_x));
+    //debug("distance from ideallinie: " + String(distance_from_ideallinie));
+    debug("steer_angle: " + String(steer_angle));
+    if(goal_x <= 39)
+      debug("steer direction: LEFT");
     else
-      currently_in_curve = false;
-      
-    //debug("Ideallinie from (" + String(ideallinie_start_x) + ", " + String(ideallinie_start_y) + ") to (" + String(ideallinie_end_x) + ", " + String(ideallinie_end_y) + ")");
-
-    int abs_gradient = abs(ideallinie_end_x - ideallinie_start_x);
-    
-    if(ideallinie_end_x > ideallinie_start_x) {
-    	//steer_right(abs_gradient);
-      //if(currently_in_curve)
-        //abs_gradient = 0; // = abs_gradient * 10 / 50;
-      steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_steer_angle_in_degrees(abs_gradient);
-      steer_angles_interpolation_counter++;
-      if(steer_angles_interpolation_counter > 2) {
-        steer_interpolated();
-        steer_angles_interpolation_counter = 0;
-      }
-  	} else {
-  		//steer_left(abs_gradient);
-      //if(currently_in_curve)
-        //abs_gradient = 0; // = abs_gradient * 10 / 50;
-      steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_steer_angle_in_degrees(abs_gradient);
-      steer_angles_interpolation_counter++;
-      if(steer_angles_interpolation_counter > 2) {
-        steer_interpolated();
-        steer_angles_interpolation_counter = 0;
-      }
-	  }
-   
-    /*int ideallinie_mean_x = (ideallinie_start_x + ideallinie_end_x) / 2;
-    int distance_to_ideallinie_mean_x = abs(ideallinie_mean_x - ((pixy.frameWidth - 1) / 2));
-
-    if(ideallinie_mean_x >= (pixy.frameWidth - 1) / 2) { // idealline_mean_x on the right, steer towards it
-      steer_angles_interpolation[steer_angles_interpolation_counter] = calculate_pull_towards_ideallinie_in_degrees(distance_to_ideallinie_mean_x);
-    } else {
-      steer_angles_interpolation[steer_angles_interpolation_counter] = -calculate_pull_towards_ideallinie_in_degrees(distance_to_ideallinie_mean_x);
-    }*/
-
-    
-    /*int compare_x = (pixy.frameWidth - 1) / 2 - ideallinie_mean_x;
-    if(compare_x < - ALLOWED_DEVIATON_FROM_IDEALLINIE) {
-      debug("Steer to the right!");
-      steer_right(abs(compare_x));
-    }
-    else if(compare_x > ALLOWED_DEVIATON_FROM_IDEALLINIE) {
-      debug("Steer to the left!");
-      steer_left(abs(compare_x));
-    }
-    else {
-      debug("Perfectly centered!");
-      steer_straight();
-    }*/
+      debug("steer direction: RIGHT");
     debug("");
+
+    /*if(steer_angle <= 5 && last_steer_angle >= ) {
+
+    }*/
+
+
+    if(goal_x <= 39) { // steer left
+      steer_angles_interpolation[steer_angles_interpolation_counter] = -steer_angle;
+    }
+    else { // steer right
+      steer_angles_interpolation[steer_angles_interpolation_counter] = steer_angle;
+    }
+
+    steer_angles_interpolation_counter++;
+    if(steer_angles_interpolation_counter > 2) {
+      steer_interpolated();
+      steer_angles_interpolation_counter = 0;
+    }
+
     delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
+    
   }
    
   
