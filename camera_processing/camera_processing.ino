@@ -1,4 +1,4 @@
-#define DEVIATION_FROM_VERTICAL 3 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
+#define DEVIATION_FROM_VERTICAL 5 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 
 #define WAIT_TIME_BETWEEN_LINE_DETECTION 0 // ms
 #define I2C_ADDRESS_OF_SLAVE 8
@@ -32,6 +32,7 @@ float voltage_of_battery = 10;
 int batter_low_counter = 0;
 int last_steer_angle = 0;
 int second_last_steer_angle = 0;
+String current_angle_string;
 
 void prepare_interpolated_string() {
   int interpolated_angle = 0;
@@ -93,7 +94,9 @@ void prepare_interpolated_string() {
 }
 
 void send_interpolated_string() {
-  write_i2c(interpolated_angle_string);
+  //write_i2c(interpolated_angle_string);
+  
+  write_i2c(current_angle_string);
   steer_angles.clear();
 }
 
@@ -110,9 +113,10 @@ int return_min(int i1, int i2) {
 }
 
 void write_i2c(String s) {
-  debug(s);
-  char buffer[8];
-  s.toCharArray(buffer, 8);
+  //debug(s);
+  char buffer[4];
+  s.toCharArray(buffer, 4);
+  while(digitalRead(I2C_READY_PIN) == LOW);
   Wire.beginTransmission(I2C_ADDRESS_OF_SLAVE);
   Wire.write(buffer);
   Wire.endTransmission();
@@ -296,8 +300,8 @@ void setup()
   //Wire.begin(8);                // join i2c bus with address #8
   //Wire.onReceive(receiveEvent); // register event
 
-  //pinMode(I2C_READY_PIN, INPUT);
-  attachInterrupt(I2C_READY_PIN, send_interpolated_string, RISING);
+  pinMode(I2C_READY_PIN, INPUT);
+  //attachInterrupt(I2C_READY_PIN, send_interpolated_string, RISING);
   pinMode(PIN_BATTERY_VOLTAGE, INPUT);
   
   pinMode(PIN_LED_1, OUTPUT);
@@ -459,17 +463,44 @@ void loop()
     else if(second_last_steer_angle < -4 && last_steer_angle < -4 && steer_angle > 0)
       steer_angle = steer_angle / 2;
 
+    if(!currently_in_curve)
+      steer_angle = steer_angle / 2;
 
     if(goal_x <= 39) { // steer left
       //steer_angles_interpolation[steer_angles_interpolation_counter] = -steer_angle;
-      steer_angles.push_back(steer_angle * -1);
+      //steer_angles.push_back(steer_angle * -1);
+      //current_angle_string = "L"steer_angle;
+      if(steer_angle < 10) {
+        if(currently_in_curve)
+          current_angle_string = "L0"+String(steer_angle)+"C";
+        else
+          current_angle_string = "L0"+String(steer_angle)+"S";
+      } else {
+        if(currently_in_curve)
+          current_angle_string = "L"+String(steer_angle)+"C";
+        else
+          current_angle_string = "L"+String(steer_angle)+"S";
+      }
     }
     else { // steer right
       //steer_angles_interpolation[steer_angles_interpolation_counter] = steer_angle;
-      steer_angles.push_back(steer_angle);
+      //steer_angles.push_back(steer_angle);
+      //current_angle_string = steer_angle;
+      
+      if(steer_angle < 10) {
+        if(currently_in_curve)
+          current_angle_string = "R0"+String(steer_angle)+"C";
+        else
+          current_angle_string = "R0"+String(steer_angle)+"S";
+      } else {
+        if(currently_in_curve)
+          current_angle_string = "R"+String(steer_angle)+"C";
+        else
+          current_angle_string = "R"+String(steer_angle)+"S";
+      }
     }
-
-    prepare_interpolated_string();
+  send_interpolated_string();
+    //prepare_interpolated_string();
 
     /*steer_angles_interpolation_counter++;
     if(steer_angles_interpolation_counter > 2) {
