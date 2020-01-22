@@ -14,26 +14,6 @@ Module "Servo"     (component PWM)
                 predefined values in <Starting pulse width> property.   Note: Calculated duty depends on the timer 
                 possibilities and on the selected period.
 
-Module "MotorLinks" (component PWM)
-   - MotorLinks_Enable -This method enables the component - it starts the signal generation. Events may be generated 
-                (<DisableEvent>/<EnableEvent>).
-   - MotorLinks_Disable -This method disables the component - it stops the signal generation and events calling. When the timer 
-                is disabled, it is possible to call <ClrValue> and <SetValue> methods.
-   - MotorLinks_SetRatio16 -This method sets a new duty-cycle ratio. Ratio is expressed as a 16-bit unsigned integer number. 0 
-                - FFFF value is proportional to ratio 0 - 100%. The method is available only if it is not selected list of 
-                predefined values in <Starting pulse width> property.   Note: Calculated duty depends on the timer 
-                possibilities and on the selected period.
-
-Module "MotorRechts" (component PWM)
-   - MotorRechts_Enable -This method enables the component - it starts the signal generation. Events may be generated 
-                (<DisableEvent>/<EnableEvent>).
-   - MotorRechts_Disable -This method disables the component - it stops the signal generation and events calling. When the 
-                timer is disabled, it is possible to call <ClrValue> and <SetValue> methods.
-   - MotorRechts_SetRatio16 -This method sets a new duty-cycle ratio. Ratio is expressed as a 16-bit unsigned integer number. 0 
-                - FFFF value is proportional to ratio 0 - 100%. The method is available only if it is not selected list of 
-                predefined values in <Starting pulse width> property.   Note: Calculated duty depends on the timer 
-                possibilities and on the selected period.
-
 Module "EN"        (component LED)
    - EN_Init -Performs the LED driver initialization.
    - EN_On -This turns the LED on.
@@ -155,30 +135,6 @@ Module "TU1"       (component TimerUnit_LDD)
    - TU1_SelectOutputAction -Sets the type of compare match and counter overflow action on channel output. This method is 
                 available when at least one channel is configured.
 
-Module "TU2"       (component TimerUnit_LDD)
-   - TU2_Init -Initializes the device. Allocates memory for the device data structure, allocates interrupt vectors and sets 
-                interrupt priority, sets pin routing, sets timing, etc. If the property <"Enable in init. code"> is set to 
-                "yes" value then the device is also enabled (see the description of the <Enable> method). In this case the 
-                <Enable> method is not necessary and needn't to be generated. This method can be called only once. Before the 
-                second call of Init the <Deinit> must be called first.
-   - TU2_Enable -Enables the component - it starts the signal generation. Events may be generated (see SetEventMask). The 
-                method is not available if the counter can't be disabled/enabled by HW.
-   - TU2_Disable -Disables the component - it stops signal generation and events calling. The method is not available if the 
-                counter can't be disabled/enabled by HW.
-   - TU2_GetPeriodTicks -Returns the number of counter ticks before re-initialization. See also method <SetPeriodTicks>. This 
-                method is available only if the property <"Counter restart"> is switched to 'on-match' value.
-   - TU2_ResetCounter -Resets counter. If counter is counting up then it is set to zero. If counter is counting down then 
-                counter is updated to the reload value.   The method is not available if HW doesn't allow resetting of the 
-                counter.
-   - TU2_GetCounterValue -Returns the content of counter register. This method can be used both if counter is enabled and if 
-                counter is disabled. The method is not available if HW doesn't allow reading of the counter.
-   - TU2_SetOffsetTicks -Sets the new offset value to channel specified by the parameter ChannelIdx. It is user responsibility 
-                to use value below selected period. This method is available when at least one channel is configured.
-   - TU2_GetOffsetTicks -Returns the number of counter ticks to compare match channel specified by the parameter ChannelIdx. 
-                See also method <SetOffsetTicks>. This method is available when at least one channel is configured.
-   - TU2_SelectOutputAction -Sets the type of compare match and counter overflow action on channel output. This method is 
-                available when at least one channel is configured.
-
 Module "RechtsINT" (component ExtInt)
    - RechtsINT_Enable -Enable the component - the external events are accepted. This method is available only if HW module 
                 allows enable/disable of the interrupt.
@@ -241,38 +197,6 @@ Module "Send_OK"   (component LED)
    - Send_OK_Off -This turns the LED off.
    - Send_OK_Neg -This negates/toggles the LED
 
-Module "MotorLinks_Rev" (component PWM)
-   - MotorLinks_Rev_Enable -This method enables the component - it starts the signal generation. Events may be generated 
-                (<DisableEvent>/<EnableEvent>).
-   - MotorLinks_Rev_Disable -This method disables the component - it stops the signal generation and events calling. When the 
-                timer is disabled, it is possible to call <ClrValue> and <SetValue> methods.
-   - MotorLinks_Rev_SetRatio16 -This method sets a new duty-cycle ratio. Ratio is expressed as a 16-bit unsigned integer number.
-                0 - FFFF value is proportional to ratio 0 - 100%. The method is available only if it is not selected list of 
-                predefined values in <Starting pulse width> property.   Note: Calculated duty depends on the timer 
-                possibilities and on the selected period.
-   - MotorLinks_Rev_SetDutyUS -This method sets the new duty value of the output signal. The duty is expressed in microseconds 
-                as a 16-bit unsigned integer number. The method is available only if it is not selected list of predefined 
-                values in <Starting pulse width> property.
-   - MotorLinks_Rev_SetDutyMS -This method sets the new duty value of the output signal. The duty is expressed in milliseconds 
-                as a 16-bit unsigned integer number. The method is available only if it is not selected list of predefined 
-                values in <Starting pulse width> property.
-
-Module "MotorRechts_Rev" (component PWM)
-   - MotorRechts_Rev_Enable -This method enables the component - it starts the signal generation. Events may be generated 
-                (<DisableEvent>/<EnableEvent>).
-   - MotorRechts_Rev_Disable -This method disables the component - it stops the signal generation and events calling. When the 
-                timer is disabled, it is possible to call <ClrValue> and <SetValue> methods.
-   - MotorRechts_Rev_SetRatio16 -This method sets a new duty-cycle ratio. Ratio is expressed as a 16-bit unsigned integer 
-                number. 0 - FFFF value is proportional to ratio 0 - 100%. The method is available only if it is not selected 
-                list of predefined values in <Starting pulse width> property.   Note: Calculated duty depends on the timer 
-                possibilities and on the selected period.
-   - MotorRechts_Rev_SetDutyUS -This method sets the new duty value of the output signal. The duty is expressed in microseconds 
-                as a 16-bit unsigned integer number. The method is available only if it is not selected list of predefined 
-                values in <Starting pulse width> property.
-   - MotorRechts_Rev_SetDutyMS -This method sets the new duty value of the output signal. The duty is expressed in milliseconds 
-                as a 16-bit unsigned integer number. The method is available only if it is not selected list of predefined 
-                values in <Starting pulse width> property.
-
 Module "LinksINT"  (component ExtInt)
    - LinksINT_Enable -Enable the component - the external events are accepted. This method is available only if HW module 
                 allows enable/disable of the interrupt.
@@ -318,6 +242,41 @@ Module "TU4"       (component TimerUnit_LDD)
    - TU4_ResetCounter -Resets counter. If counter is counting up then it is set to zero. If counter is counting down then 
                 counter is updated to the reload value.   The method is not available if HW doesn't allow resetting of the 
                 counter.
+
+Module "MotorRechts" (component PWM)
+   - MotorRechts_SetRatio16 -This method sets a new duty-cycle ratio. Ratio is expressed as a 16-bit unsigned integer number. 0 
+                - FFFF value is proportional to ratio 0 - 100%. The method is available only if it is not selected list of 
+                predefined values in <Starting pulse width> property.   Note: Calculated duty depends on the timer 
+                possibilities and on the selected period.
+
+Module "TU2"       (component TimerUnit_LDD)
+   - TU2_Init -Initializes the device. Allocates memory for the device data structure, allocates interrupt vectors and sets 
+                interrupt priority, sets pin routing, sets timing, etc. If the property <"Enable in init. code"> is set to 
+                "yes" value then the device is also enabled (see the description of the <Enable> method). In this case the 
+                <Enable> method is not necessary and needn't to be generated. This method can be called only once. Before the 
+                second call of Init the <Deinit> must be called first.
+   - TU2_GetPeriodTicks -Returns the number of counter ticks before re-initialization. See also method <SetPeriodTicks>. This 
+                method is available only if the property <"Counter restart"> is switched to 'on-match' value.
+   - TU2_GetCounterValue -Returns the content of counter register. This method can be used both if counter is enabled and if 
+                counter is disabled. The method is not available if HW doesn't allow reading of the counter.
+   - TU2_SetOffsetTicks -Sets the new offset value to channel specified by the parameter ChannelIdx. It is user responsibility 
+                to use value below selected period. This method is available when at least one channel is configured.
+   - TU2_GetOffsetTicks -Returns the number of counter ticks to compare match channel specified by the parameter ChannelIdx. 
+                See also method <SetOffsetTicks>. This method is available when at least one channel is configured.
+   - TU2_SelectOutputAction -Sets the type of compare match and counter overflow action on channel output. This method is 
+                available when at least one channel is configured.
+
+Module "MotorLinks" (component PWM)
+   - MotorLinks_SetRatio16 -This method sets a new duty-cycle ratio. Ratio is expressed as a 16-bit unsigned integer number. 0 
+                - FFFF value is proportional to ratio 0 - 100%. The method is available only if it is not selected list of 
+                predefined values in <Starting pulse width> property.   Note: Calculated duty depends on the timer 
+                possibilities and on the selected period.
+   - MotorLinks_SetDutyUS -This method sets the new duty value of the output signal. The duty is expressed in microseconds as a 
+                16-bit unsigned integer number. The method is available only if it is not selected list of predefined values in 
+                <Starting pulse width> property.
+   - MotorLinks_SetDutyMS -This method sets the new duty value of the output signal. The duty is expressed in milliseconds as a 
+                16-bit unsigned integer number. The method is available only if it is not selected list of predefined values in 
+                <Starting pulse width> property.
 
 Module "Cpu"       (component MKL25Z128LK4)
 

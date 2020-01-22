@@ -5,9 +5,10 @@
 #include "Servo.h"
 #include "PwmLdd1.h"
 #include "TU1.h"
-#include "MotorLinks.h"
 #include "PwmLdd2.h"
 #include "TU2.h"
+#include "MotorLinks.h"
+#include "PwmLdd3.h"
 #include "LinksINT.h"
 #include "ExtIntLdd2.h"
 #include "TU3.h"
@@ -19,15 +20,10 @@
 #include "Send_OK.h"
 #include "LEDpin7.h"
 #include "BitIoLdd7.h"
-#include "MotorLinks_Rev.h"
-#include "PwmLdd4.h"
-#include "MotorRechts_Rev.h"
-#include "PwmLdd6.h"
 #include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "I2C1.h"
 #include "MotorRechts.h"
-#include "PwmLdd3.h"
 #include "EN.h"
 #include "LEDpin1.h"
 #include "BitIoLdd1.h"
@@ -108,7 +104,7 @@ int SerVal = 0;
 extern uint8_t avgcounter;
 uint16_t StartMotor = 50000;
 //PID
-uint16_t P_VAL = 0;
+uint32_t P_VAL = 0;
 
 float Regel = 0;
 float PID_p, PID_d, PID_i = 0;
@@ -156,6 +152,9 @@ uint16_t Winkel_prev_L = 0;
 uint16_t Winkel_prev_R = 0;
 uint16_t Lenkung_Regler = 0;
 uint16_t Programmcounter = 0;
+uint16_t Pulse_counter = 0;
+uint32_t Speed_regulated = 0;
+uint16_t Break_intens = 0;
 double map(double x, double in_min, double in_max, double out_min, double out_max) {
 	double Result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	if(out_max > out_min) {
@@ -170,24 +169,29 @@ double map(double x, double in_min, double in_max, double out_min, double out_ma
 long map_long(long x, long in_min, long in_max, long out_min, long out_max) {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-void counter(bool Stop) //Wenn kein Interrupt mehr nach 30 Ticks ausgelöst wird dann ist die Geschwindigkeit gleich null oder der Speedsensor hat ein Error
-{
-
-}
 uint16_t Regler_P(float Soll, float Ist, int Kp) {
 if(Regler_Active == TRUE)
 {
 	float Speed_diff = Soll - Ist;
 	P_VAL += Speed_diff * Kp;
-	if(P_VAL <1000)
+	if(P_VAL <10000)
 		{
-			P_VAL = 1000;
+			P_VAL = 10000;
 		}
 	if(P_VAL>65300)
 	{
 		P_VAL = 65300;
 	}
+	printf("P_VAL: %d",P_VAL);
 	return P_VAL;
+	}
+}
+void counter()
+{
+	Pulse_counter++;
+	if(Pulse_counter > 1000)
+	{
+		uint32_t Speed_regulated = 0;
 	}
 }
 
@@ -479,10 +483,6 @@ uint16_t Threshold_cal() {
 	//printf("Min: %d\n", MinVal);
 	return Threshold;
 }
-uint16_t Lenkung(uint16_t Winkel_prev, uint16_t Winkel) {
-	uint16_t Winkeldiff;
-	return Winkeldiff = Winkel - Winkel_prev;
-}
 void LineKamera() {
 	uint8_t GetVal;
 	bool Start;
@@ -528,27 +528,37 @@ void Break(uint16_t Rev_Speed, uint16_t Block_Time) {
 			Regler_Active = FALSE;
 			FC321_Enable();
 			FC321_GetTimeMS(&Break_time);
+			MotorRechts_SetRatio16(65300);
+			MotorLinks_SetRatio16(65300);
+			//MotorLinks_RevRatio16(65300);
 			if(Break_time>Block_Time)
 			{
-				printf("Break: %d \n",Break_time);
-				Break_Active = FALSE;
-			    MotorRechts_Rev_SetRatio16(0);
-			    MotorLinks_Rev_SetRatio16(0);
+				//printf("Break: %d \n",Break_time);
+				//MotorRechts_Rev_SetRatio16(1);
+				//MotorLinks_Rev_SetRatio16(1);
 				FC321_Disable();
 				FC321_Reset();
+				Break_period = 0;
+				Break_intens = 0;
 				if(data[1] == 'X'||Start == FALSE)
 				{
 					EN_Off();
 				}
 				Regler_Active = TRUE;
+				Break_Active = FALSE;
 			}
-			MotorRechts_SetRatio16(100);
-			MotorLinks_SetRatio16(100);
-			MotorRechts_Rev_SetRatio16(Rev_Speed);
-			MotorLinks_Rev_SetRatio16(Rev_Speed);
 	}
 }
-int main(void) {
+/*lint -save  -e970 Disable MISRA rule (6.3) checking. */
+int main(void)
+/*lint -restore Enable MISRA rule (6.3) checking. */
+{
+  /* Write your local variable definition here */
+
+  /*** Processor Expert internal initialization. DON'T REMOVE THIS CODE!!! ***/
+  PE_low_level_init();
+  /*** End of Processor Expert internal initialization.                    ***/
+
 	CLK_Init();
 	PE_low_level_init();
 	FC321_Disable();
@@ -557,7 +567,7 @@ int main(void) {
 	//RechtsClock_Enable();
 
 	for (;;) {
-
+		counter();
 		(void) Potis_MeasureChan(TRUE, 0);
 		(void) Potis_GetChanValue16(0, &value);
 		(void) Potis_MeasureChan(TRUE, 1);
@@ -574,6 +584,7 @@ int main(void) {
 			value = StartMotor;
 		}*/
 		//printf("Speed %d\n",Angle);
+
 		uint16_t Maxspeed = value;
 		uint16_t Slow = Maxspeed * 1 / 4;
 		uint16_t Speed = map_long(Angle, 0, 45, Maxspeed, Slow);
@@ -585,25 +596,27 @@ int main(void) {
 		//uint16_t Break_Time_Speed = map_long(Speed, 0, 65535, 50, 25);
         uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,6.0,0,65535);
 
-		uint32_t Speed_regulated = Regler_P(Speed_Ms,velocity_Rechts_avg,Kp_drive);
-		Break(AVG_Rechts_int,Break_period);
-		printf("Regler = %d \n",Speed_regulated);
-
+		Speed_regulated = Regler_P(Speed_Ms,velocity_Rechts_avg,Kp_drive);
+		Speed_regulated = map(Speed_regulated,0,65300,65300,0);
+		//printf("Value = %f\n",Speed_Ms);
+		Break(Break_intens,Break_period);
 			if (data[3] == 'S'&&Break_Active == FALSE) {
-				Kp_drive = 1000;
+				Kp_drive = 200;
+				Break_intens = 0;
 				MotorRechts_SetRatio16(Speed_regulated);
 				MotorLinks_SetRatio16(Speed_regulated);
 			}
-			if (data[3] == 'C') {
+			if (data[3] == 'C'&&Break_Active == FALSE) {
 				Kp_drive = 100;
-				if (velocity_Rechts_avg > Speed_Ms+1)
+				if (velocity_Rechts_avg > Speed_Ms+0.5)
 						{
 						    Kp_drive = 0;
-							Break_period = 50;
+							Break_period = 25;
+							Break_intens = 30000;
 							Break_Active = TRUE;
 						}
 				if (data[0] == 'L'&&Break_Active == FALSE) {
-					if(65300 - Speed_regulated < LR_diff)
+					/*if(65300 - Speed_regulated < LR_diff)
 					{
 						MotorRechts_SetRatio16(65300);
 					}else
@@ -617,14 +630,14 @@ int main(void) {
 					}else
 					{
 						MotorLinks_SetRatio16(Speed_regulated-LR_diff_innen);
-					}
+					}*/
 
-					//MotorRechts_SetRatio16(Speed_regulated+LR_diff);
-					//MotorLinks_SetRatio16(Speed_regulated-LR_diff_innen);
+					MotorRechts_SetRatio16(Speed_regulated);
+					MotorLinks_SetRatio16(Speed_regulated);
 				}
-				if (data[0] == 'R'&&Break_Active == FALSE) {
+				if(data[0] == 'R'&&Break_Active == FALSE) {
 
-					if(65300 - Speed_regulated < LR_diff)
+					/*if(65300 - Speed_regulated < LR_diff)
 					{
 						MotorLinks_SetRatio16(65300);
 					}else
@@ -638,14 +651,15 @@ int main(void) {
 					}else
 					{
 						MotorRechts_SetRatio16(Speed_regulated-LR_diff_innen);
-					}
+					}*/
 
-					//MotorRechts_SetRatio16(Speed_regulated-LR_diff_innen);
-					//MotorLinks_SetRatio16(Speed_regulated+LR_diff);
+					MotorRechts_SetRatio16(Speed_regulated);
+					MotorLinks_SetRatio16(Speed_regulated);
 				}
 			}
-		MotorLinks_Enable();
-		MotorRechts_Enable();
+			printf("Value = %d\n",value);
+			//MotorLinks_Enable();
+			//MotorRechts_Enable();
 
 		if (TasterA_GetVal() == 1 && SW1_GetVal() == 0) {
 			Start = TRUE;
@@ -665,7 +679,9 @@ int main(void) {
 			Kp_drive = 0;
 			Break_Active = TRUE;
 			Break_period = 1000;
+			Break_intens = 40000;
 			LED1_Off();
+			EN_Off();
 		}
 
 		if (data[0] == 'L') {
@@ -710,6 +726,7 @@ int main(void) {
 				//Break_Active = 1;
 				Break_Active = TRUE;
 				Break_period = 1000;
+				Break_intens = 60000;
 				Regler_Active = FALSE;
 				Speed_regulated = 1000;
 				LED1_Off();
@@ -725,6 +742,7 @@ int main(void) {
 		 printf("Zeit = %d ms \n",Programmtime);
 		 RechtsClock_Reset();
 		 RechtsClock_Enable();*/
+
 	}
 
 	/*** Don't write any code pass this line, or it will be deleted during code generation. ***/
