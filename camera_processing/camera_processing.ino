@@ -1,4 +1,4 @@
-#define DEVIATION_FROM_VERTICAL 5 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
+#define DEVIATION_FROM_VERTICAL 3 // threshold, how far from center_x a Line can be to still be during straight driving (not curve)
 
 #define WAIT_TIME_BETWEEN_LINE_DETECTION 0 // ms
 #define I2C_ADDRESS_OF_SLAVE 8
@@ -57,6 +57,9 @@ int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
   //int angle = return_map(distance_from_ideallinie, 0, 38, 0, 45); // works quite good
   int angle = return_map(distance_from_ideallinie, 0, 30, 0, 45);
   if(angle > 45)
+    angle = 45;
+
+  if(pixy.line.numVectors == 1 && angle > 22)
     angle = 45;
 
   return angle;
@@ -308,12 +311,18 @@ void loop()
 
   if(real_lines.size() == 1) {
     Line l = real_lines[0];
+    int start_point_of_line_x = 0;
+    int start_point_of_line_y = 0;
     int end_point_of_line_x = 0;
     int end_point_of_line_y = 0;
     if(l.get_y1() <= l.get_y0()) { // hope for the best if line is horizontal
+      start_point_of_line_x = l.get_x0();
+      start_point_of_line_y = l.get_y0();
       end_point_of_line_x = l.get_x1();
       end_point_of_line_y = l.get_y1();
     } else /*if(l.get_y1() > l.get_y0())*/ {
+      start_point_of_line_x = l.get_x1();
+      start_point_of_line_y = l.get_y1();
       end_point_of_line_x = l.get_x0();
       end_point_of_line_y = l.get_y0();
     }
@@ -330,16 +339,26 @@ void loop()
     else { // line is not straight
       currently_in_curve = true;
       if(l.get_y1() <= l.get_y0()) { // normalfall, (x1, y1) ist endpunkt
-        if(l.get_x1() < l.get_x0()) // line steigs to the left
-          goal_x = end_point_of_line_x - offset_depending_on_y_position(end_point_of_line_y);
-        else // line steigs to the right
-          goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
+        if(l.get_x1() < l.get_x0()) { // line steigs to the left
+          if(start_point_of_line_x >= pixy.frameWidth / 2)
+            goal_x = end_point_of_line_x - offset_depending_on_y_position(end_point_of_line_y);
+          else
+            goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
+        }
+        else { // line steigs to the right
+          if(start_point_of_line_x > pixy.frameWidth / 2)
+            goal_x = end_point_of_line_x - offset_depending_on_y_position(end_point_of_line_y);
+          else
+            goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
+        }
       } 
       else { // line inverted, switch the steigungsvergleich around
-        if(l.get_x0() < l.get_x1()) // line steigs to the left
+        if(l.get_x0() < l.get_x1()) {// line steigs to the left
           goal_x = end_point_of_line_x - offset_depending_on_y_position(end_point_of_line_y);
-        else // line steigs to the right
+        }
+        else { // line steigs to the right
           goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
+        }
       }
     }
 
