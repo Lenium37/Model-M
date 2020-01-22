@@ -29,10 +29,18 @@ int steer_angles_interpolation_counter = 0;
 float voltage_of_battery = 10;
 int batter_low_counter = 0;
 int last_steer_angle = 0;
+int second_last_steer_angle = 0;
 
 void debug(String s) {
   Serial1.println(s);
   // if changing Serial number don't forget to change it in setup() as well!
+}
+
+int return_min(int i1, int i2) {
+  if(i1 <= i2)
+    return i1;
+  else
+    return i2;  
 }
 
 void write_i2c(String s) {
@@ -357,6 +365,12 @@ void loop()
 
     }*/
 
+    // if steer direction changes, make the change not so hard
+    if(second_last_steer_angle > 4 && last_steer_angle > 4 && steer_angle < 0)
+      steer_angle = steer_angle / 2;
+    else if(second_last_steer_angle < -4 && last_steer_angle < -4 && steer_angle > 0)
+      steer_angle = steer_angle / 2;
+
 
     if(goal_x <= 39) { // steer left
       steer_angles_interpolation[steer_angles_interpolation_counter] = -steer_angle;
@@ -370,6 +384,9 @@ void loop()
       steer_interpolated();
       steer_angles_interpolation_counter = 0;
     }
+
+    second_last_steer_angle = last_steer_angle;
+    last_steer_angle = steer_angle;
 
     delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
     
