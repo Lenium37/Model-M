@@ -24,12 +24,78 @@ std::vector<Line> real_lines;
 bool currently_in_curve = false;
 int counter_no_line_detected = 0;
 bool stopped = false;
+std::vector<int> steer_angles;
+String interpolated_angle_string;
 int steer_angles_interpolation[2];
 int steer_angles_interpolation_counter = 0;
 float voltage_of_battery = 10;
 int batter_low_counter = 0;
 int last_steer_angle = 0;
 int second_last_steer_angle = 0;
+
+void prepare_interpolated_string() {
+  int interpolated_angle = 0;
+  debug("number of angles: " + String(steer_angles.size()));
+  for(int i = 0; i < steer_angles.size(); i++) {
+    interpolated_angle += steer_angles[i];
+    debug(String(steer_angles[i]));
+  }
+    debug(String(interpolated_angle));
+  if(steer_angles.size() > 0) {
+    int divisor = steer_angles.size();
+    debug(String(divisor));
+    interpolated_angle = interpolated_angle / divisor;
+    debug(String(interpolated_angle));
+
+    if(interpolated_angle == 0) {
+      if(currently_in_curve)
+        interpolated_angle_string = "S00C";
+      else
+        interpolated_angle_string = "S00S";
+    } else if(interpolated_angle > 0) {
+      if(interpolated_angle > 45)
+        interpolated_angle = 45;
+      if(interpolated_angle < 10) {
+        if(currently_in_curve)
+          interpolated_angle_string = "R0"+String(interpolated_angle)+"C";
+        else
+          interpolated_angle_string = "R0"+String(interpolated_angle)+"S";
+      }
+      else {
+        if(currently_in_curve)
+          interpolated_angle_string = "R"+String(interpolated_angle)+"C";
+        else
+          interpolated_angle_string = "R"+String(interpolated_angle)+"S";
+      }
+    } else if(interpolated_angle < 0) {
+      if(interpolated_angle < -45)
+        interpolated_angle = -45;
+      if(abs(interpolated_angle) < 10) {
+        if(currently_in_curve)
+          interpolated_angle_string = "L0"+String(abs(interpolated_angle))+"C";
+        else
+          interpolated_angle_string = "L0"+String(abs(interpolated_angle))+"S";
+      }
+      else {
+        if(currently_in_curve)
+          interpolated_angle_string = "L"+String(abs(interpolated_angle))+"C";
+        else
+          interpolated_angle_string = "L"+String(abs(interpolated_angle))+"S";
+      }
+    }
+    if(steer_angles.size() > 10)
+      steer_angles.clear();
+  }
+
+  
+  debug(interpolated_angle_string);
+
+}
+
+void send_interpolated_string() {
+  write_i2c(interpolated_angle_string);
+  steer_angles.clear();
+}
 
 void debug(String s) {
   Serial1.println(s);
@@ -230,7 +296,8 @@ void setup()
   //Wire.begin(8);                // join i2c bus with address #8
   //Wire.onReceive(receiveEvent); // register event
 
-  pinMode(I2C_READY_PIN, INPUT);
+  //pinMode(I2C_READY_PIN, INPUT);
+  attachInterrupt(I2C_READY_PIN, send_interpolated_string, RISING);
   pinMode(PIN_BATTERY_VOLTAGE, INPUT);
   
   pinMode(PIN_LED_1, OUTPUT);
@@ -316,11 +383,13 @@ void loop()
     int end_point_of_line_x = 0;
     int end_point_of_line_y = 0;
     if(l.get_y1() <= l.get_y0()) { // hope for the best if line is horizontal
+      debug("normal case, line points up");
       start_point_of_line_x = l.get_x0();
       start_point_of_line_y = l.get_y0();
       end_point_of_line_x = l.get_x1();
       end_point_of_line_y = l.get_y1();
     } else /*if(l.get_y1() > l.get_y0())*/ {
+      debug("line points down");
       start_point_of_line_x = l.get_x1();
       start_point_of_line_y = l.get_y1();
       end_point_of_line_x = l.get_x0();
@@ -370,15 +439,15 @@ void loop()
     int distance_from_ideallinie = abs(goal_x - (pixy.frameWidth / 2)); // min: 0, max: ~77
     int steer_angle = calculate_pull_towards_ideallinie_in_degrees(distance_from_ideallinie);
 
-    debug("goal_x: " + String(goal_x));
-    debug("end_point_of_line_x: " + String(end_point_of_line_x));
+    //debug("goal_x: " + String(goal_x));
+    //debug("end_point_of_line_x: " + String(end_point_of_line_x));
     //debug("distance from ideallinie: " + String(distance_from_ideallinie));
-    debug("steer_angle: " + String(steer_angle));
-    if(goal_x <= 39)
+    //debug("steer_angle: " + String(steer_angle));
+    /*if(goal_x <= 39)
       debug("steer direction: LEFT");
     else
-      debug("steer direction: RIGHT");
-    debug("");
+      debug("steer direction: RIGHT");*/
+    //debug("");
 
     /*if(steer_angle <= 5 && last_steer_angle >= ) {
 
@@ -392,17 +461,21 @@ void loop()
 
 
     if(goal_x <= 39) { // steer left
-      steer_angles_interpolation[steer_angles_interpolation_counter] = -steer_angle;
+      //steer_angles_interpolation[steer_angles_interpolation_counter] = -steer_angle;
+      steer_angles.push_back(steer_angle * -1);
     }
     else { // steer right
-      steer_angles_interpolation[steer_angles_interpolation_counter] = steer_angle;
+      //steer_angles_interpolation[steer_angles_interpolation_counter] = steer_angle;
+      steer_angles.push_back(steer_angle);
     }
 
-    steer_angles_interpolation_counter++;
+    prepare_interpolated_string();
+
+    /*steer_angles_interpolation_counter++;
     if(steer_angles_interpolation_counter > 2) {
       steer_interpolated();
       steer_angles_interpolation_counter = 0;
-    }
+    }*/
 
     second_last_steer_angle = last_steer_angle;
     last_steer_angle = steer_angle;
