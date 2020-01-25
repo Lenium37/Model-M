@@ -41,10 +41,8 @@
 #include "IO_Map.h"
 #include "Servo.h"
 #include "PwmLdd1.h"
-#include "MotorLinks.h"
 #include "PwmLdd2.h"
 #include "MotorRechts.h"
-#include "PwmLdd3.h"
 #include "EN.h"
 #include "LEDpin1.h"
 #include "BitIoLdd1.h"
@@ -83,18 +81,19 @@
 #include "IO1.h"
 #include "TU1.h"
 #include "TU2.h"
+#include "MotorLinks.h"
+#include "PwmLdd3.h"
 #include "LinksINT.h"
 #include "ExtIntLdd2.h"
 #include "TU3.h"
+#include "FC321.h"
+#include "RealTimeLdd1.h"
+#include "TU4.h"
 #include "SI.h"
 #include "BitIoLdd8.h"
 #include "Send_OK.h"
 #include "LEDpin7.h"
 #include "BitIoLdd7.h"
-#include "MotorLinks_Rev.h"
-#include "PwmLdd4.h"
-#include "MotorRechts_Rev.h"
-#include "PwmLdd6.h"
 #include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "I2C1.h"
@@ -310,6 +309,24 @@ void LinksINT_OnInterrupt(void);
 */
 /* ===================================================================*/
 void TU3_OnCounterRestart(LDD_TUserData *UserDataPtr);
+
+/*
+** ===================================================================
+**     Event       :  MotorRechts_OnEnd (module Events)
+**
+**     Component   :  MotorRechts [PWM]
+**     Description :
+**         This event is called when the specified number of cycles has
+**         been generated. (Only when the component is enabled -
+**         <Enable> and the events are enabled - <EnableEvent>). The
+**         event is available only when the <Interrupt service/event>
+**         property is enabled and selected peripheral supports
+**         appropriate interrupt.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void MotorRechts_OnEnd(void);
 
 /* END Events */
 

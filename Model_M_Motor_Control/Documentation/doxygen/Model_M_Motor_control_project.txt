@@ -24,9 +24,6 @@
 \page page_components Components 
 - \subpage TU1
 - \subpage PwmLdd1
-- \subpage TU2
-- \subpage PwmLdd2
-- \subpage PwmLdd3
 - \subpage BitIoLdd1
 - \subpage AdcLdd1
 - \subpage BitsIoLdd1
@@ -45,10 +42,13 @@
 - \subpage IO1
 - \subpage BitIoLdd8
 - \subpage BitIoLdd7
-- \subpage PwmLdd4
-- \subpage PwmLdd6
 - \subpage ExtIntLdd2
 - \subpage TU3
+- \subpage TU4
+- \subpage RealTimeLdd1
+- \subpage TU2
+- \subpage PwmLdd2
+- \subpage PwmLdd3
 
 */
 

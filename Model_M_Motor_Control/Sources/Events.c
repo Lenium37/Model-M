@@ -40,15 +40,12 @@ float Rechts_time = 0;
 float velocity_Rechts_avg = 0.0;
 volatile uint16_t Speed_time_Links = 0;
 uint16_t Speed_time_Rechts = 0;
-double Speed = 0.0;
-double Tick_Time = 0.0;
-extern bool PID_Active;
-extern int counter();
-/* User includes (#include below this line is not maintained by Processor Expert) */
-//I2C
+
 extern bool flags_rev;
 extern bool errFlags_rev;
 extern bool flags_send;
+
+extern uint16_t Pulse_counter;
 
 extern bool Serial;
 bool Start_up_Rechts = TRUE;
@@ -87,6 +84,7 @@ void Cpu_OnNMIINT(void) {
  */
 void RechtsINT_OnInterrupt(void)
 {
+			Pulse_counter = 0;
 			Speed_time_Rechts = TU3_GetCounterValue(TU3_Pointer);
 			TU3_CounterValue = Speed_time_Rechts+(Counter_OVF*65535);
 			Rechts_time = 0.000002*TU3_CounterValue;
@@ -308,6 +306,24 @@ void TU3_OnCounterRestart(LDD_TUserData *UserDataPtr)
 {
    Counter_OVF++;
 }
+
+/*
+** ===================================================================
+**     Event       :  MotorRechts_OnEnd (module Events)
+**
+**     Component   :  MotorRechts [PWM]
+**     Description :
+**         This event is called when the specified number of cycles has
+**         been generated. (Only when the component is enabled -
+**         <Enable> and the events are enabled - <EnableEvent>). The
+**         event is available only when the <Interrupt service/event>
+**         property is enabled and selected peripheral supports
+**         appropriate interrupt.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+
 
 /* END Events */
 
