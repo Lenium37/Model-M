@@ -52,3 +52,4 @@ Mkfile.old
 dkms.conf
 
 Model_M_Motor_Control/Debug/*
+Model_M_Motor_Control/.settings/*
