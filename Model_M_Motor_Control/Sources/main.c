@@ -65,6 +65,7 @@
 #include "PE_Error.h"
 #include "PE_Const.h"
 #include "IO_Map.h"
+#include <stdlib.h>
 /* User includes (#include below this line is not maintained by Processor Expert) */
 uint16_t value;
 uint16_t value2;
@@ -130,6 +131,9 @@ uint16_t Start_Counter = 16000;
 uint16_t Mitte = 60750;
 uint16_t Links = 61650;
 uint16_t Rechts = 59860;
+uint16_t Angle_reg = 60750;
+uint32_t P_VAL_Lenkung = 60750;
+uint16_t servo_value_regulated = 60750;
 float velocity_Links = 0.0;
 float velocity_Rechts = 0.0;
 float velocity_Rechts_avg;
@@ -170,6 +174,7 @@ double map(double x, double in_min, double in_max, double out_min, double out_ma
 long map_long(long x, long in_min, long in_max, long out_min, long out_max) {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+
 uint16_t Regler_P(float Soll, float Ist, int Kp) {
 if(Regler_Active == TRUE)
 {
@@ -186,8 +191,9 @@ if(Regler_Active == TRUE)
 	{
 		P_VAL = 65300;
 	}
+	Kp = Kp / 10;
 	P_VAL += Speed_diff * Kp;
-	printf("P_VAL: %d\n",P_VAL);
+	//printf("P_VAL: %d\n",P_VAL);
 	//printf("P_VAL: %d\n",Kp);
 	return P_VAL;
 	}
@@ -304,6 +310,7 @@ void Send(char Data, uint8_t Block_send) {
 	}
 }
 void Rec() {
+	printf("receiving\n");
 	flags_rev = FALSE; /* Clear flags */
 	errFlags_rev = FALSE;
 	int count = 0;
@@ -335,8 +342,8 @@ void Rec() {
 		Angle = prev_angle;
 	}
 	SerVal = map_long(Angle, 0, 450, 0, 819); //819 //3277 //max 62258 min 58981; 819 sind 45° , mitte 60619
-	printf("  Data: %c%c%c%c\n",data[0],data[1],data[2],data[3],data[4]);
-	printf("Angle: %d, %d\n", Angle,SerVal);
+	//printf("  Data: %c%c%c%c\n",data[0],data[1],data[2],data[3],data[4]);
+	//printf("Angle: %d, %d\n", Angle,SerVal);
 	//if(data[1] == 'L'||data[1]=='R'||data[1]=='S'||data[2] == 'L'||data[2]=='R'||data[2]=='S')
 	//{
 	I2C1_ClearRxBuf();
@@ -575,14 +582,15 @@ int main(void)
 	FC321_Reset();
 	uint16_t Kp_drive = 175;
 	//RechtsClock_Enable();
-
+	servo_value_regulated = Mitte;
 	for (;;) {
 		counter();
 		(void) Potis_MeasureChan(TRUE, 0);
 		(void) Potis_GetChanValue16(0, &value);
 		(void) Potis_MeasureChan(TRUE, 1);
 		(void) Potis_GetChanValue16(1, &value2);
-		Rec();
+		if(Programmcounter % 15 == 0) // nur jedes 10. Mal receiven
+			Rec();
 		//LineKamera();
 		if (Serial == TRUE) {
 			printf("IST_Rechts = %0.2f,IST_Links = %0.2f Soll_Speed = %d m/s\n",
@@ -596,7 +604,7 @@ int main(void)
 		//printf("Speed %d\n",Angle);
 
 		uint16_t Maxspeed = value;
-		uint16_t Slow = Maxspeed * 1 / 3;
+		uint16_t Slow = Maxspeed * 3 / 4;
 		uint16_t Speed = map_long(Angle, 0, 450, Maxspeed, Slow);
 		//printf("Speed %d\n",Speed);
 		double Speed_Ms = map(Speed,0,65535,0.0,5.0);
@@ -610,7 +618,7 @@ int main(void)
        // printf("Speed = %f",velocity_Rechts_avg);
 		Speed_regulated = Regler_P(Speed_Ms,velocity_Rechts_avg,Kp_drive);
 		Speed_regulated = map(Speed_regulated,0,65300,65300,0);
-		printf("Value = %0.2f\n",velocity_Rechts_avg);
+		//printf("Value = %0.2f\n",velocity_Rechts_avg);
 		Break(Break_intens,Break_period);
 			/*if (data[3] == 'S'&&Break_Active == FALSE) {
 				Kp_drive = 200;
@@ -701,18 +709,31 @@ int main(void)
 			EN_Off();
 		}
 
+		uint16_t servo_value = Mitte;
+
 		if (data[0] == 'L') {
-			int diff2 = map_long(SerVal, 0, 819, Mitte, Links); //max 62258 min 58981; 819 sind 45° , mitte 60619
-			Servo_SetRatio16(diff2);
-			Servo_Enable();
+			servo_value = map_long(SerVal, 0, 819, Mitte, Links); //max 62258 min 58981; 819 sind 45° , mitte 60619
 			//Winkel_prev_L = diff2;
 		}
-		if (data[0] == 'R') {
-			int diff = map_long(SerVal, 0, 819, Mitte, Rechts);
-			Servo_SetRatio16(diff);
-			Servo_Enable();
+		else if (data[0] == 'R') {
+			servo_value = map_long(SerVal, 0, 819, Mitte, Rechts);
 			//Winkel_prev_R = diff;
 		}
+
+		if(abs(servo_value - servo_value_regulated) > 50) {
+			printf("servo_value too large, taking only a step\n");
+			if(servo_value > servo_value_regulated)
+				servo_value_regulated += 50;
+			else
+				servo_value_regulated -= 50;
+		} else {
+			printf("jumping exactly to servo_value\n");
+			servo_value_regulated = servo_value;
+		}
+
+		Servo_SetRatio16(servo_value_regulated);
+		Servo_Enable();
+
 		if (data[0] == 'S') {
 			Servo_SetRatio16(Mitte); //3276 //62306 1639
 		}
@@ -726,6 +747,8 @@ int main(void)
 				SerVal = map_long(value2, 0, 65535, 62258, 59800);
 				Servo_SetRatio16(SerVal);
 				Mitte = SerVal;
+				Angle_reg = Mitte;
+				P_VAL_Lenkung = Mitte;
 				Links = Mitte + 819;
 				Rechts = Mitte - 819;
 			}
@@ -751,11 +774,11 @@ int main(void)
 			}
 			Programmcounter = 0;
 		}
-		data[0] = '0';
-		data[1] = '0';
-		data[2] = '0';
-		data[3] = '0';
-		data[4] = '0';
+		//data[0] = '0';
+		//data[1] = '0';
+		//data[2] = '0';
+		//data[3] = '0';
+		//data[4] = '0';
 		/*RechtsClock_GetTimeMS(&Programmtime);
 		 printf("Zeit = %d ms \n",Programmtime);
 		 RechtsClock_Reset();
