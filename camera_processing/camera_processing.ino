@@ -34,6 +34,8 @@ int batter_low_counter = 0;
 int last_steer_angle = 0;
 int second_last_steer_angle = 0;
 String current_angle_string;
+String last_steering_direction = "straight";
+bool blocked_last_steering = false;
 
 void debug(String s) {
   Serial1.println(s);
@@ -573,10 +575,20 @@ void loop()
   }
 
   //debug(current_angle_string);
-  write_i2c(current_angle_string);
+  if((current_angle_string.charAt(0) == "L" && last_steering_direction == "left") || (current_angle_string.charAt(0) == "R" && last_steering_direction == "right") || current_angle_string.charAt(0) == "S" || last_steering_direction == "straight") {
+    write_i2c(current_angle_string);
+    second_last_steer_angle = last_steer_angle;
+    last_steer_angle = steer_angle;
+  }
+  else
+    debug("blocked sudden change of steering direction");
 
-  second_last_steer_angle = last_steer_angle;
-  last_steer_angle = steer_angle;
+  if(current_angle_string.charAt(0) == "L")
+      last_steering_direction = "left";
+  else if(current_angle_string.charAt(0) == "R")
+      last_steering_direction = "right";
+  else// if(current_angle_string.charAt(0) == "S")
+    last_steering_direction = "straight";
 
 
 
