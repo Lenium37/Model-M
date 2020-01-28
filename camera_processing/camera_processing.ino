@@ -34,72 +34,6 @@ int last_steer_angle = 0;
 int second_last_steer_angle = 0;
 String current_angle_string;
 
-void prepare_interpolated_string() {
-  int interpolated_angle = 0;
-  debug("number of angles: " + String(steer_angles.size()));
-  for(int i = 0; i < steer_angles.size(); i++) {
-    interpolated_angle += steer_angles[i];
-    debug(String(steer_angles[i]));
-  }
-    debug(String(interpolated_angle));
-  if(steer_angles.size() > 0) {
-    int divisor = steer_angles.size();
-    debug(String(divisor));
-    interpolated_angle = interpolated_angle / divisor;
-    debug(String(interpolated_angle));
-
-    if(interpolated_angle == 0) {
-      if(currently_in_curve)
-        interpolated_angle_string = "S00C";
-      else
-        interpolated_angle_string = "S00S";
-    } else if(interpolated_angle > 0) {
-      if(interpolated_angle > 45)
-        interpolated_angle = 45;
-      if(interpolated_angle < 10) {
-        if(currently_in_curve)
-          interpolated_angle_string = "R0"+String(interpolated_angle)+"C";
-        else
-          interpolated_angle_string = "R0"+String(interpolated_angle)+"S";
-      }
-      else {
-        if(currently_in_curve)
-          interpolated_angle_string = "R"+String(interpolated_angle)+"C";
-        else
-          interpolated_angle_string = "R"+String(interpolated_angle)+"S";
-      }
-    } else if(interpolated_angle < 0) {
-      if(interpolated_angle < -45)
-        interpolated_angle = -45;
-      if(abs(interpolated_angle) < 10) {
-        if(currently_in_curve)
-          interpolated_angle_string = "L0"+String(abs(interpolated_angle))+"C";
-        else
-          interpolated_angle_string = "L0"+String(abs(interpolated_angle))+"S";
-      }
-      else {
-        if(currently_in_curve)
-          interpolated_angle_string = "L"+String(abs(interpolated_angle))+"C";
-        else
-          interpolated_angle_string = "L"+String(abs(interpolated_angle))+"S";
-      }
-    }
-    if(steer_angles.size() > 10)
-      steer_angles.clear();
-  }
-
-  
-  debug(interpolated_angle_string);
-
-}
-
-void send_interpolated_string() {
-  //write_i2c(interpolated_angle_string);
-  
-  write_i2c(current_angle_string);
-  steer_angles.clear();
-}
-
 void debug(String s) {
   Serial1.println(s);
   // if changing Serial number don't forget to change it in setup() as well!
@@ -113,7 +47,7 @@ int return_min(int i1, int i2) {
 }
 
 void write_i2c(String s) {
-  //debug(s);
+  debug(s);
   char buffer[4];
   s.toCharArray(buffer, 4);
   while(digitalRead(I2C_READY_PIN) == LOW);
@@ -246,11 +180,12 @@ void merge_vectors() {
 }
 
 int length_of_line(int x0, int y0, int x1, int y1) {
-  return (x0 + y0 + x1 + y1);
+  return sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+  //return (x0 + y0 + x1 + y1);
 }
 
-void add_longest_line_to_real_lines() {
-  int length_of_longest_line = 0;
+void add_longest_lines_to_real_lines() {
+  /*int length_of_longest_line = 0;
   int index_of_longest_line = 0;
   for(int i = 0; i < pixy.line.numVectors; i++) {
     Vector v1 = pixy.line.vectors[i];
@@ -261,14 +196,22 @@ void add_longest_line_to_real_lines() {
   }
   Vector longest_vector = pixy.line.vectors[index_of_longest_line];
   Line longest_line(longest_vector.m_x0, longest_vector.m_y0, longest_vector.m_x1, longest_vector.m_y1, longest_vector.m_index);
-  real_lines.push_back(longest_line);
+  real_lines.push_back(longest_line);*/
+
+  for(int i = 0; i < pixy.line.numVectors; i++) {
+    Vector v1 = pixy.line.vectors[i];
+    if(length_of_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1) > 15) {
+      Line long_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1, v1.m_index);
+      real_lines.push_back(long_line);
+    }
+  }
 }
 
 void preprocess_vectors() {
   real_lines.clear();
   //merge_vectors();
-  if(pixy.line.numVectors > 0)
-    add_longest_line_to_real_lines();
+  if(pixy.line.numVectors > 1)
+    add_longest_lines_to_real_lines();
   
 }
 
@@ -318,7 +261,9 @@ void loop()
 {
   Line line1;
   Line line2;
+  debug(String(millis()));
   pixy.line.getAllFeatures();
+  debug(String(millis()));
 
   voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
   debug(String(voltage_of_battery));
@@ -379,8 +324,16 @@ void loop()
 
   debug("real_lines.size(): " + String(real_lines.size()));
 
+    int goal_x = 0;
+  if(real_lines.size() > 1) {
+    Line l1 = real_lines[0];
+    Line l2 = real_lines[1];
 
-  if(real_lines.size() == 1) {
+    int goal_x = (l1.get_x1() + l2.get_x1()) / 2;
+    debug("goal x 2 lines: " + String(goal_x));
+
+  }
+  else if(real_lines.size() == 1) {
     Line l = real_lines[0];
     int start_point_of_line_x = 0;
     int start_point_of_line_y = 0;
@@ -400,7 +353,6 @@ void loop()
       end_point_of_line_y = l.get_y0();
     }
     
-    int goal_x = 0;
 
     if(abs(l.get_x1() - l.get_x0()) <= DEVIATION_FROM_VERTICAL) { // line is straight
       currently_in_curve = false;
@@ -433,87 +385,81 @@ void loop()
           goal_x = end_point_of_line_x + offset_depending_on_y_position(end_point_of_line_y);
         }
       }
-    }
-
-    // goal_x max: 116 (78 + 38)
-    // goal_x realistic max: 106 (78 + 28)
-    // goal_x min: -38 (0 - 38)
-    // goal_x realisitc min: -33 (0 - 33 (geschaetzt bei y irgendwo in der Mitte))
-
-    int distance_from_ideallinie = abs(goal_x - (pixy.frameWidth / 2)); // min: 0, max: ~77
-    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(distance_from_ideallinie);
-
-    //debug("goal_x: " + String(goal_x));
-    //debug("end_point_of_line_x: " + String(end_point_of_line_x));
-    //debug("distance from ideallinie: " + String(distance_from_ideallinie));
-    //debug("steer_angle: " + String(steer_angle));
-    /*if(goal_x <= 39)
-      debug("steer direction: LEFT");
-    else
-      debug("steer direction: RIGHT");*/
-    //debug("");
-
-    /*if(steer_angle <= 5 && last_steer_angle >= ) {
-
-    }*/
-
-    // if steer direction changes, make the change not so hard
-    if(second_last_steer_angle > 4 && last_steer_angle > 4 && steer_angle < 0)
-      steer_angle = steer_angle / 2;
-    else if(second_last_steer_angle < -4 && last_steer_angle < -4 && steer_angle > 0)
-      steer_angle = steer_angle / 2;
-
-    if(!currently_in_curve)
-      steer_angle = steer_angle / 2;
-
-    if(goal_x <= 39) { // steer left
-      //steer_angles_interpolation[steer_angles_interpolation_counter] = -steer_angle;
-      //steer_angles.push_back(steer_angle * -1);
-      //current_angle_string = "L"steer_angle;
-      if(steer_angle < 10) {
-        if(currently_in_curve)
-          current_angle_string = "L0"+String(steer_angle)+"C";
-        else
-          current_angle_string = "L0"+String(steer_angle)+"S";
-      } else {
-        if(currently_in_curve)
-          current_angle_string = "L"+String(steer_angle)+"C";
-        else
-          current_angle_string = "L"+String(steer_angle)+"S";
-      }
-    }
-    else { // steer right
-      //steer_angles_interpolation[steer_angles_interpolation_counter] = steer_angle;
-      //steer_angles.push_back(steer_angle);
-      //current_angle_string = steer_angle;
-      
-      if(steer_angle < 10) {
-        if(currently_in_curve)
-          current_angle_string = "R0"+String(steer_angle)+"C";
-        else
-          current_angle_string = "R0"+String(steer_angle)+"S";
-      } else {
-        if(currently_in_curve)
-          current_angle_string = "R"+String(steer_angle)+"C";
-        else
-          current_angle_string = "R"+String(steer_angle)+"S";
-      }
-    }
-  send_interpolated_string();
-    //prepare_interpolated_string();
-
-    /*steer_angles_interpolation_counter++;
-    if(steer_angles_interpolation_counter > 2) {
-      steer_interpolated();
-      steer_angles_interpolation_counter = 0;
-    }*/
-
-    second_last_steer_angle = last_steer_angle;
-    last_steer_angle = steer_angle;
-
-    delay(WAIT_TIME_BETWEEN_LINE_DETECTION);
-    
+    } 
   }
-   
-  
+
+  // goal_x max: 116 (78 + 38)
+  // goal_x realistic max: 106 (78 + 28)
+  // goal_x min: -38 (0 - 38)
+  // goal_x realisitc min: -33 (0 - 33 (geschaetzt bei y irgendwo in der Mitte))
+
+  int distance_from_ideallinie = abs(goal_x - (pixy.frameWidth / 2)); // min: 0, max: ~77
+  int steer_angle = calculate_pull_towards_ideallinie_in_degrees(distance_from_ideallinie);
+  if(real_lines.size() > 1) {
+    steer_angle = steer_angle / 2;
+    if(steer_angle > 5)
+      steer_angle = 5;
+  } else if(real_lines.size() == 1) {
+    if(steer_angle >= 25)
+      steer_angle = 45;
+  }
+
+  //debug("goal_x: " + String(goal_x));
+  //debug("end_point_of_line_x: " + String(end_point_of_line_x));
+  //debug("distance from ideallinie: " + String(distance_from_ideallinie));
+  //debug("steer_angle: " + String(steer_angle));
+  /*if(goal_x <= 39)
+    debug("steer direction: LEFT");
+  else
+    debug("steer direction: RIGHT");*/
+  //debug("");
+
+  /*if(steer_angle <= 5 && last_steer_angle >= ) {
+
+  }*/
+
+  // if steer direction changes, make the change not so hard
+  if(second_last_steer_angle > 4 && last_steer_angle > 4 && steer_angle < 0)
+    steer_angle = steer_angle / 2;
+  else if(second_last_steer_angle < -4 && last_steer_angle < -4 && steer_angle > 0)
+    steer_angle = steer_angle / 2;
+
+  if(!currently_in_curve)
+    steer_angle = steer_angle / 2;
+
+  if(goal_x <= 39) { // steer left
+    if(steer_angle < 10) {
+      if(currently_in_curve)
+        current_angle_string = "L0"+String(steer_angle)+"C";
+      else
+        current_angle_string = "L0"+String(steer_angle)+"S";
+    } else {
+      if(currently_in_curve)
+        current_angle_string = "L"+String(steer_angle)+"C";
+      else
+        current_angle_string = "L"+String(steer_angle)+"S";
+    }
+  }
+  else { // steer right      
+    if(steer_angle < 10) {
+      if(currently_in_curve)
+        current_angle_string = "R0"+String(steer_angle)+"C";
+      else
+        current_angle_string = "R0"+String(steer_angle)+"S";
+    } else {
+      if(currently_in_curve)
+        current_angle_string = "R"+String(steer_angle)+"C";
+      else
+        current_angle_string = "R"+String(steer_angle)+"S";
+    }
+  }
+
+  debug(current_angle_string);
+  write_i2c(current_angle_string);
+
+  second_last_steer_angle = last_steer_angle;
+  last_steer_angle = steer_angle;
+
+
+
 }
