@@ -55,7 +55,7 @@ all: Test.elf secondary-outputs
 Test.elf: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross ARM C++ Linker'
-	arm-none-eabi-g++ -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -T "/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Project_Settings/Linker_Files/ProcessorExpert.ld" -Xlinker --gc-sections -L"/Users/moritzklerkx/Documents/NXP_Cup_Git/Model-M/Model_M_Motor_Control/Project_Settings/Linker_Files" -Wl,-Map,"Test.map" -u _printf_float -u _scanf_float -specs=nano.specs -specs=nosys.specs -o "Test.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-none-eabi-g++ -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -T "C:/Users/Johannes/Desktop/Uni/1_Autonomes_Auto/Model-M/Model_M_Motor_Control/Project_Settings/Linker_Files/ProcessorExpert.ld" -Xlinker --gc-sections -L"C:/Users/Johannes/Desktop/Uni/1_Autonomes_Auto/Model-M/Model_M_Motor_Control/Project_Settings/Linker_Files" -Wl,-Map,"Test.map" -u _printf_float -u _scanf_float -specs=nano.specs -specs=nosys.specs -o "Test.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

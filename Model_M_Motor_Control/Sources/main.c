@@ -91,9 +91,9 @@ bool flags_rev;
 bool errFlags_rev;
 bool flags_send;
 byte err_rev;
-byte data[4];
+byte data[5];
 word ret_rev;
-uint8_t Angle = 0;
+uint16_t Angle = 0;
 #define SLAVE 0x09
 
 //Allgemeine Variablen
@@ -243,9 +243,9 @@ uint8_t char_int(char Zeichen) {
 	}
 	return Wert;
 }
-int Cal_Angle(uint8_t Ten, uint8_t Zero) {
+int Cal_Angle(uint8_t Hundred, uint8_t Ten, uint8_t Zero) {
 
-	return Ten * 10 + Zero;
+	return Hundred * 100 + Ten * 10 + Zero;
 }
 void Send(char Data, uint8_t Block_send) {
 	byte err_send;
@@ -324,18 +324,19 @@ void Rec() {
 	/* Receive bytes in slave mode (read the input buffer) */
 	err_rev = I2C1_RecvBlock(&data, 8, &ret_rev);
 	err_rev = 100;
-	uint8_t Ten = char_int(data[1]);
-	uint8_t Zero = char_int(data[2]);
+	uint8_t Hundred = char_int(data[1]);
+	uint8_t Ten = char_int(data[2]);
+	uint8_t Zero = char_int(data[3]);
 	prev_angle = Angle;
-	if (data[0] != 'X' || data[1] != 'X' || data[2] != 'X' || data[3] != 'X') {
-		Angle = Cal_Angle(Ten, Zero);
+	if (data[0] != 'X' || data[1] != 'X' || data[2] != 'X' || data[3] != 'X' || data[4] != 'X') {
+		Angle = Cal_Angle(Hundred, Ten, Zero);
 	}
-	if (data[0] == 'X' || data[1] == 'X' || data[2] == 'X' || data[3] == 'X') {
+	if (data[0] == 'X' || data[1] == 'X' || data[2] == 'X' || data[3] == 'X' || data[4] == 'X') {
 		Angle = prev_angle;
 	}
-	SerVal = map_long(Angle, 0, 45, 0, 819); //819 //3277 //max 62258 min 58981; 819 sind 45° , mitte 60619
-	printf("  Data: %c%c%c\n",data[0],data[1],data[2],data[3]);
-	//printf("Angle: %d, %d\n", Angle,SerVal);
+	SerVal = map_long(Angle, 0, 450, 0, 819); //819 //3277 //max 62258 min 58981; 819 sind 45° , mitte 60619
+	printf("  Data: %c%c%c%c\n",data[0],data[1],data[2],data[3],data[4]);
+	printf("Angle: %d, %d\n", Angle,SerVal);
 	//if(data[1] == 'L'||data[1]=='R'||data[1]=='S'||data[2] == 'L'||data[2]=='R'||data[2]=='S')
 	//{
 	I2C1_ClearRxBuf();
@@ -572,7 +573,7 @@ int main(void)
 	PE_low_level_init();
 	FC321_Disable();
 	FC321_Reset();
-	uint16_t Kp_drive = 100;
+	uint16_t Kp_drive = 175;
 	//RechtsClock_Enable();
 
 	for (;;) {
@@ -596,12 +597,14 @@ int main(void)
 
 		uint16_t Maxspeed = value;
 		uint16_t Slow = Maxspeed * 1 / 3;
-		uint16_t Speed = map_long(Angle, 0, 45, Maxspeed, Slow);
+		uint16_t Speed = map_long(Angle, 0, 450, Maxspeed, Slow);
 		//printf("Speed %d\n",Speed);
 		double Speed_Ms = map(Speed,0,65535,0.0,5.0);
 		//printf("Speed_Ms %f\n",Speed_Ms);
-		uint16_t LR_diff = map_long(Angle, 0, 45, 0, 8000);
-		uint16_t LR_diff_innen = map_long(Angle, 0, 45, 0, 4000);
+		uint16_t LR_diff = map_long(Angle, 0, 450, 0, 8000);
+		uint16_t LR_diff_innen = map_long(Angle, 0, 450, 0, 8000);
+		if(LR_diff_innen < 4000)
+			LR_diff_innen = 0;
 		//uint16_t Break_Time_Speed = map_long(Speed, 0, 65535, 50, 25);
         uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,5.0,0,65535);
        // printf("Speed = %f",velocity_Rechts_avg);
@@ -616,7 +619,7 @@ int main(void)
 				MotorLinks_SetRatio16(Speed_regulated);
 			}*/
 			if (/*data[3] == 'C'&&*/Break_Active == FALSE) {
-				Kp_drive = 100;
+				Kp_drive = 175;
 				if (velocity_Rechts_avg > Speed_Ms+1)
 						{
 						    Kp_drive = 0;
@@ -642,7 +645,9 @@ int main(void)
 					}*/
 
 					MotorRechts_SetRatio16(Speed_regulated);
-					MotorLinks_SetRatio16(Speed_regulated);
+					if(Speed_regulated - LR_diff_innen < 3)
+						LR_diff_innen = -5;
+					MotorLinks_SetRatio16(Speed_regulated - LR_diff_innen);
 				}
 				if(data[0] == 'R'&&Break_Active == FALSE) {
 
@@ -662,7 +667,9 @@ int main(void)
 						MotorRechts_SetRatio16(Speed_regulated-LR_diff_innen);
 					}*/
 
-					MotorRechts_SetRatio16(Speed_regulated);
+					if(Speed_regulated - LR_diff_innen < 3)
+						LR_diff_innen = -5;
+					MotorRechts_SetRatio16(Speed_regulated - LR_diff_innen);
 					MotorLinks_SetRatio16(Speed_regulated);
 				}
 			}
@@ -727,12 +734,12 @@ int main(void)
 		//LineKamera();
 		Programmcounter++;
 		if (Programmcounter >= 150) {
-			if (data[0] == '0' && data[1] == '0' && data[2] == '0'
-					&& data[3] == '0') {
+			if (data[0] == '0' && data[1] == '0' && data[2] == '0' && data[3] == '0' && data[4] == '0') {
 				data[0] = 'X';
 				data[1] = 'X';
 				data[2] = 'X';
 				data[3] = 'X';
+				data[4] = 'X';
 				//Break_Active = 1;
 				Break_Active = TRUE;
 				Break_period = 1000;
@@ -748,6 +755,7 @@ int main(void)
 		data[1] = '0';
 		data[2] = '0';
 		data[3] = '0';
+		data[4] = '0';
 		/*RechtsClock_GetTimeMS(&Programmtime);
 		 printf("Zeit = %d ms \n",Programmtime);
 		 RechtsClock_Reset();
