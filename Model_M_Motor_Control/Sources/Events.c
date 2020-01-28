@@ -36,6 +36,7 @@ float Abstand_Mag = 0.01383;
 float velocity_Links;
 float velocity_Rechts;
 extern float velocity_Rechts_avg;
+extern bool first_pulse;
 float Rechts_time = 0;
 float velocity_Rechts_avg = 0.0;
 volatile uint16_t Speed_time_Links = 0;
@@ -84,15 +85,16 @@ void Cpu_OnNMIINT(void) {
  */
 void RechtsINT_OnInterrupt(void)
 {
+			//first_pulse = TRUE;
 			Pulse_counter = 0;
 			Speed_time_Rechts = TU3_GetCounterValue(TU3_Pointer);
 			TU3_CounterValue = Speed_time_Rechts+(Counter_OVF*65535);
 			Rechts_time = 0.000002*TU3_CounterValue;
 			velocity_Rechts += Abstand_Mag/Rechts_time;
 			avg_counter++;
-			if(avg_counter > 10)
+			if(avg_counter > 40)
 			{
-				velocity_Rechts_avg = velocity_Rechts/10;
+				velocity_Rechts_avg = velocity_Rechts/40;
 				velocity_Rechts = 0;
 				avg_counter = 0;
 			}
