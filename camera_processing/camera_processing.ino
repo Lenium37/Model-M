@@ -322,7 +322,7 @@ void loop()
   
   if(counter_no_line_detected > 100) {
     // STOP MOTOR!
-    write_i2c("XXXX");
+    write_i2c("XXXXX");
     stopped = true;
     debug("stopped car");
   }
