@@ -64,7 +64,8 @@ int pitch(int x1, int y1, int x2, int y2) {
 }
 
 int calculate_steer_angle_in_degrees(int num) {
-  int angle = return_map(num, 0, 20, 0, 600); // 450
+  //int angle = return_map(num, 0, 20, 0, 600); // 450
+  int angle = return_map(num, 0, 20, 0, 150);
   if(angle > 450)
     angle = 450;
 
@@ -72,7 +73,8 @@ int calculate_steer_angle_in_degrees(int num) {
 }
 
 int calculate_push_away_angle_in_degrees(int distance_line_camera_center) {
-  int angle = return_map(distance_line_camera_center, 0, 20, 250, 0); // 0, 20, 25, 0
+  //int angle = return_map(distance_line_camera_center, 0, 20, 250, 0); // 0, 20, 25, 0
+  int angle = return_map(distance_line_camera_center, 0, 20, 350, 0);
   if(angle < 0)
     angle = 0;
 
@@ -93,7 +95,7 @@ int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
   return angle;
 }
 
-int offset_depending_on_y_position(int y_position) {
+/*int offset_depending_on_y_position(int y_position) {
   //debug("y_position: " + String(y_position));
   int offset = return_map(y_position, 0, 51, 28, 38); // 0 und 51 sind die min/max-Werte für Y, entsprechend mappen auf track_width/2 ganz unten und ganz oben
   if(offset < 28)
@@ -102,7 +104,7 @@ int offset_depending_on_y_position(int y_position) {
     offset = 38;
 
   return offset;
-}
+}*/
 
 int return_map(int value_to_map, int in_min, int in_max, int out_min, int out_max) {
   return (value_to_map - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -113,57 +115,66 @@ int return_map(int value_to_map, int in_min, int in_max, int out_min, int out_ma
  * TODO: What happens if there are 3 or more lines at one intersection?
  */
 void merge_vectors() {
+  //debug("numVectors: " + String(pixy.line.numVectors));
   for(int i = 0; i < pixy.line.numVectors; i++) {
     bool merged = false;
     //debug("comparing line");
     Vector v1 = pixy.line.vectors[i];
-    for(int j = 0; i < pixy.line.numVectors; j++) { // I know I am comparing every line with itself, maybe will improve it later
-      Vector v2 = pixy.line.vectors[j];
-      // If v2 starts at the position that v1 ends at, merge them and add to merged_lines
-      //if(v1.m_x1 == v2.m_x0 && v1.m_y1 == v2.m_y0) {
-      if(v2.m_x0 > v1.m_x1 - 11 && v2.m_x0 < v1.m_x1 + 11 && v2.m_y0 > v1.m_y1 - 8 && v2.m_y0 < v1.m_y1 + 8) {
-        //debug("merging");
-        int index = return_min(v1.m_index, v2.m_index);
-        Line new_line(v1.m_x0, v1.m_y0, v2.m_x1, v2.m_y1, index);
-        merged = true;
-        bool endpoint_already_exists = false;
-        int index_of_endpoint_already_exists = 0;
-        for(int k = 0; k < merged_lines.size(); k++) {
-          if((merged_lines[k].get_x1() >= v2.m_x1 - 3 || merged_lines[k].get_x1() <= v2.m_x1 + 3) && (merged_lines[k].get_y1() >= v2.m_y1 - 3 || merged_lines[k].get_y1() <= v2.m_y1 + 3)) {
-            endpoint_already_exists = true;
-            merged_lines[k] = new_line;
-          debug("ENDPOINT ALREADY EXISTS");
+     //debug("v1: (" + String(v1.m_x0) + ", " + String(v1.m_y0) + "), (" + String(v1.m_x1) + ", " + String(v1.m_y1) + ")");
+      //pixy.line.vectors[i].print();
+    for(int j = 0; j < pixy.line.numVectors; j++) { // I know I am comparing every line with itself, maybe will improve it later
+      if(i != j) {
+        Vector v2 = pixy.line.vectors[j];
+        //debug("v2: (" + String(v2.m_x0) + ", " + String(v2.m_y0) + "), (" + String(v2.m_x1) + ", " + String(v2.m_y1) + ")");
+        // If v2 starts at the position that v1 ends at, merge them and add to merged_lines
+        //if(v1.m_x1 == v2.m_x0 && v1.m_y1 == v2.m_y0) {
+        if(v2.m_x0 > v1.m_x1 - 11 && v2.m_x0 < v1.m_x1 + 11 && v2.m_y0 > v1.m_y1 - 8 && v2.m_y0 < v1.m_y1 + 8) {
+          //debug("merging");
+          int index = return_min(v1.m_index, v2.m_index);
+          Line new_line(v1.m_x0, v1.m_y0, v2.m_x1, v2.m_y1, index);
+          merged = true;
+          bool endpoint_already_exists = false;
+          int index_of_endpoint_already_exists = 0;
+          for(int k = 0; k < merged_lines.size(); k++) {
+            if((merged_lines[k].get_x1() >= v2.m_x1 - 3 || merged_lines[k].get_x1() <= v2.m_x1 + 3) && (merged_lines[k].get_y1() >= v2.m_y1 - 3 || merged_lines[k].get_y1() <= v2.m_y1 + 3)) {
+              endpoint_already_exists = true;
+              merged_lines[k] = new_line;
+            debug("ENDPOINT ALREADY EXISTS");
+            }
           }
+          if(!endpoint_already_exists)
+            merged_lines.push_back(new_line);
+            
+          //debug("merged two lines at (" + String(v2.m_x0) + ", " + String(v2.m_y0) + ")");
+          //debug("new line beginning at " + String(new_line.get_x0()) + ", " + String(new_line.get_y0()) + ")");
+          debug("merged two lines:");
+          debug("    Line1: (" + String(v1.m_x0) + ", " + String(v1.m_y0) + "), (" + String(v1.m_x1) + ", " + String(v1.m_y1) + ")");
+          debug("    Line2: (" + String(v2.m_x0) + ", " + String(v2.m_y0) + "), (" + String(v2.m_x1) + ", " + String(v2.m_y1) + ")");
+          debug("    new_line: (" + String(v1.m_x0) + ", " + String(v1.m_y0) + "), (" + String(v2.m_x1) + ", " + String(v2.m_y1) + ")");
         }
-        if(!endpoint_already_exists)
-          merged_lines.push_back(new_line);
-          
-        //debug("merged two lines at (" + String(v2.m_x0) + ", " + String(v2.m_y0) + ")");
-        //debug("new line beginning at " + String(new_line.get_x0()) + ", " + String(new_line.get_y0()) + ")");
-        debug("merged two lines:");
-        debug("    Line1: (" + String(v1.m_x0) + ", " + String(v1.m_y0) + "), (" + String(v1.m_x1) + ", " + String(v1.m_y1) + ")");
-        debug("    Line2: (" + String(v2.m_x0) + ", " + String(v2.m_y0) + "), (" + String(v2.m_x1) + ", " + String(v2.m_y1) + ")");
-        debug("    new_line: (" + String(v1.m_x0) + ", " + String(v1.m_y0) + "), (" + String(v2.m_x1) + ", " + String(v2.m_y1) + ")");
-      }
-      
-      // If merged, stop comparing this v1
-      if(merged)
-        break;
         
-      // If no other Vectors starts at the end of v1, add v1 to merged_lines
-      if(!merged && j == pixy.line.numVectors) {
-        Line new_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1, v1.m_index);
-        bool endpoint_already_exists = false;
-        for(int k = 0; k < merged_lines.size(); k++) {
-          if(merged_lines[k].get_x1() == v1.m_x1 && merged_lines[k].get_y1() == v1.m_y1)
-            endpoint_already_exists = true;
-          debug("ENDPOINT ALREADY EXISTS");
+        // If merged, stop comparing this v1
+        if(merged)
+          break;
+          
+        // If no other Vectors starts at the end of v1, add v1 to merged_lines
+        if(!merged && j == pixy.line.numVectors) {
+          Line new_line(v1.m_x0, v1.m_y0, v1.m_x1, v1.m_y1, v1.m_index);
+          bool endpoint_already_exists = false;
+          for(int k = 0; k < merged_lines.size(); k++) {
+            if(merged_lines[k].get_x1() == v1.m_x1 && merged_lines[k].get_y1() == v1.m_y1)
+              endpoint_already_exists = true;
+            debug("ENDPOINT ALREADY EXISTS");
+          }
+          if(!endpoint_already_exists) {
+            merged_lines.push_back(new_line);
+            debug("did not merge line, pushed back line:");
+            debug("v1: (" + String(v1.m_x0) + ", " + String(v1.m_y0) + "), (" + String(v1.m_x1) + ", " + String(v1.m_y1) + ")");
+          }
+          //debug("old (and real) line beginning at " + String(new_line.get_x0()) + ", " + String(new_line.get_y0()) + ")");
+          merged = true;
         }
-        if(!endpoint_already_exists)
-          merged_lines.push_back(new_line);
-        //debug("did not merge line");
-        //debug("old (and real) line beginning at " + String(new_line.get_x0()) + ", " + String(new_line.get_y0()) + ")");
-        merged = true;
+        debug("v2: (" + String(v2.m_x0) + ", " + String(v2.m_y0) + "), (" + String(v2.m_x1) + ", " + String(v2.m_y1) + ")");
       }
     }
   }
@@ -363,7 +374,7 @@ void loop()
   debug("real_lines.size(): " + String(real_lines.size()));
   for(int i = 0; i < real_lines.size(); i++) {
     Line l = real_lines[i];
-    debug("    Line"+String(i)+": (" + String(l.get_x0()) + ", " + String(l.get_y0()) + "), (" + String(l.get_x1()) + ", " + String(l.get_y1()) + ")");
+    debug("    Line "+String(i)+": (" + String(l.get_x0()) + ", " + String(l.get_y0()) + "), (" + String(l.get_x1()) + ", " + String(l.get_y1()) + ")");
   }
 
   int goal_x = 0;
@@ -395,19 +406,23 @@ void loop()
     // if single line is pretty much vertical
     //if(abs(l.get_y1() - l.get_y0()) > 10 && l.get_x1() >= l.get_x0() - DEVIATION_FROM_VERTICAL && l.get_x1() <= l.get_x0() + DEVIATION_FROM_VERTICAL) {
     //if(abs(l.get_y1() - l.get_y0()) > 10 && abs(l.get_x1() - l.get_x0()) > DEVIATION_FROM_VERTICAL) {
-    if(pitch(l.get_x0(), l.get_y0(), l.get_x1(), l.get_y1()) > 10) {
+    /*if(pitch(l.get_x0(), l.get_y0(), l.get_x1(), l.get_y1()) > 10) {
       currently_in_curve = false;
     }
     // if the single line is not vertical, car in a curve
     else {
       currently_in_curve = true;
-    }
+    }*/
+    if(abs(l.get_x0() - l.get_x1() > 30))
+      currently_in_curve = true;
+    else
+      currently_in_curve = false;
     
     int line_center = (l.get_x1() + l.get_x0()) / 2;
     push_car_into_center = true;
     
     if(push_car_into_center) {
-      //Serial.println("push degrees into center: " + String(calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2))));
+      Serial.println("push degrees into center: " + String(calculate_push_away_angle_in_degrees(abs(line_center - (pixy.frameWidth) / 2))));
     }
     //Serial.println("currently_in_curve: "+String(currently_in_curve));
     //if(currently_in_curve)
@@ -466,8 +481,14 @@ void loop()
       }
     }
 
-    if(steer_angle >= 300)
+    if(steer_angle >= 300 && currently_in_curve)
       steer_angle = 450;
+      
+  if(steer_angle > 450)
+    steer_angle = 450;
+    
+  if(steer_angle < -450)
+    steer_angle = -450;
 
   }
 
@@ -491,16 +512,25 @@ void loop()
   }*/
 
   // if steer direction changes, make the change not so hard
-  if(second_last_steer_angle > 40 && last_steer_angle > 40 && steer_angle < 0)
+  /*if(second_last_steer_angle > 40 && last_steer_angle > 40 && steer_angle < 0)
     steer_angle = steer_angle / 2;
   else if(second_last_steer_angle < -40 && last_steer_angle < -40 && steer_angle > 0)
-    steer_angle = steer_angle / 2;
+    steer_angle = steer_angle / 2;*/
 
   //if(!currently_in_curve)
     //steer_angle = steer_angle / 2;
 
   if(real_lines.size() > 1) {
+  if(steer_angle > 450)
+    steer_angle = 450;
+    
+  if(steer_angle < -450)
+    steer_angle = -450;
+    
     if(goal_x <= 39) { // steer left
+      if(last_steering_direction == "right")
+        steer_angle = steer_angle / 2;
+        
       if(steer_angle < 10) {
         if(currently_in_curve)
           current_angle_string = "L00"+String(steer_angle)+"C";
@@ -519,6 +549,9 @@ void loop()
       }
     }
     else { // steer right      
+      if(last_steering_direction == "left")
+        steer_angle = steer_angle / 2;
+        
       if(steer_angle < 10) {
         if(currently_in_curve)
           current_angle_string = "R00"+String(steer_angle)+"C";
@@ -538,6 +571,9 @@ void loop()
     }
   } else {
     if(steer_angle <= 0) { // steer left
+      if(last_steering_direction == "right")
+        steer_angle = steer_angle / 2;
+        
       if(steer_angle > -10) {
         if(currently_in_curve)
           current_angle_string = "L00"+String(abs(steer_angle))+"C";
@@ -555,6 +591,9 @@ void loop()
           current_angle_string = "L"+String(abs(steer_angle))+"S";
       }
     } else {      
+      if(last_steering_direction == "left")
+        steer_angle = steer_angle / 2;
+        
       if(steer_angle < 10) {
         if(currently_in_curve)
           current_angle_string = "R00"+String(steer_angle)+"C";
@@ -575,7 +614,7 @@ void loop()
   }
 
   //debug(current_angle_string);
-  if((current_angle_string.charAt(0) == "L" && last_steering_direction == "left") || (current_angle_string.charAt(0) == "R" && last_steering_direction == "right") || current_angle_string.charAt(0) == "S" || last_steering_direction == "straight") {
+  if((current_angle_string.charAt(0) == "L" && last_steering_direction == "left") || (current_angle_string.charAt(0) == "R" && last_steering_direction == "right") || current_angle_string.charAt(0) == "S" || last_steering_direction == "straight") {    
     write_i2c(current_angle_string);
     second_last_steer_angle = last_steer_angle;
     last_steer_angle = steer_angle;
