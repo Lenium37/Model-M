@@ -149,9 +149,10 @@ bool Serial = FALSE;
 bool Serialline = FALSE;
 bool Break_Curve = FALSE;
 bool Break_Active = FALSE;
+bool Start_up = TRUE;
 bool DRIVE = TRUE;
 bool Regler_Active = TRUE;
-bool first_pulse = FALSE;
+bool first_pulse = TRUE;
 int Break_Timer = 0;
 uint16_t Winkel_prev_L = 0;
 uint16_t Winkel_prev_R = 0;
@@ -160,6 +161,22 @@ uint16_t Programmcounter = 0;
 uint16_t Pulse_counter = 0;
 uint32_t Speed_regulated = 0;
 uint16_t Break_intens = 0;
+uint16_t Start_point = 10000;
+void cal_start_point()
+{
+
+	if(velocity_Rechts_avg > 0.1&&first_pulse == TRUE)
+	{
+		Start_point = P_VAL;
+		printf("Startpoint %d\n", Start_point);
+		first_pulse = FALSE;
+	}
+	if(Start_point < 11000)
+	{
+		Start_point = 11000;
+	}
+
+}
 double map(double x, double in_min, double in_max, double out_min, double out_max) {
 	double Result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	if(out_max > out_min) {
@@ -183,9 +200,9 @@ if(Regler_Active == TRUE)
 	{
 		Kp = 1000;
 	}
-	if(P_VAL <16000)
+	if(P_VAL < Start_point)
 		{
-			P_VAL = 16000;
+			P_VAL = Start_point;
 		}
 	if(P_VAL>65300)
 	{
@@ -201,11 +218,12 @@ if(Regler_Active == TRUE)
 void counter()
 {
 	Pulse_counter++;
-	if(Pulse_counter > 50)
+	if(Pulse_counter > 500)
 	{
 		uint32_t Speed_regulated = 0;
 		velocity_Rechts_avg = velocity_Rechts_avg/2;
 		P_VAL = P_VAL/2;
+		first_pulse = TRUE;
 		Pulse_counter = 0;
 	}
 }
@@ -310,27 +328,26 @@ void Send(char Data, uint8_t Block_send) {
 	}
 }
 void Rec() {
-	printf("receiving\n");
-	flags_rev = FALSE; /* Clear flags */
-	errFlags_rev = FALSE;
-	int count = 0;
-	while (!flags_rev) /* Wait for full buffer */
+	//int count = 0;
+	/*while (!flags_rev)
 	{
-		Send_OK_On();
 		//printf("Angle: %d, %d\n", Angle,SerVal);
 		count++;
 		if (count > 30000) {
-			flags_rev = TRUE; /* Clear flags*/
+			flags_rev = TRUE;
 			count = 0;
 		}
 		//Send('R',1);
-	}
+	}*/
 	//Send('B',1);
 	//while (!errFlags_rev);
-	Send_OK_Off();
+	if(flags_rev == TRUE)
+	{
+	//Send_OK_Off();
+	//printf("receiving\n");
 	/* Receive bytes in slave mode (read the input buffer) */
 	err_rev = I2C1_RecvBlock(&data, 8, &ret_rev);
-	err_rev = 100;
+	//err_rev = 100;
 	uint8_t Hundred = char_int(data[1]);
 	uint8_t Ten = char_int(data[2]);
 	uint8_t Zero = char_int(data[3]);
@@ -376,7 +393,13 @@ void Rec() {
 		if (err_rev == ERR_NOTAVAIL) {
 			printf("ERR_NOTAVAIL\n");
 		}
+	  }
+	flags_rev = FALSE; /* Clear flags */
+	errFlags_rev = FALSE;
 	}
+
+	Send_OK_On();
+	//}
 	/*
 	 ERR_OK - OK
 	 ERR_SPEED - This device does not work in the active speed mode
@@ -550,7 +573,7 @@ void Break(uint16_t Rev_Speed, uint16_t Block_Time) {
 			//MotorLinks_RevRatio16(65300);
 			if(Break_time>Block_Time)
 			{
-				printf("Break: %d \n",Break_time);
+				//printf("Break: %d \n",Break_time);
 				//MotorRechts_Rev_SetRatio16(1);
 				//MotorLinks_Rev_SetRatio16(1);
 				FC321_Disable();
@@ -585,6 +608,7 @@ int main(void)
 	servo_value_regulated = Mitte;
 	for (;;) {
 		counter();
+		cal_start_point();
 		(void) Potis_MeasureChan(TRUE, 0);
 		(void) Potis_GetChanValue16(0, &value);
 		(void) Potis_MeasureChan(TRUE, 1);
@@ -592,10 +616,6 @@ int main(void)
 		if(Programmcounter % 15 == 0) // nur jedes 10. Mal receiven
 			Rec();
 		//LineKamera();
-		if (Serial == TRUE) {
-			printf("IST_Rechts = %0.2f,IST_Links = %0.2f Soll_Speed = %d m/s\n",
-					velocity_Links, velocity_Rechts, value);
-		}
 		//printf("Soll_Speed = %d \n",value);
 		//counter(FALSE);
 		/*if (value > StartMotor) {
@@ -618,6 +638,7 @@ int main(void)
        // printf("Speed = %f",velocity_Rechts_avg);
 		Speed_regulated = Regler_P(Speed_Ms,velocity_Rechts_avg,Kp_drive);
 		Speed_regulated = map(Speed_regulated,0,65300,65300,0);
+		//printf("velocity_Rechts_avg %f\n",velocity_Rechts_avg);
 		//printf("Value = %0.2f\n",velocity_Rechts_avg);
 		Break(Break_intens,Break_period);
 			/*if (data[3] == 'S'&&Break_Active == FALSE) {
@@ -721,13 +742,13 @@ int main(void)
 		}
 
 		if(abs(servo_value - servo_value_regulated) > 50) {
-			printf("servo_value too large, taking only a step\n");
+			//printf("servo_value too large, taking only a step\n");
 			if(servo_value > servo_value_regulated)
 				servo_value_regulated += 50;
 			else
 				servo_value_regulated -= 50;
 		} else {
-			printf("jumping exactly to servo_value\n");
+			//printf("jumping exactly to servo_value\n");
 			servo_value_regulated = servo_value;
 		}
 
