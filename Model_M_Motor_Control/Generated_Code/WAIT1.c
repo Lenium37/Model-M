@@ -7,7 +7,7 @@
 **     Version     : Component 01.057, Driver 01.00, CPU db: 3.00.000
 **     Repository  : My Components
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-01-18, 18:53, # CodeGen: 34
+**     Date/Time   : 2020-01-30, 19:40, # CodeGen: 66
 **     Abstract    :
 **
 **     Settings    :
@@ -63,7 +63,7 @@ void WAIT1_Wait10Cycles(void)
 {
   /* This function will wait 10 CPU cycles (including call overhead). */
   /* NOTE: this is not really accurate, as not sure yet about the cycle counts. Assuming 1 cycle for a NOP */
-  asm(
+	__asm__(
    "nop \n\t"
    "nop \n\t"
    "nop \n\t"
@@ -92,7 +92,7 @@ void WAIT1_Wait100Cycles(void)
   volatile byte i;
   for(i=0; i<133; i++) {
     /* NOTE: this is not really accurate, as not sure yet about the cycle counts. Assuming 0.75 cycle for a NOP */
-    asm(
+    __asm__(
      "nop \n\t"
     );
   } /* just something to wait, NOT the requested 100 cycles */
