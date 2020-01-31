@@ -75,7 +75,7 @@ uint16_t Programmtime;
 int Curve = 0;
 word Break_time = 0;
 uint16_t Break_period = 0;
-
+bool Start_line;
 //Routine Auswertung
 uint16_t Pixel[128];
 uint16_t Pixel_Auswertung[128];
@@ -146,12 +146,15 @@ uint16_t DreiLinien = 0;
 uint16_t VierLinien = 0;
 bool Start = FALSE;
 bool Serial = FALSE;
-bool Serialline = FALSE;
+bool Serialline = TRUE;
 bool Break_Curve = FALSE;
 bool Break_Active = FALSE;
+bool Start_up = TRUE;
 bool DRIVE = TRUE;
 bool Regler_Active = TRUE;
-bool first_pulse = FALSE;
+bool first_pulse = TRUE;
+bool CLK_OFF = FALSE;
+bool CLK_ON = FALSE;
 int Break_Timer = 0;
 uint16_t Winkel_prev_L = 0;
 uint16_t Winkel_prev_R = 0;
@@ -160,6 +163,23 @@ uint16_t Programmcounter = 0;
 uint16_t Pulse_counter = 0;
 uint32_t Speed_regulated = 0;
 uint16_t Break_intens = 0;
+uint16_t Start_point = 10000;
+uint16_t linescan_counter = 0;
+void cal_start_point()
+{
+
+	if(velocity_Rechts_avg > 0.1&&first_pulse == TRUE)
+	{
+		Start_point = P_VAL;
+		//printf("Startpoint %d\n", Start_point);
+		first_pulse = FALSE;
+	}
+	if(Start_point < 11000)
+	{
+		Start_point = 11000;
+	}
+
+}
 double map(double x, double in_min, double in_max, double out_min, double out_max) {
 	double Result = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	if(out_max > out_min) {
@@ -183,15 +203,15 @@ if(Regler_Active == TRUE)
 	{
 		Kp = 1000;
 	}
-	if(P_VAL <16000)
+	if(P_VAL < Start_point)
 		{
-			P_VAL = 16000;
+			P_VAL = Start_point;
 		}
 	if(P_VAL>65300)
 	{
 		P_VAL = 65300;
 	}
-	Kp = Kp / 10;
+	Kp = Kp / 20;
 	P_VAL += Speed_diff * Kp;
 	//printf("P_VAL: %d\n",P_VAL);
 	//printf("P_VAL: %d\n",Kp);
@@ -201,11 +221,12 @@ if(Regler_Active == TRUE)
 void counter()
 {
 	Pulse_counter++;
-	if(Pulse_counter > 50)
+	if(Pulse_counter > 500)
 	{
 		uint32_t Speed_regulated = 0;
 		velocity_Rechts_avg = velocity_Rechts_avg/2;
 		P_VAL = P_VAL/2;
+		//first_pulse = TRUE;
 		Pulse_counter = 0;
 	}
 }
@@ -310,27 +331,26 @@ void Send(char Data, uint8_t Block_send) {
 	}
 }
 void Rec() {
-	printf("receiving\n");
-	flags_rev = FALSE; /* Clear flags */
-	errFlags_rev = FALSE;
-	int count = 0;
-	while (!flags_rev) /* Wait for full buffer */
+	//int count = 0;
+	/*while (!flags_rev)
 	{
-		Send_OK_On();
 		//printf("Angle: %d, %d\n", Angle,SerVal);
 		count++;
 		if (count > 30000) {
-			flags_rev = TRUE; /* Clear flags*/
+			flags_rev = TRUE;
 			count = 0;
 		}
 		//Send('R',1);
-	}
+	}*/
 	//Send('B',1);
 	//while (!errFlags_rev);
-	Send_OK_Off();
+	if(flags_rev == TRUE)
+	{
+	//Send_OK_Off();
+	//printf("receiving\n");
 	/* Receive bytes in slave mode (read the input buffer) */
 	err_rev = I2C1_RecvBlock(&data, 8, &ret_rev);
-	err_rev = 100;
+	//err_rev = 100;
 	uint8_t Hundred = char_int(data[1]);
 	uint8_t Ten = char_int(data[2]);
 	uint8_t Zero = char_int(data[3]);
@@ -376,7 +396,13 @@ void Rec() {
 		if (err_rev == ERR_NOTAVAIL) {
 			printf("ERR_NOTAVAIL\n");
 		}
+	  }
+	flags_rev = FALSE; /* Clear flags */
+	errFlags_rev = FALSE;
 	}
+
+	Send_OK_On();
+	//}
 	/*
 	 ERR_OK - OK
 	 ERR_SPEED - This device does not work in the active speed mode
@@ -501,43 +527,60 @@ uint16_t Threshold_cal() {
 	return Threshold;
 }
 void LineKamera() {
-	uint8_t GetVal;
-	bool Start;
 	uint16_t ADC_Wert = 0;
 	uint16_t Threshold = 0;
-	for (int i = 0; i < 128 * 2; i++) {
-		if (i == 0)              //Kommunikation gestartet?
-				{
-			//SI_On();                 //Einschalten von SI PTD7
-			SI_PutVal(TRUE);
-			Start = TRUE;
-		}
-		CLK_Neg();                 //CLK Signal auf High  PTE1
-		WAIT1_Waitus(1);
-		if (i == 0 || Start == TRUE)             //Kommunikation gestartet?
+	uint16_t exposure_time_on = 2;
+	uint16_t exposure_time_off = 2;
+	if(CLK_ON == FALSE)
+	{
+		if (linescan_counter == 0 && Start_line == TRUE)              //Kommunikation gestartet?
 		{
+			//SI_On();                 //Einschalten von SI PTD7
+
+			SI_PutVal(TRUE);
+			WAIT1_Waitus(5);
+			Start_line = TRUE;
+		}
+		CLK_On();//CLK_Neg();                 //CLK Signal auf High  PTE1
+		if (Start_line == TRUE)             //Kommunikation gestartet?
+		{
+			WAIT1_Waitus(5);
 			//SI_Off();     //SI auf LOW vor der n�chsten Fallendenflanke von CLK
 			SI_PutVal(FALSE);
-			Start = FALSE;
-		}
-		pulse++;                   //1 = LOW pulse 2 = High Pulse = Eine Periode
-
-		if (pulse == 2)                     //Wenn CLK auf High lese ADC aus
-				{
+			Start_line = FALSE;
+		}                   //1 = LOW pulse 2 = High Pulse = Eine Periode
+		CLK_ON = TRUE;
+	}
+	if(linescan_counter == exposure_time_on)
+	{
+		CLK_OFF = TRUE;
+	}
+		if (CLK_OFF == TRUE)                     //Wenn CLK auf High lese ADC aus
+			{
 			(void) Potis_MeasureChan(TRUE, 2);
 			(void) Potis_GetChanValue16(2, &ADC_Wert);
 			Pixel[array_pos] = ADC_Wert; //Schreibe Aktuellen Analogwert in das Array
 			array_pos++;                    //Position des Arrays inkrementieren
-			pulse = 0;                      //Periode Vorbei
-			if (array_pos == 128)             //Alle 129 Werte ausgelesen
+			CLK_Off();
+			if (array_pos == 129)             //Alle 129 Werte ausgelesen
 				{
 				array_pos = 0;                 //Array position wieder auf null
+				linescan_counter = 0;
 				startup = 0;
+				Start_line = TRUE;
+				//Threshold = Threshold_cal();
+				//Auswertung(128, Threshold);
 			}
+			CLK_OFF = FALSE;
 		}
+	//}
+	linescan_counter++;
+	if(linescan_counter == exposure_time_off+exposure_time_on)
+	{
+		linescan_counter = 0;
+		CLK_ON = FALSE;
+
 	}
-	Threshold = Threshold_cal();
-	Auswertung(128, Threshold);
 }
 void Break(uint16_t Rev_Speed, uint16_t Block_Time) {
 	if(Break_Active == TRUE)
@@ -550,7 +593,7 @@ void Break(uint16_t Rev_Speed, uint16_t Block_Time) {
 			//MotorLinks_RevRatio16(65300);
 			if(Break_time>Block_Time)
 			{
-				printf("Break: %d \n",Break_time);
+				//printf("Break: %d \n",Break_time);
 				//MotorRechts_Rev_SetRatio16(1);
 				//MotorLinks_Rev_SetRatio16(1);
 				FC321_Disable();
@@ -581,21 +624,19 @@ int main(void)
 	FC321_Disable();
 	FC321_Reset();
 	uint16_t Kp_drive = 175;
+	uint16_t add_links_speed = 200;
 	//RechtsClock_Enable();
 	servo_value_regulated = Mitte;
 	for (;;) {
 		counter();
+		cal_start_point();
 		(void) Potis_MeasureChan(TRUE, 0);
 		(void) Potis_GetChanValue16(0, &value);
 		(void) Potis_MeasureChan(TRUE, 1);
 		(void) Potis_GetChanValue16(1, &value2);
 		if(Programmcounter % 15 == 0) // nur jedes 10. Mal receiven
 			Rec();
-		//LineKamera();
-		if (Serial == TRUE) {
-			printf("IST_Rechts = %0.2f,IST_Links = %0.2f Soll_Speed = %d m/s\n",
-					velocity_Links, velocity_Rechts, value);
-		}
+		LineKamera();
 		//printf("Soll_Speed = %d \n",value);
 		//counter(FALSE);
 		/*if (value > StartMotor) {
@@ -610,22 +651,23 @@ int main(void)
 		double Speed_Ms = map(Speed,0,65535,0.0,5.0);
 		//printf("Speed_Ms %f\n",Speed_Ms);
 		uint16_t LR_diff = map_long(Angle, 0, 450, 0, 8000);
-		uint16_t LR_diff_innen = map_long(Angle, 0, 450, 0, 8000);
-		if(LR_diff_innen < 4000)
+		uint16_t LR_diff_innen = map_long(Angle, 0, 450, 0, 4000);
+		if(LR_diff_innen < 2000)
 			LR_diff_innen = 0;
 		//uint16_t Break_Time_Speed = map_long(Speed, 0, 65535, 50, 25);
         uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,5.0,0,65535);
        // printf("Speed = %f",velocity_Rechts_avg);
 		Speed_regulated = Regler_P(Speed_Ms,velocity_Rechts_avg,Kp_drive);
 		Speed_regulated = map(Speed_regulated,0,65300,65300,0);
+		//printf("velocity_Rechts_avg %f\n",velocity_Rechts_avg);
 		//printf("Value = %0.2f\n",velocity_Rechts_avg);
 		Break(Break_intens,Break_period);
-			/*if (data[3] == 'S'&&Break_Active == FALSE) {
+			 if(data[0] == 'S'&&Break_Active == FALSE) {
 				Kp_drive = 200;
 				Break_intens = 0;
 				MotorRechts_SetRatio16(Speed_regulated);
-				MotorLinks_SetRatio16(Speed_regulated);
-			}*/
+				MotorLinks_SetRatio16(Speed_regulated+add_links_speed);
+			}
 			if (/*data[3] == 'C'&&*/Break_Active == FALSE) {
 				Kp_drive = 175;
 				if (velocity_Rechts_avg > Speed_Ms+1)
@@ -652,7 +694,7 @@ int main(void)
 						MotorLinks_SetRatio16(Speed_regulated-LR_diff_innen);
 					}*/
 
-					MotorRechts_SetRatio16(Speed_regulated);
+					MotorRechts_SetRatio16(Speed_regulated+add_links_speed);
 					if(Speed_regulated - LR_diff_innen < 3)
 						LR_diff_innen = -5;
 					MotorLinks_SetRatio16(Speed_regulated - LR_diff_innen);
@@ -678,7 +720,7 @@ int main(void)
 					if(Speed_regulated - LR_diff_innen < 3)
 						LR_diff_innen = -5;
 					MotorRechts_SetRatio16(Speed_regulated - LR_diff_innen);
-					MotorLinks_SetRatio16(Speed_regulated);
+					MotorLinks_SetRatio16(Speed_regulated+add_links_speed);
 				}
 			}
 			//printf("Value = %d\n",value);
@@ -721,13 +763,13 @@ int main(void)
 		}
 
 		if(abs(servo_value - servo_value_regulated) > 50) {
-			printf("servo_value too large, taking only a step\n");
+			//printf("servo_value too large, taking only a step\n");
 			if(servo_value > servo_value_regulated)
 				servo_value_regulated += 50;
 			else
 				servo_value_regulated -= 50;
 		} else {
-			printf("jumping exactly to servo_value\n");
+			//printf("jumping exactly to servo_value\n");
 			servo_value_regulated = servo_value;
 		}
 

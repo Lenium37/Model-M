@@ -45,6 +45,7 @@ uint16_t Speed_time_Rechts = 0;
 extern bool flags_rev;
 extern bool errFlags_rev;
 extern bool flags_send;
+extern bool Start_up;
 
 extern uint16_t Pulse_counter;
 
@@ -85,14 +86,14 @@ void Cpu_OnNMIINT(void) {
  */
 void RechtsINT_OnInterrupt(void)
 {
-			//first_pulse = TRUE;
+
 			Pulse_counter = 0;
 			Speed_time_Rechts = TU3_GetCounterValue(TU3_Pointer);
 			TU3_CounterValue = Speed_time_Rechts+(Counter_OVF*65535);
 			Rechts_time = 0.000002*TU3_CounterValue;
 			velocity_Rechts += Abstand_Mag/Rechts_time;
 			avg_counter++;
-			if(avg_counter > 40)
+			if(avg_counter > 20)
 			{
 				velocity_Rechts_avg = velocity_Rechts/40;
 				velocity_Rechts = 0;
@@ -211,7 +212,7 @@ void I2C1_OnTxChar(void) {
  */
 void I2C1_OnFullRxBuf(void) {
 	flags_rev = TRUE;
-
+	Send_OK_Off();
 }
 
 /*
@@ -244,45 +245,28 @@ void I2C1_OnError(void) {
 */
 void LinksINT_OnInterrupt(void)
 {
-	/*/PID_Active = TRUE;
-			//FC1_Disable();
-			uint8_t AVGMAX = 4;
-			RechtsClock_Disable();  //Deaktivieren vom Timer um Zeit zu Speichern
-			double AVG_Speed_Time = 0.0;
-			counter(TRUE);
-			LinksINT_Disable(); //Interrupt Deaktivieren
-			if (Start_up_Links == TRUE)//Beim ersten auslösen des Interrupts nach dem Start den Timer Starten
+	/*Pulse_counter = 0;
+			Speed_time_Rechts = TU3_GetCounterValue(TU3_Pointer);
+			TU3_CounterValue = Speed_time_Rechts+(Counter_OVF*65535);
+			Rechts_time = 0.000002*TU3_CounterValue;
+			velocity_Rechts += Abstand_Mag/Rechts_time;
+			avg_counter++;
+			printf("Start_up %d",avg_counter);
+			if(avg_counter > 40)
 			{
-				//FC1_Enable();
-				RechtsClock_Enable();
-				Start_up_Links = FALSE;
-			}
-			if (count <= 1)	  //Ersten Impulse Zählen
-					{
-				count++;
-			}
-			if (count >= 2) //Beim Ersten Impulse auf den Zweiten warten erst dann Zeit Messen
-			{
-				RechtsClock_GetTimeMS(&Speed_time_Links);
-				AVG_ARRAY_Links[avgcounter] = Speed_time_Links;			//Zeit in einem Array Speichern
-				Speed_time_Links = 0;			//Ausgelesener Timerwert wieder wieder auf null
-				avgcounter++;							//Array Zähler um eins erhöhen
-				RechtsClock_Reset();
-				RechtsClock_Enable();
-			}
-			if (avgcounter >= AVGMAX)//Wenn 4 Impulse gemessen wurden berechne den Mittelwert um Fehler zu vermindern
-					{
-				for (int i = 0; i < AVGMAX; i++)
+				//printf("Start_up %d",Start_up);
+				if(Start_up == TRUE)
 				{
-					AVG_Speed_Time = AVG_Speed_Time + AVG_ARRAY_Links[i];	//Alle Samples addieren
+					first_pulse = TRUE;
+					//printf("Start_up %d",first_pulse);
+					Start_up = FALSE;
 				}
-				AVG_Speed_Time = AVG_Speed_Time / AVGMAX;				//Mittelwert bilden
-				velocity_Links = Abstand_Mag / AVG_Speed_Time * 1000;	//Geschwindigkeit berechnen um auf m/s zu kommen muss die Geschwindigkeit * 1000 gerehnet werden
-				avgcounter = 0;							//Array Zähler wieder auf null
+				velocity_Rechts_avg = velocity_Rechts/40;
+				velocity_Rechts = 0;
+				avg_counter = 0;
 			}
-
-			LinksINT_Enable();									//Interrupt wieder Starten
-			printf("velocity_Links = %d\n",velocity_Links);*/
+			Counter_OVF = 0;
+			TU3_ResetCounter(TU3_Pointer);*/
 }
 
 /*
