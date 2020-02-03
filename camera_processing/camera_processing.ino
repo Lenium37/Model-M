@@ -37,6 +37,8 @@ int second_last_steer_angle = 0;
 String current_angle_string;
 String last_steering_direction = "straight";
 bool blocked_last_steering = false;
+bool removed_inner_line = false;
+bool was_on_straight = true;
 
 void debug(String s) {
   Serial1.println(s);
@@ -293,6 +295,7 @@ void remove_inner_curve_lines() {
   for(int i = 0; i < indexes_to_be_removed.size(); i++) {
     merged_lines.erase(merged_lines.begin()+indexes_to_be_removed[i]);
     debug("removed inner curve line");
+    removed_inner_line = true;
   }
 }
 
@@ -300,9 +303,15 @@ void preprocess_vectors() {
   orientation_corrected_lines.clear();
   merged_lines.clear();
   real_lines.clear();
+  removed_inner_line = false;
   flip_falling_lines();
   merge_vectors();
-  remove_inner_curve_lines();
+  if(merged_lines.size() > 1)
+    remove_inner_curve_lines();
+
+  if(merged_lines.size() == 0 && orientation_corrected_lines.size() > 0)
+    merged_lines.push_back(orientation_corrected_lines[0]);
+    
   if(merged_lines.size() == 1) {
     real_lines.push_back(merged_lines[0]);
   } else if(merged_lines.size() == 2) {
@@ -329,6 +338,7 @@ void setup()
     debug("voltage of battery too low on startup");
     digitalWrite(PIN_RELAY, LOW);
   } else {
+    debug("turned on relay");
     digitalWrite(PIN_RELAY, HIGH);
   }
 
@@ -536,9 +546,13 @@ void loop()
     if(steer_angle < -450)
       steer_angle = -450;
 
-    if(l.get_y0() < 30) // if only seeing outer line at beginning of curve
+    if(was_on_straight && (l.get_y0() < 30 || abs(l.get_x1() - l.get_x0()) < 50 || (l.get_x0() > 60 && l.get_y1() < 4))) { // if only seeing outer line at beginning of curve
       steer_angle = steer_angle / 3;
+      debug("at beginning of curve");
+    }
 
+    if(removed_inner_line)
+      steer_angle = 0;
   }
 
   // goal_x max: 116 (78 + 38)
@@ -575,6 +589,9 @@ void loop()
       
     if(steer_angle < -450)
       steer_angle = -450;
+
+    if(removed_inner_line)
+      steer_angle = 0;
       
     if(goal_x <= 39) { // steer left
       if(last_steering_direction == "right")
@@ -661,6 +678,16 @@ void loop()
       }
     }
   }
+  
+  if(was_on_straight)
+    debug("was on straight");
+    
+  if((second_last_steer_angle == 450 && last_steer_angle == 450 && steer_angle == 450) || (second_last_steer_angle == -450 && last_steer_angle == -450 && steer_angle == -450)) {
+    was_on_straight = false;
+  } else if(abs(second_last_steer_angle) < 50 && abs(last_steer_angle) < 50 && abs(steer_angle) < 50) {
+    was_on_straight = true;
+  }
+
 
   //debug(current_angle_string);
   if((current_angle_string.charAt(0) == "L" && last_steering_direction == "left") || (current_angle_string.charAt(0) == "R" && last_steering_direction == "right") || current_angle_string.charAt(0) == "S" || last_steering_direction == "straight") {    
