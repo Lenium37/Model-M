@@ -373,12 +373,18 @@ void loop() {
   if(currently_seeing_only_left_line) {
     debug("currently seeing only left line\n");
     center = index_of_left_line + 27;
-    index_of_right_line = 62;
+    if(index_of_left_line > 55)
+      index_of_right_line = 66;
+    else
+      index_of_right_line = 62;
   }
   if(currently_seeing_only_right_line) {
     debug("currently seeing only right line\n");
     center = index_of_right_line - 27;
-    index_of_left_line = 0;
+    if(index_of_right_line < 7)
+      index_of_left_line = -5;
+    else
+      index_of_left_line = 0;
   }
 
 
