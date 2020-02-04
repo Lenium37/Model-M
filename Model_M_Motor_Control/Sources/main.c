@@ -198,6 +198,11 @@ long map_long(long x, long in_min, long in_max, long out_min, long out_max) {
 uint16_t Regler_P(float Soll, float Ist, int Kp) {
 if(Regler_Active == TRUE)
 {
+	printf("Soll: %f\n", Soll);
+	printf("Ist: %f\n", Ist);
+	printf("P_VAL start: %d\n", P_VAL);
+
+
 	float Speed_diff = Soll - Ist;
 	if(Speed_diff < 0)
 	{
@@ -215,6 +220,7 @@ if(Regler_Active == TRUE)
 	P_VAL += Speed_diff * Kp;
 	//printf("P_VAL: %d\n",P_VAL);
 	//printf("P_VAL: %d\n",Kp);
+	printf("P_VAL after calculation: %d\n", P_VAL);
 	return P_VAL;
 	}
 }
@@ -624,7 +630,7 @@ int main(void)
 	FC321_Disable();
 	FC321_Reset();
 	uint16_t Kp_drive = 175;
-	uint16_t add_links_speed = 200;
+	uint16_t add_links_speed = 0;
 	//RechtsClock_Enable();
 	servo_value_regulated = Mitte;
 	for (;;) {
@@ -634,7 +640,7 @@ int main(void)
 		(void) Potis_GetChanValue16(0, &value);
 		(void) Potis_MeasureChan(TRUE, 1);
 		(void) Potis_GetChanValue16(1, &value2);
-		if(Programmcounter % 15 == 0) // nur jedes 10. Mal receiven
+		if(Programmcounter % 15 == 0) // nur jedes 15. Mal receiven
 			Rec();
 		LineKamera();
 		//printf("Soll_Speed = %d \n",value);
@@ -648,25 +654,45 @@ int main(void)
 		uint16_t Slow = Maxspeed * 3 / 4;
 		uint16_t Speed = map_long(Angle, 0, 450, Maxspeed, Slow);
 		//printf("Speed %d\n",Speed);
-		double Speed_Ms = map(Speed,0,65535,0.0,5.0);
+		float Speed_Ms = (float) map(Speed,0,65535,0.0,2.0);
 		//printf("Speed_Ms %f\n",Speed_Ms);
-		uint16_t LR_diff = map_long(Angle, 0, 450, 0, 8000);
-		uint16_t LR_diff_innen = map_long(Angle, 0, 450, 0, 4000);
-		if(LR_diff_innen < 2000)
-			LR_diff_innen = 0;
+		//uint16_t LR_diff = map_long(Angle, 0, 450, 0, 8000);
+		//uint16_t LR_diff_innen = map_long(Angle, 0, 450, 0, 4000);
+		//if(LR_diff_innen < 2000)
+			//LR_diff_innen = 0;
 		//uint16_t Break_Time_Speed = map_long(Speed, 0, 65535, 50, 25);
-        uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,5.0,0,65535);
+        uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,2.0,0,65535);
        // printf("Speed = %f",velocity_Rechts_avg);
 		Speed_regulated = Regler_P(Speed_Ms,velocity_Rechts_avg,Kp_drive);
 		Speed_regulated = map(Speed_regulated,0,65300,65300,0);
 		//printf("velocity_Rechts_avg %f\n",velocity_Rechts_avg);
 		//printf("Value = %0.2f\n",velocity_Rechts_avg);
+
+		uint16_t LR_diff = 0;
+		if(Angle > 400) {
+			LR_diff = Speed_regulated / 3;
+			if(Speed_regulated + LR_diff > 65300) {
+				LR_diff = Speed_regulated / 5;
+				if(Speed_regulated + LR_diff > 65300) {
+					LR_diff = Speed_regulated / 8;
+					if(Speed_regulated + LR_diff > 65300) {
+						LR_diff = 0;
+					}
+				}
+			}
+		}
+
+		printf("velocity_Rechts_avg: %f\n", velocity_Rechts_avg);
+		printf("speed_regulated: %d\n", Speed_regulated);
+		printf("LR_diff: %d\n", LR_diff);
+
+
 		Break(Break_intens,Break_period);
 			 if(data[0] == 'S'&&Break_Active == FALSE) {
 				Kp_drive = 200;
 				Break_intens = 0;
 				MotorRechts_SetRatio16(Speed_regulated);
-				MotorLinks_SetRatio16(Speed_regulated+add_links_speed);
+				MotorLinks_SetRatio16(Speed_regulated + add_links_speed);
 			}
 			if (/*data[3] == 'C'&&*/Break_Active == FALSE) {
 				Kp_drive = 175;
@@ -694,10 +720,10 @@ int main(void)
 						MotorLinks_SetRatio16(Speed_regulated-LR_diff_innen);
 					}*/
 
-					MotorRechts_SetRatio16(Speed_regulated+add_links_speed);
-					if(Speed_regulated - LR_diff_innen < 3)
-						LR_diff_innen = -5;
-					MotorLinks_SetRatio16(Speed_regulated - LR_diff_innen);
+					MotorRechts_SetRatio16(Speed_regulated - LR_diff);
+					if(Speed_regulated - LR_diff < 3)
+						LR_diff = -5;
+					MotorLinks_SetRatio16(Speed_regulated + add_links_speed + LR_diff);
 				}
 				if(data[0] == 'R'&&Break_Active == FALSE) {
 
@@ -717,10 +743,10 @@ int main(void)
 						MotorRechts_SetRatio16(Speed_regulated-LR_diff_innen);
 					}*/
 
-					if(Speed_regulated - LR_diff_innen < 3)
-						LR_diff_innen = -5;
-					MotorRechts_SetRatio16(Speed_regulated - LR_diff_innen);
-					MotorLinks_SetRatio16(Speed_regulated+add_links_speed);
+					if(Speed_regulated - LR_diff < 3)
+						LR_diff = -5;
+					MotorRechts_SetRatio16(Speed_regulated + LR_diff);
+					MotorLinks_SetRatio16(Speed_regulated + add_links_speed - LR_diff);
 				}
 			}
 			//printf("Value = %d\n",value);
