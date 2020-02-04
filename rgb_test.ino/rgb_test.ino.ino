@@ -1,8 +1,8 @@
 #include <Pixy2.h>
 #include <Wire.h> // I2Cs
 
-#define THRESHOLD_GRAY 90
-#define MIN_TRACK_WIDTH 35
+#define THRESHOLD_GRAY 112
+#define MIN_TRACK_WIDTH 20
 #define I2C_ADDRESS_OF_SLAVE 8
 #define I2C_READY_PIN 3
 #define PIN_RELAY 6
@@ -224,11 +224,13 @@ uint8_t center_of_drivable_space(uint8_t camera_line[63], int &track_till_border
 uint8_t count_lines(uint8_t array[63]) {
   uint8_t number_of_lines = 0;
   bool currently_in_line = false;
+  int index_of_last_line = -MIN_TRACK_WIDTH - 5;
 
   for(int i = 0; i < 63; i++) {
-    if(!currently_in_line && array[i] == 0) {
+    if(!currently_in_line && array[i] == 0 && i > index_of_last_line + MIN_TRACK_WIDTH) {
       number_of_lines++;
       currently_in_line = true;
+      index_of_last_line = i;
     }
     if(array[i] == 1)
       currently_in_line = false;
@@ -314,7 +316,7 @@ void loop() {
     else
       rgb_at_y_25[j] = 0;*/
 
-    
+    //debug(String(gray) + "\n");
 
 
     pixy.video.getRGB(i, 75, &r, &g, &b, false);
@@ -324,7 +326,6 @@ void loop() {
     else
       rgb_at_y_75[j] = 0;
 
-debug(String(gray) + "\n");
 
     /*pixy.video.getRGB(i, 125, &r, &g, &b, false);
     gray = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -372,10 +373,12 @@ debug(String(gray) + "\n");
   if(currently_seeing_only_left_line) {
     debug("currently seeing only left line\n");
     center = index_of_left_line + 27;
+    index_of_right_line = 62;
   }
   if(currently_seeing_only_right_line) {
     debug("currently seeing only right line\n");
     center = index_of_right_line - 27;
+    index_of_left_line = 0;
   }
 
 
@@ -594,5 +597,8 @@ debug(String(gray) + "\n");
     write_i2c(current_angle_string);
     debug("\n");
     debug("\n");
+  } else { // write last steer angle
+    debug("seeing no line, sending last angle string\n");
+    write_i2c(current_angle_string);
   }
 }
