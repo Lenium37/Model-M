@@ -46,6 +46,7 @@ extern bool flags_rev;
 extern bool errFlags_rev;
 extern bool flags_send;
 extern bool Start_up;
+bool first_pulse_active = TRUE;
 
 extern uint16_t Pulse_counter;
 
@@ -93,6 +94,12 @@ void RechtsINT_OnInterrupt(void)
 			Rechts_time = 0.000002*TU3_CounterValue;
 			velocity_Rechts += Abstand_Mag/Rechts_time;
 			avg_counter++;
+			if(avg_counter > 10 && first_pulse_active == TRUE)
+			{
+				first_pulse = TRUE;
+				first_pulse_active = FALSE;
+			}
+
 			if(avg_counter > 20)
 			{
 				velocity_Rechts_avg = velocity_Rechts/40;
