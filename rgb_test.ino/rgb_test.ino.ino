@@ -1,8 +1,8 @@
 #include <Pixy2.h>
 #include <Wire.h> // I2Cs
 
-#define THRESHOLD_GRAY 100
-#define MIN_TRACK_WIDTH 20
+#define THRESHOLD_GRAY 150
+#define THRESHOLD_DIFFERENCE 120
 #define I2C_ADDRESS_OF_SLAVE 8
 #define I2C_READY_PIN 3
 #define PIN_RELAY 6
@@ -10,9 +10,11 @@
 #define PIN_LED_2 8
 #define PIN_LED_3 9
 #define PIN_BATTERY_VOLTAGE 15
-#define OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER 27
+#define OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER 25
 #define OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER 30
+#define MIN_TRACK_WIDTH 30
 #define DEBUG_GRAY_VALUES false
+#define DEBUG_PRINTS true
 
 
 Pixy2 pixy;
@@ -42,8 +44,10 @@ bool currently_seeing_only_left_line = false;
 bool currently_seeing_only_right_line = false;
 
 void debug(String s) {
-  Serial1.print(s);
-  // if changing Serial number don't forget to change it in setup() as well!
+  if(DEBUG_PRINTS) {
+    Serial1.print(s);
+    // if changing Serial number don't forget to change it in setup() as well!
+  }
 }
 
 void write_i2c(String s) {
@@ -122,7 +126,7 @@ void setup() {
 
   pixy.init();
   Serial.println(pixy.changeProg("video"));
-  current_lamp_status = 1;
+  current_lamp_status = 0;
   pixy.setLamp(current_lamp_status, current_lamp_status);
   Serial.print("Turned on lamps...\n");
 
@@ -161,11 +165,22 @@ int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
   return angle;
 }
 
-uint8_t count_lines(uint8_t array[63]) {
+uint8_t count_lines(uint8_t array[63], bool start_at_left_line, bool end_at_right_line) {
   uint8_t number_of_lines = 0;
   bool currently_in_line = false;
   int index_of_last_line = -MIN_TRACK_WIDTH - 5;
+  int start = 0;
+  if(start_at_left_line)
+    start = index_of_left_line - 3;
+  if(start < 0)
+    start = 0;
+  int end = 63;
+  if(end_at_right_line)
+    end = index_of_right_line + 4;
+  if(end > 63)
+    end = 63;
 
+  //for(int i = start; i < end; i++) {
   for(int i = 0; i < 63; i++) {
     if(!currently_in_line && array[i] == 0 && i > index_of_last_line + MIN_TRACK_WIDTH) {
       number_of_lines++;
@@ -230,15 +245,35 @@ void detect_if_left_or_right_line(uint8_t array[63]) {
   if(index_of_left_line == index_of_right_line) {
     index_of_left_line -= 1;
     index_of_right_line += 1;
+    debug("index of left = index of right");
   }
+
+  bool line_found = false;
   int index_of_line = 0;
   for(int i = 0; i < 63; i++) {
     if(array[i] == 0) {
-      index_of_line = i;
-      if(i > 32)
+      line_found = true;
+      if(i > 32) {
+        index_of_line = i;
         break;
+      }
+    }
+    if(line_found && array[i] == 1) {
+      index_of_line = i;
+      break;
     }
   }
+
+
+  /*if(last_steer_angle > 0) {
+    index_of_left_line += 10;
+    index_of_right_line += 10;
+  } else if(last_steer_angle < 0) {
+    index_of_left_line -= 10;
+    index_of_right_line -= 10;
+  }*/
+
+
   int distance_from_left_index = abs(index_of_left_line - index_of_line);
   int distance_from_right_index = abs(index_of_right_line - index_of_line);
   if(distance_from_right_index <= distance_from_left_index) {
@@ -272,7 +307,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   uint8_t r, g, b;
   uint8_t gray;
-  //debug(String(millis()) + "\n");
+  debug(String(millis()) + "\n");
 
   line_25_until_border = 0;
   line_75_until_border = 0;
@@ -282,8 +317,8 @@ void loop() {
 
   
   for(int i = 0, j = 0; i < 315; i = i + 5, j++) {
-
-    /*pixy.video.getRGB(i, 25, &r, &g, &b, false);
+    /*
+    pixy.video.getRGB(i, 25, &r, &g, &b, false);
     gray = 0.299 * r + 0.587 * g + 0.114 * b;
     if(DEBUG_GRAY_VALUES)
       rgb_25[j] = gray;
@@ -297,8 +332,7 @@ void loop() {
 
     pixy.video.getRGB(i, 75, &r, &g, &b, false);
     gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    if(DEBUG_GRAY_VALUES)
-      rgb_75[j] = gray;
+    rgb_75[j] = gray;
     if(gray > THRESHOLD_GRAY)
       black_or_white_at_75[j] = 1;
     else
@@ -318,44 +352,60 @@ void loop() {
 
     pixy.video.getRGB(i, 175, &r, &g, &b, false);
     gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    if(DEBUG_GRAY_VALUES)
-      rgb_175[j] = gray;
+    rgb_175[j] = gray;
     if(gray > THRESHOLD_GRAY)
       black_or_white_at_175[j] = 1;
     else
       black_or_white_at_175[j] = 0;
   }
 
-  if(DEBUG_GRAY_VALUES) {
-    String s_25;
-    String s_75;
-    String s_125;
-    String s_175;
+  /*for(int i = 0; i < 63; i++) {
+    if(i == 0) {
+      if(abs(rgb_75[i] - rgb_75[i+1]) > THRESHOLD_DIFFERENCE)
+        black_or_white_at_75[i] = 0;
+      else
+        black_or_white_at_75[i] = 1;
 
-    //debug("\n");
-    for(int i = 0; i < 63; i++) {
-      //debug(String(black_or_white_at_75[i]));
-      s_25 += String(rgb_25[i]) + " ";
-      s_75 += String(rgb_75[i]) + " ";
-      s_125 += String(rgb_125[i]) + " ";
-      s_175 += String(rgb_175[i]) + " ";
+      if(abs(rgb_175[i] - rgb_175[i+1]) > THRESHOLD_DIFFERENCE)
+        black_or_white_at_175[i] = 0;
+      else
+        black_or_white_at_175[i] = 1;
+    } else if(i == 62) {
+      if(abs(rgb_75[i] - rgb_75[i-1]) > THRESHOLD_DIFFERENCE)
+        black_or_white_at_75[i] = 0;
+      else
+        black_or_white_at_75[i] = 1;
+
+      if(abs(rgb_175[i] - rgb_175[i-1]) > THRESHOLD_DIFFERENCE)
+        black_or_white_at_175[i] = 0;
+      else
+        black_or_white_at_175[i] = 1;
+    } else {
+      if((abs(rgb_75[i] - rgb_75[i+1]) > THRESHOLD_DIFFERENCE) || abs(rgb_75[i] - rgb_75[i-1]) > THRESHOLD_DIFFERENCE)
+        black_or_white_at_75[i] = 0;
+      else
+        black_or_white_at_75[i] = 1;
+
+      if((abs(rgb_175[i] - rgb_175[i+1]) > THRESHOLD_DIFFERENCE) || abs(rgb_175[i] - rgb_175[i-1]) > THRESHOLD_DIFFERENCE)
+        black_or_white_at_175[i] = 0;
+      else
+        black_or_white_at_175[i] = 1;
     }
-    debug(s_25);
-    debug("$");
-    debug(s_75);
-    debug("$$");
-    debug(s_125);
-    debug("$$$");
-    debug(s_175);
-    debug("$$$$");
-    debug("\n");
-  }
+  }*/
+
 
   for(int i = 0; i < 63; i++) {
     debug(String(black_or_white_at_75[i]));
   } debug("\n");
 
-  uint8_t number_of_lines = count_lines(black_or_white_at_75);
+  uint8_t number_of_lines = 0;
+  if(currently_seeing_only_left_line)
+    number_of_lines = count_lines(black_or_white_at_75, true, false);
+  else if(currently_seeing_only_right_line)
+    number_of_lines = count_lines(black_or_white_at_75, false, true);
+  else
+    number_of_lines = count_lines(black_or_white_at_75, false, false);
+
   debug("number of lines: " + String(number_of_lines) + "\n");
   if(number_of_lines == 2) {
     currently_seeing_both_lines = true;
@@ -381,7 +431,7 @@ void loop() {
     debug("currently seeing only left line\n");
         debug("index_of_left_line: " + String(index_of_left_line) + "\n");
     center = index_of_left_line + OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
-    if(index_of_left_line > 55)
+    if(index_of_left_line > 40)
       index_of_right_line = 66;
     else
       index_of_right_line = 62;
@@ -390,7 +440,7 @@ void loop() {
     debug("currently seeing only right line\n");
         debug("index_of_right_line: " + String(index_of_right_line) + "\n");
     center = index_of_right_line - OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
-    if(index_of_right_line < 7)
+    if(index_of_right_line < 22)
       index_of_left_line = -5;
     else
       index_of_left_line = 0;
@@ -431,8 +481,16 @@ void loop() {
         debug(String(black_or_white_at_175[i]));
       } debug("\n");
 
-      uint8_t number_of_lines_175 = count_lines(black_or_white_at_175);
+      uint8_t number_of_lines_175 = 0;
+      if(currently_seeing_only_left_line)
+          number_of_lines_175 = count_lines(black_or_white_at_175, true, false);
+        else if(currently_seeing_only_right_line)
+          number_of_lines_175 = count_lines(black_or_white_at_175, false, true);
+        else
+          number_of_lines_175 = count_lines(black_or_white_at_175, false, false);
+        
       debug("number of lines: " + String(number_of_lines_175) + "\n");
+
       if(number_of_lines_175 == 2) {
         currently_seeing_both_lines = true;
         currently_seeing_only_left_line = false;
@@ -457,7 +515,7 @@ void loop() {
         debug("currently seeing only left line\n");
         debug("index_of_left_line: " + String(index_of_left_line) + "\n");
         center = index_of_left_line + OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER;
-        if(index_of_left_line > 55)
+        if(index_of_left_line > 40)
           index_of_right_line = 66;
         else
           index_of_right_line = 62;
@@ -466,7 +524,7 @@ void loop() {
         debug("currently seeing only right line\n");
         debug("index_of_right_line: " + String(index_of_right_line) + "\n");
         center = index_of_right_line - OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER;
-        if(index_of_right_line < 7)
+        if(index_of_right_line < 22)
           index_of_left_line = -5;
         else
           index_of_left_line = 0;
@@ -482,7 +540,10 @@ void loop() {
           steer_angle_175 = steer_angle_175 * -1;
         }
 
-        steer_angle_175 = steer_angle_175 * 2;
+        if((steer_angle_175 > 0 && last_steer_angle > 0) || (steer_angle_175 < 0 && last_steer_angle < 0))
+          steer_angle_175 = last_steer_angle;
+        else
+          steer_angle_175 = steer_angle_175 * 2;
         //if((last_steer_angle > 400 && steer_angle_175 < 100 && steer_angle_175 > 0) || (last_steer_angle < -400 && steer_angle_175 > -100 && steer_angle_175 < 0))
           //steer_angle_175 = steer_angle_175 * 4;
 
@@ -501,8 +562,43 @@ void loop() {
       else { // write last steer angle
         //debug("seeing no line, sending last angle string\n");
         write_i2c(current_angle_string);
+        currently_seeing_only_left_line = false;
+        currently_seeing_only_right_line = false;
         debug("\n");
         debug("\n");
       }
+  }
+
+
+  if(DEBUG_GRAY_VALUES) {
+    debug("##");
+    String s_25;
+    String s_75;
+    String s_125;
+    String s_175;
+
+    //debug("\n");
+    for(int i = 0; i < 63; i++) {
+      //debug(String(black_or_white_at_75[i]));
+      s_25 += String(rgb_25[i]) + " ";
+      s_75 += String(rgb_75[i]) + " ";
+      s_125 += String(rgb_125[i]) + " ";
+      s_175 += String(rgb_175[i]) + " ";
+      if(i == 62) {
+        s_25.setCharAt(s_25.length() - 1, '\0');
+        s_75.setCharAt(s_75.length() - 1, '\0');
+        s_125.setCharAt(s_125.length() - 1, '\0');
+        s_175.setCharAt(s_175.length() - 1, '\0');
+      }
+    }
+    debug(s_25);
+    debug("$");
+    debug(s_75);
+    debug("$$");
+    debug(s_125);
+    debug("$$$");
+    debug(s_175);
+    debug("$$$$");
+    debug("&");
   }
 }
