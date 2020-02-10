@@ -690,10 +690,11 @@ int main(void)
 		//printf("LR_diff: %d\n", LR_diff);
 
 		Break(Break_intens,Break_period);
-		if(data[4] =="S")
+		if(data[4] == 'S')
 			Kp_drive = 400;
 		else
-			Kp_drive = 175;
+			Kp_drive = 250;
+
 			 if(data[0] == 'S'&&Break_Active == FALSE) {
 				Kp_drive = 400;
 				Break_intens = 0;
@@ -701,7 +702,7 @@ int main(void)
 				MotorLinks_SetRatio16(Speed_regulated);
 			}
 			if (/*data[3] == 'C'&&*/Break_Active == FALSE) {
-				Kp_drive = 175;
+				Kp_drive = 250;
 				if (velocity_Rechts_avg > Speed_Ms+1)
 						{
 						    Kp_drive = 0;
