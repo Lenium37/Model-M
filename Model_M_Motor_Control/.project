@@ -30,21 +30,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>Static_Code/Events.c</name>
-			<type>1</type>
-			<locationURI>PROJECT_LOC/Sources/Events.c</locationURI>
-		</link>
-		<link>
-			<name>Static_Code/Events.h</name>
-			<type>1</type>
-			<locationURI>PROJECT_LOC/Sources/Events.h</locationURI>
-		</link>
-		<link>
-			<name>Static_Code/main.c</name>
-			<type>1</type>
-			<locationURI>PROJECT_LOC/Sources/main.c</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>

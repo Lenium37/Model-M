@@ -661,7 +661,7 @@ void loop() {
 
   if (digitalRead(PIN_BT) == HIGH)
   {
-    debug_active = true;
+    debug_active = false;
   } else
   {
     debug_active = false ;
