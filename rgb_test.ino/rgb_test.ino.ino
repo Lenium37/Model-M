@@ -1,6 +1,6 @@
 #include <Pixy2.h>
 #include <Wire.h> // I2Cs
-
+#include <EEPROM.h>
 
 #define I2C_ADDRESS_OF_SLAVE 8
 #define I2C_READY_PIN 3
@@ -16,6 +16,7 @@
 #define ECHO_PIN_LEFT 20
 #define TRIGGER_PIN_RIGHT 4
 #define ECHO_PIN_RIGHT 2
+#define ARRAY_EEPROMM_SIZE 12
 
 Pixy2 pixy;
 
@@ -27,6 +28,7 @@ uint8_t  MIN_TRACK_WIDTH = 20;
 uint8_t  OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = 27;
 uint8_t  OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER = 30;
 uint8_t  THRESHOLD_DIFFERENCE = 40;
+int data_eepromm[ARRAY_EEPROMM_SIZE];
 
 bool debug_active = false;
 bool current_lamp_status = 0;
@@ -117,33 +119,46 @@ void Serial_receive()
        // String BOOL_BIN_data = incomingData.substring(p12+6, p13);
 
         int Led_Brightness = 21 - Led_Brightness_data.toInt();
-        int Brightness = Brightness_data.toInt();
-        int Red = 255 - Red_data.toInt() / Led_Brightness;
-        int Blue = 255 - Blue_data.toInt() / Led_Brightness;
-        int Green = 255 - Green_data.toInt() / Led_Brightness;
+      data_eepromm[0] = Led_Brightness;
+      int Brightness = Brightness_data.toInt();
+      data_eepromm[1] = Brightness;
+      int Red = 255 - Red_data.toInt() / Led_Brightness;
+      data_eepromm[2] = Red;
+      int Blue = 255 - Blue_data.toInt() / Led_Brightness;
+      data_eepromm[3] = Blue;
+      int Green = 255 - Green_data.toInt() / Led_Brightness;
+      data_eepromm[4] = Green;
 
-        OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data.toInt();
+      OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data.toInt();
 
-        OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER_data.toInt();
+      data_eepromm[5] = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
 
-        THRESHOLD_GRAY = THRESHOLD_GRAY_data.toInt();
+      OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER_data.toInt();
 
-        MIN_TRACK_WIDTH = MIN_TRACK_WIDTH_data.toInt();
+      data_eepromm[6] = OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER;
 
-        LEFT_DISTANCE_THRESHOLD = LEFT_DISTANCE_THRESHOLD_data.toInt();
+      THRESHOLD_GRAY = THRESHOLD_GRAY_data.toInt();
+      data_eepromm[7] = THRESHOLD_GRAY;
 
-        RIGHT_DISTANCE_THRESHOLD = RIGHT_DISTANCE_THRESHOLD_data.toInt();
+      MIN_TRACK_WIDTH = MIN_TRACK_WIDTH_data.toInt();
+      data_eepromm[8] = THRESHOLD_GRAY;
 
-        ULTRASONIC_SAMPELS = ULTRASONIC_SAMPELS_data.toInt();
+      LEFT_DISTANCE_THRESHOLD = LEFT_DISTANCE_THRESHOLD_data.toInt();
+      data_eepromm[9] = LEFT_DISTANCE_THRESHOLD;
 
-        //BOOL_BIN = BOOL_BIN_data.toInt();
-        
-        
-       // Serial.println(BOOL_BIN_data);
-       // Serial.println(ULTRASONIC_SAMPELS);
-        
-        set_LED(Red, Green, Blue);
-        pixy.setCameraBrightness(Brightness);
+      RIGHT_DISTANCE_THRESHOLD = RIGHT_DISTANCE_THRESHOLD_data.toInt();
+      data_eepromm[10] = RIGHT_DISTANCE_THRESHOLD;
+
+      ULTRASONIC_SAMPELS = ULTRASONIC_SAMPELS_data.toInt();
+      data_eepromm[11] = ULTRASONIC_SAMPELS;
+
+      for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++)
+      {
+        EEPROM_write_read(i, data_eepromm[i], true);
+      }
+
+      set_LED(Red, Green, Blue);
+      pixy.setCameraBrightness(Brightness);
       }
     }
   }
@@ -165,7 +180,19 @@ void write_i2c(String s) {
   Wire.write(buffer);
   Wire.endTransmission();
 }
+uint8_t EEPROM_write_read(int address, uint8_t data, bool read_write)
+{
+  int data_read = 0;
+  if (read_write)
+  {
+    EEPROM.write(address, data);
+    EEPROM.write(200, 230);
 
+  } else if (!read_write)
+  {
+    return data_read = EEPROM.read(address);
+  }
+}
 void generate_steer_angle_string(int steer_angle) {
 
   if((steer_angle >= 0 && steer_angle < 225) || (steer_angle <= 0 && steer_angle > -225)) {
@@ -259,6 +286,45 @@ void Ultrasonic_RIGHT_ISR()
     RIGHT_counter = 0;
   }
 }
+void load_eeprom()
+{
+  if (EEPROM.read(200) == 230)
+  {
+    for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++)
+    {
+      data_eepromm[i] = EEPROM_write_read(i, 0, false);
+    }
+    int Led_Brightness = data_eepromm[0];
+    int Brightness = data_eepromm[1];
+    int Red = data_eepromm[2];
+    int Blue = data_eepromm[3];
+    int Green = data_eepromm[4];
+
+    OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = data_eepromm[5];
+
+
+    OFFSET_FROM_ONE_LINE_AT_175_TO_CENTER = data_eepromm[6];
+
+
+    THRESHOLD_GRAY = data_eepromm[7];
+
+
+    MIN_TRACK_WIDTH = data_eepromm[8];
+
+
+    LEFT_DISTANCE_THRESHOLD = data_eepromm[9] ;
+
+
+    RIGHT_DISTANCE_THRESHOLD = data_eepromm[10];
+
+
+    ULTRASONIC_SAMPELS = data_eepromm[11];
+
+    set_LED(Red, Green, Blue);
+    pixy.setCameraBrightness(Brightness);
+
+  }
+}
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(230400);
@@ -281,7 +347,7 @@ void setup() {
     debug("turned on relay");
     digitalWrite(PIN_RELAY, HIGH);
   }
-
+  load_eeprom();
   pixy.init();
   //Serial.println(pixy.changeProg("video"));
   current_lamp_status = 1;

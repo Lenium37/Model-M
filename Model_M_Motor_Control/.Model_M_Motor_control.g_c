@@ -507,7 +507,7 @@
     </GenFiles>
     <SignalListFile>Documentation\Model_M_Motor_control_SIGNALS.txt</SignalListFile>
     <DestinationCompiler>GNUC</DestinationCompiler>
-    <ProjectModificationStamp>122</ProjectModificationStamp>
+    <ProjectModificationStamp>125</ProjectModificationStamp>
   </Options>
   <CpuID_16>
     <Generated>true</Generated>
@@ -1060,7 +1060,7 @@
         <ExtraFile0>Documentation\doxygen\BitIoLdd1_component.txt</ExtraFile0>
       </InhrCompID_318>
     </InhrCompID_317>
-    <InhrCompID_346>
+    <InhrCompID_347>
       <Generated>false</Generated>
       <GenCompName />
       <GenComponentVersion>??.???</GenComponentVersion>
@@ -1103,7 +1103,7 @@
       <GenSmartUserChangesDetected_Asembl>false</GenSmartUserChangesDetected_Asembl>
       <GenMethodPos>0</GenMethodPos>
       <GenExtraFilesCount>0</GenExtraFilesCount>
-    </InhrCompID_346>
+    </InhrCompID_347>
   </ComponentID_23>
   <ComponentID_26>
     <Generated>true</Generated>
@@ -4000,8 +4000,8 @@
     <GenComponentVersion>01.287</GenComponentVersion>
     <GenDriverVersion>01.01</GenDriverVersion>
     <GenEventModule>Events</GenEventModule>
-    <HeaderAge>1346778522</HeaderAge>
-    <CodeAge>1346778522</CodeAge>
+    <HeaderAge>1347257014</HeaderAge>
+    <CodeAge>1347257014</CodeAge>
     <AsemblAge>-1</AsemblAge>
     <GenNumMethods>22</GenNumMethods>
     <Enable>false</Enable>
