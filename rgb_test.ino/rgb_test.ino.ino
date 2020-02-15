@@ -185,7 +185,7 @@ uint8_t EEPROM_write_read(int address, uint8_t data, bool read_write)
   if (read_write)
   {
     EEPROM.write(address, data);
-    if(EEPROM.read(200) == !230)
+    if(EEPROM.read(200) != 230)
     {
       EEPROM.write(200, 230);
     }
