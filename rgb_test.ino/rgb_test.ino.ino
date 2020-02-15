@@ -68,7 +68,6 @@ bool currently_seeing_only_left_line = false;
 bool currently_seeing_only_right_line = false;
 volatile bool left_active = false;
 bool start_stream = true;
-
 unsigned long begin_of_steering_straight = 0;
 bool maybe_on_straight = false;
 
@@ -186,7 +185,10 @@ uint8_t EEPROM_write_read(int address, uint8_t data, bool read_write)
   if (read_write)
   {
     EEPROM.write(address, data);
-    EEPROM.write(200, 230);
+    if(EEPROM.read(200) == !230)
+    {
+      EEPROM.write(200, 230);
+    }
 
   } else if (!read_write)
   {
