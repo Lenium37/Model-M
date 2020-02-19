@@ -50,6 +50,7 @@ float voltage_of_battery = 10;
 int battery_low_counter = 0;
 int index_of_left_line = 0;
 int index_of_right_line = 62;
+uint8_t indexes_of_lines[64];
 int last_steer_angle = 0;
 double distanceCmRight = 0;
 double distanceCmLeft = 0;
@@ -331,6 +332,7 @@ uint8_t count_lines(uint8_t array[63]) {
 
   for (int i = 0; i < 63; i++) {
     if (!currently_in_line && array[i] == 0 && i > index_of_last_line + MIN_TRACK_WIDTH) {
+      indexes_of_lines[number_of_lines] = index_of_last_line;
       number_of_lines++;
       currently_in_line = true;
     }
@@ -564,8 +566,13 @@ void loop() {
 
     pixy.video.getRGB(i, 175, &r, &g, &b, false);
     gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (DEBUG_GRAY_VALUES)
+    if (DEBUG_GRAY_VALUES) {
       rgb_175[j] = gray;
+
+      if(j >= 1) {
+        differences_175[j - 1] = abs(rgb_175[j - 1] - rgb_175[j]);
+      }
+    }
     if (gray > THRESHOLD_GRAY)
       black_or_white_at_175[j] = 1;
     else
@@ -592,6 +599,10 @@ void loop() {
     currently_seeing_both_lines = false;
     currently_seeing_only_left_line = false;
     currently_seeing_only_right_line = false;
+  } else {
+    for(int i = 0; i < number_of_lines; i++) {
+      debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
+    }
   }
 
   int center = 0;
@@ -668,6 +679,13 @@ void loop() {
       currently_seeing_both_lines = false;
       currently_seeing_only_left_line = false;
       currently_seeing_only_right_line = false;
+      // reset indexes cause currently probably on cross
+      index_of_left_line = 0;
+      index_of_right_line = 62;
+    } else {
+      for(int i = 0; i < number_of_lines_175; i++) {
+        debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
+      }
     }
 
     int center = 0;
@@ -698,9 +716,14 @@ void loop() {
         steer_angle_175 = steer_angle_175 * -1;
       }
 
-      steer_angle_175 = steer_angle_175 * 2;
+      steer_angle_175 = steer_angle_175 * 5;
       //if((last_steer_angle > 400 && steer_angle_175 < 100 && steer_angle_175 > 0) || (last_steer_angle < -400 && steer_angle_175 > -100 && steer_angle_175 < 0))
       //steer_angle_175 = steer_angle_175 * 4;
+
+      if(steer_angle_175 > 0 && steer_angle_175 < 100)
+        steer_angle_175 = 100;
+      else if(steer_angle_175 < 0 && steer_angle_175 > -100)
+        steer_angle_175 = -100;
 
       if (steer_angle_175 > 450)
         steer_angle_175 = 450;
