@@ -16,7 +16,7 @@
 #define ECHO_PIN_LEFT 20
 #define TRIGGER_PIN_RIGHT 4
 #define ECHO_PIN_RIGHT 2
-#define ARRAY_EEPROMM_SIZE 12
+#define ARRAY_EEPROMM_SIZE 13
 
 Pixy2 pixy;
 
@@ -37,6 +37,7 @@ uint8_t black_or_white_at_25[63];
 uint8_t black_or_white_at_75[63];
 uint8_t black_or_white_at_120[63];
 uint8_t black_or_white_at_165[63];
+int Led_Brightness = 0;
 uint8_t rgb_25[63];
 uint8_t rgb_75[63];
 uint8_t rgb_120[63];
@@ -89,7 +90,7 @@ void Serial_receive()
     if (Serial1.available() > 0) {
       // Lies das eingehende Byte:
       String incomingData = Serial1.readStringUntil('&');
-
+      incomingData.trim();
       if (start_stream == true)
       {
         int p1 = incomingData.indexOf("$");
@@ -102,13 +103,14 @@ void Serial_receive()
         int p8 = incomingData.indexOf("///", p7);
         int p9 = incomingData.indexOf("////", p8);
         int p10 = incomingData.indexOf("§", p8);
-        int p11 = incomingData.indexOf("§§", p8);
-        int p12 = incomingData.indexOf("§§§", p8);
-       // int p13 = incomingData.indexOf("+", p9);
-
+        int p11 = incomingData.indexOf("§§", p9);
+        int p12 = incomingData.indexOf("§§§", p10);
+        int p13 = incomingData.indexOf("§§§§", p11);
+        //int p14 = incomingData.indexOf("?", p12);
+        
         String Brightness_data = incomingData.substring(0, p1);
         String OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data = incomingData.substring(p1 + 1, p2);
-        String OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data = incomingData.substring(p2 + 2, p3);
+        String OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER_data = incomingData.substring(p2 + 2, p3);
         String THRESHOLD_GRAY_data = incomingData.substring(p3 + 3, p4);
         String MIN_TRACK_WIDTH_data = incomingData.substring(p4 + 4, p5);
         String Red_data = incomingData.substring(p5 + 1, p6);
@@ -118,28 +120,34 @@ void Serial_receive()
         String LEFT_DISTANCE_THRESHOLD_data = incomingData.substring(p9 + 4, p10);
         String RIGHT_DISTANCE_THRESHOLD_data = incomingData.substring(p10 + 2, p11);
         String ULTRASONIC_SAMPELS_data = incomingData.substring(p11 + 4, p12);
+        String OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data = incomingData.substring(p12 + 6, p13);
        // String BOOL_BIN_data = incomingData.substring(p12+6, p13);
 
-      int Led_Brightness = 21 - Led_Brightness_data.toInt();
+      Led_Brightness = 21 - Led_Brightness_data.toInt();
       data_eepromm[0] = Led_Brightness;
       int Brightness = Brightness_data.toInt();
       data_eepromm[1] = Brightness;
-      int Red = 255 - Red_data.toInt() / Led_Brightness;
+      int Red = 255 - Red_data.toInt()/Led_Brightness;
       data_eepromm[2] = Red;
-      int Blue = 255 - Blue_data.toInt() / Led_Brightness;
+      int Blue = 255 - Blue_data.toInt()/Led_Brightness;
       data_eepromm[3] = Blue;
-      int Green = 255 - Green_data.toInt() / Led_Brightness;
+      int Green = 255 - Green_data.toInt()/Led_Brightness;
       data_eepromm[4] = Green;
 
-      //OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data.toInt();
+      OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data.toInt();
 
       data_eepromm[5] = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
 
-      //OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data.toInt();
+      OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER_data.toInt();
 
-      data_eepromm[6] = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
+      data_eepromm[6] = OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER;
+
+      OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data.toInt();
+
+      data_eepromm[12] = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
 
       THRESHOLD_GRAY = THRESHOLD_GRAY_data.toInt();
+      THRESHOLD_DIFFERENCE = THRESHOLD_GRAY;
       data_eepromm[7] = THRESHOLD_GRAY;
 
       MIN_TRACK_WIDTH = MIN_TRACK_WIDTH_data.toInt();
@@ -153,12 +161,13 @@ void Serial_receive()
 
       ULTRASONIC_SAMPELS = ULTRASONIC_SAMPELS_data.toInt();
       data_eepromm[11] = ULTRASONIC_SAMPELS;
-
+      
+      //Serial.println(incomingData.length());
       for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++)
       {
         EEPROM_write_read(i, data_eepromm[i], true);
       }
-
+      //Serial.println(Led_Brightness);
       set_LED(Red, Green, Blue);
       pixy.setCameraBrightness(Brightness);
       }
@@ -187,7 +196,7 @@ uint8_t EEPROM_write_read(int address, uint8_t data, bool read_write)
   int data_read = 0;
   if (read_write)
   {
-    EEPROM.write(address, data);
+    EEPROM.write(address+10, data);
     if(EEPROM.read(200) != 230)
     {
       EEPROM.write(200, 230);
@@ -195,8 +204,9 @@ uint8_t EEPROM_write_read(int address, uint8_t data, bool read_write)
 
   } else if (!read_write)
   {
-    return data_read = EEPROM.read(address);
+    return data_read = EEPROM.read(address+10);
   }
+  return 0;
 }
 void generate_steer_angle_string(int steer_angle) {
 
@@ -298,28 +308,41 @@ void load_eeprom()
     for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++)
     {
       data_eepromm[i] = EEPROM_write_read(i, 0, false);
+      Serial.print(EEPROM_write_read(i, 0, false));
     }
-    int Led_Brightness = data_eepromm[0];
+        Led_Brightness = data_eepromm[0];
     int Brightness = data_eepromm[1];
     int Red = data_eepromm[2];
     int Blue = data_eepromm[3];
     int Green = data_eepromm[4];
 
-    //OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = data_eepromm[5];
-    //OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = data_eepromm[6];
+    OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = data_eepromm[5];
+    OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = data_eepromm[6];
+    OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = data_eepromm[12];
     THRESHOLD_GRAY = data_eepromm[7];
+    THRESHOLD_DIFFERENCE = THRESHOLD_GRAY;
     MIN_TRACK_WIDTH = data_eepromm[8];
     LEFT_DISTANCE_THRESHOLD = data_eepromm[9] ;
     RIGHT_DISTANCE_THRESHOLD = data_eepromm[10];
     ULTRASONIC_SAMPELS = data_eepromm[11];
-
+  
     set_LED(Red, Green, Blue);
     pixy.setCameraBrightness(Brightness);
+    Serial.println("");
 
   }
 }
 void setup() {
   // put your setup code here, to run once:
+    pinMode(PIN_LED_1, OUTPUT);
+  //digitalWrite(PIN_LED_1, LOW);
+  pinMode(PIN_LED_2, OUTPUT);
+  //digitalWrite(PIN_LED_2, LOW);
+  pinMode(PIN_LED_3, OUTPUT);
+  //digitalWrite(PIN_LED_3, LOW);
+  digitalWrite(PIN_LED_1, HIGH);
+  digitalWrite(PIN_LED_2, HIGH);
+  digitalWrite(PIN_LED_3, HIGH);
   Serial.begin(230400);
   pinMode(PIN_BT, INPUT);
   pinMode(PIN_RELAY, OUTPUT);
@@ -328,6 +351,7 @@ void setup() {
   pinMode(TRIGGER_PIN_RIGHT, OUTPUT);
   pinMode(ECHO_PIN_RIGHT, INPUT);
   pinMode(PIN_LIGHT_SENSOR, INPUT);
+ 
   attachInterrupt(ECHO_PIN_RIGHT, Ultrasonic_RIGHT_ISR, CHANGE);
   attachInterrupt(ECHO_PIN_LEFT, Ultrasonic_LEFT_ISR, CHANGE);
   voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
@@ -341,7 +365,7 @@ void setup() {
     digitalWrite(PIN_RELAY, HIGH);
   }
   pixy.init();
-  load_eeprom();
+  
   //Serial.println(pixy.changeProg("video"));
   current_lamp_status = 1;
   pixy.setLamp(current_lamp_status, current_lamp_status);
@@ -355,13 +379,8 @@ void setup() {
   //attachInterrupt(I2C_READY_PIN, send_interpolated_string, RISING);
   pinMode(PIN_BATTERY_VOLTAGE, INPUT);
 
-  pinMode(PIN_LED_1, OUTPUT);
-  //digitalWrite(PIN_LED_1, LOW);
-  pinMode(PIN_LED_2, OUTPUT);
-  //digitalWrite(PIN_LED_2, LOW);
-  pinMode(PIN_LED_3, OUTPUT);
-  //digitalWrite(PIN_LED_3, LOW);
-
+ 
+  load_eeprom();
   //Serial1.begin(38400); // Default communication rate of the Bluetooth module
   Serial1.begin(460800);
 }
@@ -511,11 +530,10 @@ void detect_if_left_or_right_line(uint8_t array[63]) {
   }
 
 }
-void set_LED(uint8_t R, uint8_t G, uint8_t B)
-{
-  analogWrite(PIN_LED_2, R);
-  analogWrite(PIN_LED_3, G);
-  analogWrite(PIN_LED_1, B);
+void set_LED(uint8_t R,uint8_t G,uint8_t B){
+  analogWrite(PIN_LED_2,R);
+  analogWrite(PIN_LED_3,G);
+  analogWrite(PIN_LED_1,B);
 }
 void Ultrasonic_RIGHT()
 {
@@ -897,7 +915,7 @@ void loop() {
 
   }
  
-  Serial.println(millis());
+//  Serial.println(millis());
   Ultrasonic_LEFT();
   Serial_receive();
 }
