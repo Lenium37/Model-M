@@ -76,7 +76,7 @@
       <XtraAge33>1347184046</XtraAge33>
       <XtraAge34>1347184046</XtraAge34>
       <XtraAge36>1346778522</XtraAge36>
-      <XtraAge37>1347184046</XtraAge37>
+      <XtraAge37>1347663906</XtraAge37>
       <GenExtraFileType37>4</GenExtraFileType37>
       <GenExtraFileType36>5</GenExtraFileType36>
       <GenExtraFileType35>4</GenExtraFileType35>
@@ -507,7 +507,7 @@
     </GenFiles>
     <SignalListFile>Documentation\Model_M_Motor_control_SIGNALS.txt</SignalListFile>
     <DestinationCompiler>GNUC</DestinationCompiler>
-    <ProjectModificationStamp>125</ProjectModificationStamp>
+    <ProjectModificationStamp>126</ProjectModificationStamp>
   </Options>
   <CpuID_16>
     <Generated>true</Generated>
@@ -1060,7 +1060,7 @@
         <ExtraFile0>Documentation\doxygen\BitIoLdd1_component.txt</ExtraFile0>
       </InhrCompID_318>
     </InhrCompID_317>
-    <InhrCompID_347>
+    <InhrCompID_348>
       <Generated>false</Generated>
       <GenCompName />
       <GenComponentVersion>??.???</GenComponentVersion>
@@ -1103,7 +1103,7 @@
       <GenSmartUserChangesDetected_Asembl>false</GenSmartUserChangesDetected_Asembl>
       <GenMethodPos>0</GenMethodPos>
       <GenExtraFilesCount>0</GenExtraFilesCount>
-    </InhrCompID_347>
+    </InhrCompID_348>
   </ComponentID_23>
   <ComponentID_26>
     <Generated>true</Generated>
@@ -5103,8 +5103,8 @@
     <GenComponentVersion>02.105</GenComponentVersion>
     <GenDriverVersion>01.00</GenDriverVersion>
     <GenEventModule>Events</GenEventModule>
-    <HeaderAge>1346778522</HeaderAge>
-    <CodeAge>1346778522</CodeAge>
+    <HeaderAge>1347663906</HeaderAge>
+    <CodeAge>1347663906</CodeAge>
     <AsemblAge>-1</AsemblAge>
     <GenNumMethods>5</GenNumMethods>
     <Enable>true</Enable>
@@ -5183,8 +5183,8 @@
       <GenComponentVersion>02.156</GenComponentVersion>
       <GenDriverVersion>01.02</GenDriverVersion>
       <GenEventModule>Events</GenEventModule>
-      <HeaderAge>1346778522</HeaderAge>
-      <CodeAge>1346778522</CodeAge>
+      <HeaderAge>1347663906</HeaderAge>
+      <CodeAge>1347663906</CodeAge>
       <AsemblAge>-1</AsemblAge>
       <GenNumMethods>9</GenNumMethods>
       <Init>true</Init>
