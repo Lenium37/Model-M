@@ -37,31 +37,33 @@ Button b5;
 
 int Brightness = 0;
 int Offset_at_75_to_Center = 0;
-int Offset_at_175_to_Center = 0;
+int Offset_at_120_to_Center = 0;
+int Offset_at_165_to_Center = 0;
 int Threshold_Gray = 0;
 int Min_Track_width = 0;
 int Red = 0;
 int Green = 0;
 int Blue = 0;
 int Led_Brightness = 0;
-int LEFT_DISTANCE_THRESHOLD = 0;
-int RIGHT_DISTANCE_THRESHOLD = 0;
+int LEFT_DISTANCE = 0;
+int RIGHT_DISTANCE = 0;
 int ULTRASONIC_SAMPELS = 0;
-int THRESHOLD_DIFFERENCE = 40;
+int THRESHOLD_DIFFERENCE = 0;
 
 int Threshold_Gray_bar = 0;
 
 int Brightness_table = 0;
 int Offset_at_75_to_Center_table = 0;
-int Offset_at_175_to_Center_table = 0;
+int Offset_at_120_to_Center_table = 0;
+int Offset_at_165_to_Center_table = 0;
 int Threshold_Gray_table = 0;
 int Min_Track_width_table = 0;
 int Red_table = 0;
 int Green_table = 0;
 int Blue_table = 0;
 int Led_Brightness_table = 0;
-int LEFT_DISTANCE_THRESHOLD_table = 0;
-int RIGHT_DISTANCE_THRESHOLD_table = 0;
+int LEFT_DISTANCE_table = 0;
+int RIGHT_DISTANCE_table = 0;
 int ULTRASONIC_SAMPELS_table = 0;
 
 int Y_AXIS = 1;
@@ -127,15 +129,16 @@ void setup() {
 
   table.addColumn("Brightness", Table.INT);
   table.addColumn("Offset_at_75_to_Center", Table.INT);
-  table.addColumn("Offset_at_175_to_Center", Table.INT);
+  table.addColumn("Offset_at_120_to_Center", Table.INT);
+  table.addColumn("Offset_at_165_to_Center", Table.INT);
   table.addColumn("Threshold_Gray", Table.INT);
   table.addColumn("Min_Track_width", Table.INT);
   table.addColumn("Red", Table.INT);
   table.addColumn("Blue", Table.INT);
   table.addColumn("Green", Table.INT);
   table.addColumn("Led_Brightness", Table.INT);
-  table.addColumn("LEFT_DISTANCE_THRESHOLD", Table.INT);
-  table.addColumn("RIGHT_DISTANCE_THRESHOLD", Table.INT);
+  table.addColumn("LEFT_DISTANCE", Table.INT);
+  table.addColumn("RIGHT_DISTANCE", Table.INT);
   table.addColumn("ULTRASONIC_SAMPELS", Table.INT);
   table = loadTable("Settings.csv", "header");
 
@@ -144,15 +147,16 @@ void setup() {
     RowCount = table.getRowCount();       
     Brightness_table = table.getInt(RowCount-1, "Brightness");
     Offset_at_75_to_Center_table = table.getInt(RowCount-1, "Offset_at_75_to_Center");
-    Offset_at_175_to_Center_table = table.getInt(RowCount-1, "Offset_at_175_to_Center");
+    Offset_at_120_to_Center_table = table.getInt(RowCount-1, "Offset_at_120_to_Center");
+    Offset_at_165_to_Center_table = table.getInt(RowCount-1, "Offset_at_165_to_Center");
     Threshold_Gray_table = table.getInt(RowCount-1, "Threshold_Gray");
     Min_Track_width_table = table.getInt(RowCount-1, "Min_Track_width");
     Red_table = table.getInt(RowCount-1, "Red");
     Blue_table = table.getInt(RowCount-1, "Blue");
     Green_table = table.getInt(RowCount-1, "Green");
     Led_Brightness_table = table.getInt(RowCount-1, "Led_Brightness");
-    LEFT_DISTANCE_THRESHOLD_table = table.getInt(RowCount-1, "LEFT_DISTANCE_THRESHOLD");
-    RIGHT_DISTANCE_THRESHOLD_table = table.getInt(RowCount-1, "RIGHT_DISTANCE_THRESHOLD");
+    LEFT_DISTANCE_table = table.getInt(RowCount-1, "LEFT_DISTANCE");
+    RIGHT_DISTANCE_table = table.getInt(RowCount-1, "RIGHT_DISTANCE");
     ULTRASONIC_SAMPELS_table = table.getInt(RowCount-1, "ULTRASONIC_SAMPELS");
     Threshold_Gray_bar = Threshold_Gray_table;
   }
@@ -214,7 +218,7 @@ void setup() {
     .setColorLabel(100)
     ;   
   cp18.addButton("Apply")
-    .setPosition(20, 660)
+    .setPosition(20, 680)
     .setSize(63, 20)
     .setColorLabel(255)
     ;   
@@ -268,16 +272,23 @@ void setup() {
     .setValue(Offset_at_75_to_Center_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("Offset_at_175_to_Center")
+  cp12.addSlider("Offset_at_120_to_Center")
     .setPosition(20, 600)
     .setSize(200, 10)
     .setRange(0, 40)
     .setColorLabel(100)
-    .setValue(Offset_at_175_to_Center_table)
+    .setValue(Offset_at_120_to_Center_table)
+    .setVisible(true); 
+     cp12.addSlider("Offset_at_165_to_Center")
+    .setPosition(20, 620)
+    .setSize(200, 10)
+    .setRange(0, 40)
+    .setColorLabel(100)
+    .setValue(Offset_at_120_to_Center_table)
     .setVisible(true); 
   ;
   cp12.addSlider("Threshold_Gray")
-    .setPosition(20, 620)
+    .setPosition(20, 640)
     .setSize(200, 10)
     .setRange(0, 255)
     .setColorLabel(100)
@@ -285,27 +296,27 @@ void setup() {
     .setVisible(true); 
   ;
   cp12.addSlider("Min_Track_width")
-    .setPosition(20, 640)
+    .setPosition(20, 660)
     .setSize(200, 10)
     .setRange(0, 40)
     .setColorLabel(100)
     .setValue(Min_Track_width_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("LEFT_DISTANCE_THRESHOLD")
+  cp12.addSlider("LEFT_DISTANCE")
     .setPosition(350, 640)
     .setSize(200, 10)
     .setRange(0, 200)
     .setColorLabel(100)
-    .setValue(LEFT_DISTANCE_THRESHOLD_table)
+    .setValue(LEFT_DISTANCE_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("RIGHT_DISTANCE_THRESHOLD")
+  cp12.addSlider("RIGHT_DISTANCE")
     .setPosition(350, 660)
     .setSize(200, 10)
     .setRange(0, 200)
     .setColorLabel(100)
-    .setValue(RIGHT_DISTANCE_THRESHOLD_table)
+    .setValue(RIGHT_DISTANCE_table)
     .setVisible(true); 
   ;
   cp12.addSlider("ULTRASONIC_SAMPELS")
@@ -456,7 +467,7 @@ void connect_line_edges(int[] array) {
   int line_edge_index = 0;
   int line_width_counter = 0;
 
-
+  THRESHOLD_DIFFERENCE = Threshold_Gray_bar;
   for(int i = 1; i < array.length - 1; i++) {
     if(array[i] < THRESHOLD_DIFFERENCE && !line_edge_found) {
       array[i] = 255;
@@ -493,7 +504,7 @@ void draw() {
     setGradient(0, 0, 315, 700, c4, c5, X_AXIS);
     setGradient(315, 0, 315, 7000, c5, c4, X_AXIS);
   }
-  println(frameRate);
+  //println(frameRate);
   // Steht was in portStream? (d.h. wurde ein vollständiger Datenblock übertragen)
   if (portStream != null&&press_start == true) {
     // Entspricht der Datenblock dem Format "SxxE\r\n"? Wenn ja, dann weiter
@@ -508,7 +519,7 @@ void draw() {
     setGradient(0, 350, 630, 19, c5, c4, Y_AXIS);
     setGradient(0, 380, 630, 19, c4, c5, Y_AXIS);
     setGradient(0, 470, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 500, 630, 200, c4, c5, Y_AXIS);
+    setGradient(0, 520, 630, 200, c4, c5,Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
 
@@ -538,10 +549,10 @@ void draw() {
       print(Serial_Monitor_stream);
       if (Console_status == 0)
       {
-        console.pause();
+        //console.pause();
       } else if (Console_status == 1)
       {
-        console.play();
+        //console.play();
       } else if (Console_status == 2)
       {
         console.clear();
@@ -578,14 +589,14 @@ void draw() {
         Right_US.setText(Right_stg);
         //float Left = US_data_array[1];
         //float Right = US_data_array[2];
-        if (US_data_array_int_Left < LEFT_DISTANCE_THRESHOLD  || US_data_array_int_Right < RIGHT_DISTANCE_THRESHOLD )
+        if (US_data_array_int_Left < LEFT_DISTANCE  || US_data_array_int_Right < RIGHT_DISTANCE )
           for (int x = 5; x<35; x++)
           {
             for (int y = 5; y<35; y++)
             {
-              if (US_data_array_int_Left < LEFT_DISTANCE_THRESHOLD && US_data_array_int_Left > 0)
+              if (US_data_array_int_Left < LEFT_DISTANCE && US_data_array_int_Left > 0)
                 set(x, y, Black);
-              if (US_data_array_int_Right < RIGHT_DISTANCE_THRESHOLD && US_data_array_int_Right > 0)
+              if (US_data_array_int_Right < RIGHT_DISTANCE && US_data_array_int_Right > 0)
                 set(x+590, y, Black);
             }
           }
@@ -817,7 +828,7 @@ void Serial_Monitor(boolean theFlag) {
 }
 void Settings(boolean theFlag) {
   if (theFlag==true) {
-    surface.setSize(630, 700);
+    surface.setSize(630, 720);
     console.clear();
     console.pause();
   } 
@@ -833,7 +844,7 @@ void Apply(boolean theFlag) {
   Data_send += "$";
   Data_send += str(Offset_at_75_to_Center);
   Data_send += "$$";
-  Data_send += str(Offset_at_175_to_Center);
+  Data_send += str(Offset_at_120_to_Center);
   Data_send += "$$$";
   Data_send += str(Threshold_Gray);
   Data_send += "$$$$";
@@ -847,33 +858,38 @@ void Apply(boolean theFlag) {
   Data_send += "///";
   Data_send += str(Led_Brightness);
   Data_send += "////";
-  Data_send += str(LEFT_DISTANCE_THRESHOLD);
+  Data_send += str(LEFT_DISTANCE);
   Data_send += "§";
-  Data_send += str(RIGHT_DISTANCE_THRESHOLD);
+  Data_send += str(RIGHT_DISTANCE);
   Data_send += "§§";
   Data_send += str(ULTRASONIC_SAMPELS);
   Data_send += "§§§";
-  Data_send += str(Bool_bin);
+  Data_send += str(Offset_at_165_to_Center);
   Data_send += "§§§§";
+  //Data_send += str(Offset_at_165_to_Center);
+  //Data_send += "&";
 
   TableRow newRow = table.addRow();
 
   newRow.setInt("Brightness", Brightness);
   newRow.setInt("Offset_at_75_to_Center", Offset_at_75_to_Center);
-  newRow.setInt("Offset_at_175_to_Center", Offset_at_175_to_Center);
+  newRow.setInt("Offset_at_120_to_Center", Offset_at_120_to_Center);
+  newRow.setInt("Offset_at_165_to_Center", Offset_at_165_to_Center);
   newRow.setInt("Threshold_Gray", Threshold_Gray);
   newRow.setInt("Min_Track_width", Min_Track_width);
   newRow.setInt("Red", Red);
   newRow.setInt("Blue", Blue);
   newRow.setInt("Green", Green);
   newRow.setInt("Led_Brightness", Led_Brightness);
-  newRow.setInt("LEFT_DISTANCE_THRESHOLD", LEFT_DISTANCE_THRESHOLD);
-  newRow.setInt("RIGHT_DISTANCE_THRESHOLD", RIGHT_DISTANCE_THRESHOLD);
+  newRow.setInt("LEFT_DISTANCE", LEFT_DISTANCE);
+  newRow.setInt("RIGHT_DISTANCE", RIGHT_DISTANCE);
   newRow.setInt("ULTRASONIC_SAMPELS", ULTRASONIC_SAMPELS);
   saveTable(table, "Settings.csv");
   Threshold_Gray_bar = Threshold_Gray;
   myPort.write(Data_send);
-  myPort.write('&');
+  println(Data_send.length());
+  println(Data_send);
+  //myPort.write('&');
 }
 void controlEvent(ControlEvent theEvent) {
 
