@@ -123,7 +123,7 @@ float US_data_array[];
 // setup() wird einmal zu Beginn dea Programms ausgeführt
 void setup() {
   // Ausgabefenster und Vorder-/Hintergrundfarben definieren
-  size(930, 700);
+  size(930,700);
 
   table = new Table();
 
@@ -214,19 +214,19 @@ void setup() {
     ;   
   cp17.addToggle("Settings")
     .setPosition(20, 520)
-    .setSize(63, 20)
+    .setSize(63,20)
     .setColorLabel(100)
     ;   
   cp18.addButton("Apply")
     .setPosition(20, 680)
-    .setSize(63, 20)
+    .setSize(63,20)
     .setColorLabel(255)
     ;   
 
 
   cp9.addSlider("Line_4")
     .setPosition(215, 490)
-    .setSize(200, 10)
+    .setSize(200,10)
     .setRange(0, 200)
     .setColorLabel(100)
     .setValue(128)  
