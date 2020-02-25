@@ -25,9 +25,9 @@ uint16_t RIGHT_DISTANCE_THRESHOLD = 10;
 uint8_t  ULTRASONIC_SAMPELS = 10;
 uint8_t  THRESHOLD_GRAY = 100;
 uint8_t  MIN_TRACK_WIDTH = 20;
-uint8_t  OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = 29;
-uint8_t  OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = 31;
-uint8_t  OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = 33;
+uint8_t  OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = 23;
+uint8_t  OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = 29;
+uint8_t  OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = 35;
 uint8_t  THRESHOLD_DIFFERENCE = 40;
 int data_eepromm[ARRAY_EEPROMM_SIZE];
 
@@ -121,7 +121,7 @@ void Serial_receive()
         String RIGHT_DISTANCE_THRESHOLD_data = incomingData.substring(p10 + 2, p11);
         String ULTRASONIC_SAMPELS_data = incomingData.substring(p11 + 4, p12);
         String OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data = incomingData.substring(p12 + 6, p13);
-       // String BOOL_BIN_data = incomingData.substring(p12+6, p13);
+        String BOOL_BIN_data = incomingData.substring(p12+6, p13);
 
       Led_Brightness = 21 - Led_Brightness_data.toInt();
       data_eepromm[0] = Led_Brightness;
@@ -607,6 +607,34 @@ void loop() {
         black_or_white_at_25[j] = 0;
 
       //debug(String(gray) + "\n");
+
+      pixy.video.getRGB(i, 120, &r, &g, &b, false);
+      gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (DEBUG_GRAY_VALUES) {
+        rgb_120[j] = gray;
+
+        if(j >= 1) {
+          differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
+        }
+      }
+      if (gray > THRESHOLD_GRAY)
+        black_or_white_at_120[j] = 1;
+      else
+        black_or_white_at_120[j] = 0;
+
+      pixy.video.getRGB(i, 165, &r, &g, &b, false);
+      gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (DEBUG_GRAY_VALUES) {
+        rgb_165[j] = gray;
+
+        if(j >= 1) {
+          differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
+        }
+      }
+      if (gray > THRESHOLD_GRAY)
+        black_or_white_at_165[j] = 1;
+      else
+        black_or_white_at_165[j] = 0;
     }
 
 
@@ -625,44 +653,15 @@ void loop() {
       black_or_white_at_75[j] = 0;
 
     //debug(String(gray) + "\n");
-
-
-    pixy.video.getRGB(i, 120, &r, &g, &b, false);
-    gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (DEBUG_GRAY_VALUES) {
-      rgb_120[j] = gray;
-
-      if(j >= 1) {
-        differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
-      }
-    }
-    if (gray > THRESHOLD_GRAY)
-      black_or_white_at_120[j] = 1;
-    else
-      black_or_white_at_120[j] = 0;
-
-
-
-    pixy.video.getRGB(i, 165, &r, &g, &b, false);
-    gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (DEBUG_GRAY_VALUES) {
-      rgb_165[j] = gray;
-
-      if(j >= 1) {
-        differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
-      }
-    }
-    if (gray > THRESHOLD_GRAY)
-      black_or_white_at_165[j] = 1;
-    else
-      black_or_white_at_165[j] = 0;
   }
   differences_75[62] = 255;
-  differences_120[62] = 255;
-  differences_165[62] = 255;
   connect_line_edges(differences_75, 62);
-  connect_line_edges(differences_120, 62);
-  connect_line_edges(differences_165, 62);
+  if(digitalRead(PIN_BT) == HIGH) {
+    differences_120[62] = 255;
+    connect_line_edges(differences_120, 62);
+    differences_165[62] = 255;
+    connect_line_edges(differences_165, 62);
+  }
 
 
   uint8_t number_of_lines = count_lines(differences_75);
@@ -736,6 +735,27 @@ void loop() {
   } else {
     debug("did not find a line at 75, now looking at 120\n");
 
+    for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
+
+      pixy.video.getRGB(i, 120, &r, &g, &b, false);
+      gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (DEBUG_GRAY_VALUES) {
+        rgb_120[j] = gray;
+
+        if(j >= 1) {
+          differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
+        }
+      }
+      if (gray > THRESHOLD_GRAY)
+        black_or_white_at_120[j] = 1;
+      else
+        black_or_white_at_120[j] = 0;
+
+    }
+    differences_120[62] = 255;
+    connect_line_edges(differences_120, 62);
+
+
     uint8_t number_of_lines_120 = count_lines(differences_120);
     debug("number of lines: " + String(number_of_lines_120) + "\n");
     if (number_of_lines_120 == 2) {
@@ -804,6 +824,25 @@ void loop() {
     } else {
       //write_i2c(current_angle_string);
       debug("did not find a line at 120, now looking at 165\n");
+
+      for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
+
+        pixy.video.getRGB(i, 165, &r, &g, &b, false);
+        gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        if (DEBUG_GRAY_VALUES) {
+          rgb_165[j] = gray;
+
+          if(j >= 1) {
+            differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
+          }
+        }
+        if (gray > THRESHOLD_GRAY)
+          black_or_white_at_165[j] = 1;
+        else
+          black_or_white_at_165[j] = 0;
+      }
+      differences_165[62] = 255;
+      connect_line_edges(differences_165, 62);
 
       uint8_t number_of_lines_165 = count_lines(differences_165);
       debug("number of lines: " + String(number_of_lines_165) + "\n");
