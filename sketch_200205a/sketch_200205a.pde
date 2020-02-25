@@ -549,10 +549,10 @@ void draw() {
       print(Serial_Monitor_stream);
       if (Console_status == 0)
       {
-        //console.pause();
+        console.pause();
       } else if (Console_status == 1)
       {
-        //console.play();
+        console.play();
       } else if (Console_status == 2)
       {
         console.clear();

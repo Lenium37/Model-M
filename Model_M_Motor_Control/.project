@@ -30,4 +30,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>Generated_Code/UART_PDD.h</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Desktop/NXP/Motore_TMP0_test/Static_Code/PDD/UART_PDD.h</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

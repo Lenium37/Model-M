@@ -1,5 +1,4 @@
 #include <Pixy2.h>
-#include <Wire.h> // I2Cs
 #include <EEPROM.h>
 
 #define I2C_ADDRESS_OF_SLAVE 8
@@ -74,7 +73,9 @@ volatile bool left_active = false;
 bool start_stream = true;
 unsigned long begin_of_steering_straight = 0;
 bool maybe_on_straight = false;
-
+bool flag_serial4 = true;
+float Speed_left = 0.0;
+float Speed_right = 0.0;
 void debug(String s) {
   if (digitalRead(PIN_BT) == HIGH)
   {
@@ -82,6 +83,30 @@ void debug(String s) {
     delay(3);
   }
   // if changing Serial number don't forget to change it in setup() as well!
+}
+void KL25z_data(String s) {
+  if (true)
+  {
+    Serial4.print(s);
+    flag_serial4 = false;
+  }
+  // if changing Serial number don't forget to change it in setup() as well!
+}
+void Serial_KL25z_receive() {
+  if (Serial4.available() > 0) {
+    // Lies das eingehende Byte:
+    byte buffer[4];
+    Serial4.readBytesUntil('&', buffer, 4);
+    if(buffer[2] == 1)
+    {
+      Speed_right = buffer[1];
+      Speed_right = (Speed_right+255)/100;
+    }else
+    {
+      Speed_right = buffer[1];
+      Speed_right = Speed_right/100;
+    }
+  }
 }
 void Serial_receive()
 {
@@ -107,7 +132,7 @@ void Serial_receive()
         int p12 = incomingData.indexOf("§§§", p10);
         int p13 = incomingData.indexOf("§§§§", p11);
         //int p14 = incomingData.indexOf("?", p12);
-        
+
         String Brightness_data = incomingData.substring(0, p1);
         String OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data = incomingData.substring(p1 + 1, p2);
         String OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER_data = incomingData.substring(p2 + 2, p3);
@@ -121,98 +146,79 @@ void Serial_receive()
         String RIGHT_DISTANCE_THRESHOLD_data = incomingData.substring(p10 + 2, p11);
         String ULTRASONIC_SAMPELS_data = incomingData.substring(p11 + 4, p12);
         String OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data = incomingData.substring(p12 + 6, p13);
-        String BOOL_BIN_data = incomingData.substring(p12+6, p13);
 
-      Led_Brightness = 21 - Led_Brightness_data.toInt();
-      data_eepromm[0] = Led_Brightness;
-      int Brightness = Brightness_data.toInt();
-      data_eepromm[1] = Brightness;
-      int Red = 255 - Red_data.toInt()/Led_Brightness;
-      data_eepromm[2] = Red;
-      int Blue = 255 - Blue_data.toInt()/Led_Brightness;
-      data_eepromm[3] = Blue;
-      int Green = 255 - Green_data.toInt()/Led_Brightness;
-      data_eepromm[4] = Green;
+        Led_Brightness = 21 - Led_Brightness_data.toInt();
+        data_eepromm[0] = Led_Brightness;
+        int Brightness = Brightness_data.toInt();
+        data_eepromm[1] = Brightness;
+        int Red = 255 - Red_data.toInt() / Led_Brightness;
+        data_eepromm[2] = Red;
+        int Blue = 255 - Blue_data.toInt() / Led_Brightness;
+        data_eepromm[3] = Blue;
+        int Green = 255 - Green_data.toInt() / Led_Brightness;
+        data_eepromm[4] = Green;
 
-      OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data.toInt();
+        OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data.toInt();
 
-      data_eepromm[5] = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
+        data_eepromm[5] = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
 
-      OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER_data.toInt();
+        OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER_data.toInt();
 
-      data_eepromm[6] = OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER;
+        data_eepromm[6] = OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER;
 
-      OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data.toInt();
+        OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data.toInt();
 
-      data_eepromm[12] = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
+        data_eepromm[12] = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
 
-      THRESHOLD_GRAY = THRESHOLD_GRAY_data.toInt();
-      THRESHOLD_DIFFERENCE = THRESHOLD_GRAY;
-      data_eepromm[7] = THRESHOLD_GRAY;
+        THRESHOLD_GRAY = THRESHOLD_GRAY_data.toInt();
+        THRESHOLD_DIFFERENCE = THRESHOLD_GRAY;
+        data_eepromm[7] = THRESHOLD_GRAY;
 
-      MIN_TRACK_WIDTH = MIN_TRACK_WIDTH_data.toInt();
-      data_eepromm[8] = THRESHOLD_GRAY;
+        MIN_TRACK_WIDTH = MIN_TRACK_WIDTH_data.toInt();
+        data_eepromm[8] = THRESHOLD_GRAY;
 
-      LEFT_DISTANCE_THRESHOLD = LEFT_DISTANCE_THRESHOLD_data.toInt();
-      data_eepromm[9] = LEFT_DISTANCE_THRESHOLD;
+        LEFT_DISTANCE_THRESHOLD = LEFT_DISTANCE_THRESHOLD_data.toInt();
+        data_eepromm[9] = LEFT_DISTANCE_THRESHOLD;
 
-      RIGHT_DISTANCE_THRESHOLD = RIGHT_DISTANCE_THRESHOLD_data.toInt();
-      data_eepromm[10] = RIGHT_DISTANCE_THRESHOLD;
+        RIGHT_DISTANCE_THRESHOLD = RIGHT_DISTANCE_THRESHOLD_data.toInt();
+        data_eepromm[10] = RIGHT_DISTANCE_THRESHOLD;
 
-      ULTRASONIC_SAMPELS = ULTRASONIC_SAMPELS_data.toInt();
-      data_eepromm[11] = ULTRASONIC_SAMPELS;
-      
-      //Serial.println(incomingData.length());
-      for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++)
-      {
-        EEPROM_write_read(i, data_eepromm[i], true);
-      }
-      //Serial.println(Led_Brightness);
-      set_LED(Red, Green, Blue);
-      pixy.setCameraBrightness(Brightness);
+        ULTRASONIC_SAMPELS = ULTRASONIC_SAMPELS_data.toInt();
+        data_eepromm[11] = ULTRASONIC_SAMPELS;
+
+        //Serial.println(incomingData.length());
+        for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++)
+        {
+          EEPROM_write_read(i, data_eepromm[i], true);
+        }
+        set_LED(Red, Green, Blue);
+        pixy.setCameraBrightness(Brightness);
       }
     }
   }
-}
-void write_i2c(String s) {
-  debug(s + "\n");
-  debug("distanceCmLeft: " + String(distanceCmLeft) + "\n");
-  debug("distanceCmRight: " + String(distanceCmRight) + "\n");
-  if (distanceCmRight < RIGHT_DISTANCE_THRESHOLD && distanceCmLeft < LEFT_DISTANCE_THRESHOLD /*&& distanceCmRight != 1000 && distanceCmLeft != 1000*/ /*|| BOOL_BIN == 1*/)
-   { 
-    s = "XXXXX";
-    debug("XXXXX\n");
-    //Serial.println(s);
-   }
-  char buffer[8];
-  s.toCharArray(buffer, 8);
-  //while (digitalRead(I2C_READY_PIN) == LOW);
-  Wire.beginTransmission(I2C_ADDRESS_OF_SLAVE);
-  Wire.write(buffer);
-  Wire.endTransmission();
 }
 uint8_t EEPROM_write_read(int address, uint8_t data, bool read_write)
 {
   int data_read = 0;
   if (read_write)
   {
-    EEPROM.write(address+10, data);
-    if(EEPROM.read(200) != 230)
+    EEPROM.write(address + 10, data);
+    if (EEPROM.read(200) != 230)
     {
       EEPROM.write(200, 230);
     }
 
   } else if (!read_write)
   {
-    return data_read = EEPROM.read(address+10);
+    return data_read = EEPROM.read(address + 10);
   }
   return 0;
 }
 void generate_steer_angle_string(int steer_angle) {
 
-  if((steer_angle >= 0 && steer_angle < 225) || (steer_angle <= 0 && steer_angle > -225)) {
-    if(maybe_on_straight) {
-      if(millis() - begin_of_steering_straight > 100) {
+  if ((steer_angle >= 0 && steer_angle < 225) || (steer_angle <= 0 && steer_angle > -225)) {
+    if (maybe_on_straight) {
+      if (millis() - begin_of_steering_straight > 100) {
         currently_in_curve = false;
       }
     } else {
@@ -310,7 +316,7 @@ void load_eeprom()
       data_eepromm[i] = EEPROM_write_read(i, 0, false);
       Serial.print(EEPROM_write_read(i, 0, false));
     }
-        Led_Brightness = data_eepromm[0];
+    Led_Brightness = data_eepromm[0];
     int Brightness = data_eepromm[1];
     int Red = data_eepromm[2];
     int Blue = data_eepromm[3];
@@ -325,7 +331,7 @@ void load_eeprom()
     LEFT_DISTANCE_THRESHOLD = data_eepromm[9] ;
     RIGHT_DISTANCE_THRESHOLD = data_eepromm[10];
     ULTRASONIC_SAMPELS = data_eepromm[11];
-  
+
     set_LED(Red, Green, Blue);
     pixy.setCameraBrightness(Brightness);
     Serial.println("");
@@ -334,7 +340,7 @@ void load_eeprom()
 }
 void setup() {
   // put your setup code here, to run once:
-    pinMode(PIN_LED_1, OUTPUT);
+  pinMode(PIN_LED_1, OUTPUT);
   //digitalWrite(PIN_LED_1, LOW);
   pinMode(PIN_LED_2, OUTPUT);
   //digitalWrite(PIN_LED_2, LOW);
@@ -351,7 +357,7 @@ void setup() {
   pinMode(TRIGGER_PIN_RIGHT, OUTPUT);
   pinMode(ECHO_PIN_RIGHT, INPUT);
   pinMode(PIN_LIGHT_SENSOR, INPUT);
- 
+
   attachInterrupt(ECHO_PIN_RIGHT, Ultrasonic_RIGHT_ISR, CHANGE);
   attachInterrupt(ECHO_PIN_LEFT, Ultrasonic_LEFT_ISR, CHANGE);
   voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
@@ -365,24 +371,20 @@ void setup() {
     digitalWrite(PIN_RELAY, HIGH);
   }
   pixy.init();
-  
+
   //Serial.println(pixy.changeProg("video"));
   current_lamp_status = 1;
   pixy.setLamp(current_lamp_status, current_lamp_status);
   //Serial.print("Turned on lamps...\n");
-
-  Wire.begin(); // join i2c bus as master (address optional as master)
-  //Wire.begin(8);                // join i2c bus with address #8
-  //Wire.onReceive(receiveEvent); // register event
-
   pinMode(I2C_READY_PIN, INPUT);
   //attachInterrupt(I2C_READY_PIN, send_interpolated_string, RISING);
   pinMode(PIN_BATTERY_VOLTAGE, INPUT);
 
- 
+
   load_eeprom();
   //Serial1.begin(38400); // Default communication rate of the Bluetooth module
   Serial1.begin(460800);
+  Serial4.begin(115200);
 }
 
 int return_map(int value_to_map, int in_min, int in_max, int out_min, int out_max) {
@@ -474,29 +476,29 @@ void connect_line_edges(uint8_t array[], uint8_t size) {
   uint8_t line_width_counter = 0;
 
 
-  for(int i = 0; i < size; i++) {
-    if(array[i] < THRESHOLD_DIFFERENCE && !line_edge_found)
+  for (int i = 0; i < size; i++) {
+    if (array[i] < THRESHOLD_DIFFERENCE && !line_edge_found)
       array[i] = 255;
     else {
-      if(array[i] > THRESHOLD_DIFFERENCE && !line_edge_found) {
+      if (array[i] > THRESHOLD_DIFFERENCE && !line_edge_found) {
         array[i] = 0;
         line_edge_found = true;
         line_width_counter = 0;
         line_edge_index = i;
       }
 
-      if(line_edge_found && ((array[i] > THRESHOLD_DIFFERENCE && array[i] < 255)) && i > line_edge_index) {
-        for(int j = line_edge_index; j < i; j++)
+      if (line_edge_found && ((array[i] > THRESHOLD_DIFFERENCE && array[i] < 255)) && i > line_edge_index) {
+        for (int j = line_edge_index; j < i; j++)
           array[j] = array[line_edge_index];
         array[i] = 0;
       }
     }
 
-    if(line_edge_found) {
+    if (line_edge_found) {
       line_width_counter++;
     }
 
-    if(line_width_counter > 4)
+    if (line_width_counter > 4)
       line_edge_found = false;
 
   }
@@ -530,10 +532,10 @@ void detect_if_left_or_right_line(uint8_t array[63]) {
   }
 
 }
-void set_LED(uint8_t R,uint8_t G,uint8_t B){
-  analogWrite(PIN_LED_2,R);
-  analogWrite(PIN_LED_3,G);
-  analogWrite(PIN_LED_1,B);
+void set_LED(uint8_t R, uint8_t G, uint8_t B) {
+  analogWrite(PIN_LED_2, R);
+  analogWrite(PIN_LED_3, G);
+  analogWrite(PIN_LED_1, B);
 }
 void Ultrasonic_RIGHT()
 {
@@ -567,8 +569,10 @@ void Ultrasonic_LEFT()
 }
 void loop() {
 
+
   debug("light sensor value: " + String(analogRead(PIN_LIGHT_SENSOR)) + "\n");
 
+  //Serial4.print("S000S");
   voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
   debug("Voltage ");
   debug(String(voltage_of_battery) + "\n");
@@ -643,7 +647,7 @@ void loop() {
     if (DEBUG_GRAY_VALUES) {
       rgb_75[j] = gray;
 
-      if(j >= 1) {
+      if (j >= 1) {
         differences_75[j - 1] = abs(rgb_75[j - 1] - rgb_75[j]);
       }
     }
@@ -653,6 +657,36 @@ void loop() {
       black_or_white_at_75[j] = 0;
 
     //debug(String(gray) + "\n");
+
+    pixy.video.getRGB(i, 120, &r, &g, &b, false);
+    gray = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (DEBUG_GRAY_VALUES) {
+      rgb_120[j] = gray;
+
+      if (j >= 1) {
+        differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
+      }
+    }
+    if (gray > THRESHOLD_GRAY)
+      black_or_white_at_120[j] = 1;
+    else
+      black_or_white_at_120[j] = 0;
+
+
+
+    pixy.video.getRGB(i, 165, &r, &g, &b, false);
+    gray = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (DEBUG_GRAY_VALUES) {
+      rgb_165[j] = gray;
+
+      if (j >= 1) {
+        differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
+      }
+    }
+    if (gray > THRESHOLD_GRAY)
+      black_or_white_at_165[j] = 1;
+    else
+      black_or_white_at_165[j] = 0;
   }
   differences_75[62] = 255;
   connect_line_edges(differences_75, 62);
@@ -680,7 +714,7 @@ void loop() {
     currently_seeing_only_left_line = false;
     currently_seeing_only_right_line = false;
   } else {
-    for(int i = 0; i < number_of_lines; i++) {
+    for (int i = 0; i < number_of_lines; i++) {
       debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
     }
   }
@@ -697,7 +731,7 @@ void loop() {
     index_of_right_line = index_of_left_line + 2 * OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
     /*if (index_of_left_line > 55)
       index_of_right_line = 66;
-    else
+      else
       index_of_right_line = 62;*/
   }
   if (currently_seeing_only_right_line) {
@@ -707,7 +741,7 @@ void loop() {
     index_of_left_line = index_of_right_line - 2 * OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
     /*if (index_of_right_line < 7)
       index_of_left_line = -5;
-    else
+      else
       index_of_left_line = 0;*/
   }
 
@@ -730,7 +764,8 @@ void loop() {
 
     generate_steer_angle_string(steer_angle);
 
-    write_i2c(current_angle_string);
+    //write_i2c(current_angle_string);
+    KL25z_data(current_angle_string);
     last_steer_angle = steer_angle;
   } else {
     debug("did not find a line at 75, now looking at 120\n");
@@ -775,7 +810,7 @@ void loop() {
       index_of_left_line = 0;
       index_of_right_line = 62;
     } else {
-      for(int i = 0; i < number_of_lines_120; i++) {
+      for (int i = 0; i < number_of_lines_120; i++) {
         debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
       }
     }
@@ -819,7 +854,8 @@ void loop() {
 
       generate_steer_angle_string(steer_angle_120);
 
-      write_i2c(current_angle_string);
+      //write_i2c(current_angle_string);
+      KL25z_data(current_angle_string);
       last_steer_angle = steer_angle_120;
     } else {
       //write_i2c(current_angle_string);
@@ -863,7 +899,7 @@ void loop() {
         index_of_left_line = 0;
         index_of_right_line = 62;
       } else {
-        for(int i = 0; i < number_of_lines_165; i++) {
+        for (int i = 0; i < number_of_lines_165; i++) {
           debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
         }
       }
@@ -902,9 +938,9 @@ void loop() {
         //if((last_steer_angle > 400 && steer_angle_165 < 100 && steer_angle_165 > 0) || (last_steer_angle < -400 && steer_angle_165 > -100 && steer_angle_165 < 0))
         //steer_angle_165 = steer_angle_165 * 4;
 
-        if(steer_angle_165 > 0 && steer_angle_165 < 100)
+        if (steer_angle_165 > 0 && steer_angle_165 < 100)
           steer_angle_165 = 100;
-        else if(steer_angle_165 < 0 && steer_angle_165 > -100)
+        else if (steer_angle_165 < 0 && steer_angle_165 > -100)
           steer_angle_165 = -100;
 
         if (steer_angle_165 > 450)
@@ -914,16 +950,18 @@ void loop() {
 
         generate_steer_angle_string(steer_angle_165);
 
-        write_i2c(current_angle_string);
+        //write_i2c(current_angle_string);
+        KL25z_data(current_angle_string);
         last_steer_angle = steer_angle_165;
       }
       else { // write last steer angle
         //debug("seeing no line, sending last angle string\n");
-        write_i2c(current_angle_string);
+        //write_i2c(current_angle_string);
+        KL25z_data(current_angle_string);
       }
     }
   }
-  if (DEBUG_GRAY_VALUES)
+  if (digitalRead(PIN_BT) == HIGH)
   {
     String s_25;
     String s_75;
@@ -935,12 +973,12 @@ void loop() {
 
     for (int i = 0; i < 63; i++) {
       //debug(String(black_or_white_at_75[i]));
-      
+
       s_25 += String(rgb_25[i]) + " ";
       //if(i == 62)
-        //s_25 += "255 ";
+      //s_25 += "255 ";
       //else
-        //s_25 += String(differences_75[i]) + " ";
+      //s_25 += String(differences_75[i]) + " ";
       s_75 += String(rgb_75[i]) + " ";
       s_120 += String(rgb_120[i]) + " ";
       s_165 += String(rgb_165[i]) + " ";
@@ -953,8 +991,9 @@ void loop() {
     debug(mainString);
 
   }
- 
-//  Serial.println(millis());
+
+  //  Serial.println(millis());
   Ultrasonic_LEFT();
   Serial_receive();
+  Serial_KL25z_receive();
 }
