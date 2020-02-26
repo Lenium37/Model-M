@@ -74,6 +74,7 @@ bool start_stream = true;
 unsigned long begin_of_steering_straight = 0;
 bool maybe_on_straight = false;
 bool flag_serial4 = true;
+uint8_t Start_Stop = 1;
 float Speed_left = 0.0;
 float Speed_right = 0.0;
 void debug(String s) {
@@ -85,10 +86,15 @@ void debug(String s) {
   // if changing Serial number don't forget to change it in setup() as well!
 }
 void KL25z_data(String s) {
-  if (true)
+  if (Start_Stop == 1)
   {
-    Serial4.print(s);
+    Serial4.print(s + "A");
     flag_serial4 = false;
+  }if (Start_Stop == 2)
+  {
+    Serial4.print("XXXXXX");
+    Serial4.print("XXXXXX");
+    Start_Stop = 3;
   }
   // if changing Serial number don't forget to change it in setup() as well!
 }
@@ -118,35 +124,49 @@ void Serial_receive()
       incomingData.trim();
       if (start_stream == true)
       {
-        int p1 = incomingData.indexOf("$");
-        int p2 = incomingData.indexOf("$$", p1);
-        int p3 = incomingData.indexOf("$$$", p2);
-        int p4 = incomingData.indexOf("$$$$", p3);
-        int p5 = incomingData.indexOf("%", p4);
-        int p6 = incomingData.indexOf("/", p5);
-        int p7 = incomingData.indexOf("//", p6);
-        int p8 = incomingData.indexOf("///", p7);
-        int p9 = incomingData.indexOf("////", p8);
-        int p10 = incomingData.indexOf("§", p8);
-        int p11 = incomingData.indexOf("§§", p9);
-        int p12 = incomingData.indexOf("§§§", p10);
-        int p13 = incomingData.indexOf("§§§§", p11);
-        //int p14 = incomingData.indexOf("?", p12);
+        int p1 = incomingData.indexOf("!");
+        int p2 = incomingData.indexOf("§", p1);
+        int p3 = incomingData.indexOf("$", p2);
+        int p4 = incomingData.indexOf("%", p3);
+        int p5 = incomingData.indexOf("/", p4);
+        int p6 = incomingData.indexOf("(", p5);
+        int p7 = incomingData.indexOf(")", p6);
+        int p8 = incomingData.indexOf("=", p7);
+        int p9 = incomingData.indexOf("?", p8);
+        int p10 = incomingData.indexOf("#", p9);
+        int p11 = incomingData.indexOf("+", p10);
+        int p12 = incomingData.indexOf("*", p11);
+        int p13 = incomingData.indexOf("-", p12);
+        int p14 = incomingData.indexOf(";", p13);
 
         String Brightness_data = incomingData.substring(0, p1);
         String OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER_data = incomingData.substring(p1 + 1, p2);
-        String OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER_data = incomingData.substring(p2 + 2, p3);
-        String THRESHOLD_GRAY_data = incomingData.substring(p3 + 3, p4);
-        String MIN_TRACK_WIDTH_data = incomingData.substring(p4 + 4, p5);
+        String OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER_data = incomingData.substring(p2 + 1, p3);
+        String THRESHOLD_GRAY_data = incomingData.substring(p3 + 1, p4);
+        String MIN_TRACK_WIDTH_data = incomingData.substring(p4 + 1, p5);
         String Red_data = incomingData.substring(p5 + 1, p6);
         String Blue_data = incomingData.substring(p6 + 1, p7);
-        String Green_data = incomingData.substring(p7 + 2, p8);
-        String Led_Brightness_data = incomingData.substring(p8 + 3, p9);
-        String LEFT_DISTANCE_THRESHOLD_data = incomingData.substring(p9 + 4, p10);
-        String RIGHT_DISTANCE_THRESHOLD_data = incomingData.substring(p10 + 2, p11);
-        String ULTRASONIC_SAMPELS_data = incomingData.substring(p11 + 4, p12);
-        String OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data = incomingData.substring(p12 + 6, p13);
-
+        String Green_data = incomingData.substring(p7 + 1, p8);
+        String Led_Brightness_data = incomingData.substring(p8 + 1, p9);
+        String LEFT_DISTANCE_THRESHOLD_data = incomingData.substring(p9 + 1, p10);
+        String RIGHT_DISTANCE_THRESHOLD_data = incomingData.substring(p10 + 1, p11);
+        String Speed_data = incomingData.substring(p11 + 1, p12);
+        String OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data = incomingData.substring(p12 + 1, p13);
+        String Start_Stop_data = incomingData.substring(p13 + 1, p14);
+        
+        float Speed_data_float = Speed_data.toFloat();
+        int Speed_data_int = Speed_data_float*100;
+        if(Speed_data_int < 100)
+        {
+          Speed_data = "V0" + String(abs(Speed_data_int)) + "V";
+        }else if(Speed_data_int > 100)
+        {
+        Speed_data = "V" + String(abs(Speed_data_int)) + "V";
+        }
+        if(Speed_data_int < 10)
+        {
+          Speed_data = "V00" + String(abs(Speed_data_int)) + "V";
+        }
         Led_Brightness = 21 - Led_Brightness_data.toInt();
         data_eepromm[0] = Led_Brightness;
         int Brightness = Brightness_data.toInt();
@@ -183,8 +203,10 @@ void Serial_receive()
         RIGHT_DISTANCE_THRESHOLD = RIGHT_DISTANCE_THRESHOLD_data.toInt();
         data_eepromm[10] = RIGHT_DISTANCE_THRESHOLD;
 
-        ULTRASONIC_SAMPELS = ULTRASONIC_SAMPELS_data.toInt();
+        ULTRASONIC_SAMPELS = Speed_data.toInt();
         data_eepromm[11] = ULTRASONIC_SAMPELS;
+
+        Start_Stop = Start_Stop_data.toInt();
 
         //Serial.println(incomingData.length());
         for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++)
@@ -192,6 +214,8 @@ void Serial_receive()
           EEPROM_write_read(i, data_eepromm[i], true);
         }
         set_LED(Red, Green, Blue);
+        Serial.println(Start_Stop);
+        KL25z_data(Speed_data);
         pixy.setCameraBrightness(Brightness);
       }
     }
@@ -569,7 +593,7 @@ void Ultrasonic_LEFT()
 }
 void loop() {
 
-
+  Serial_receive();
   debug("light sensor value: " + String(analogRead(PIN_LIGHT_SENSOR)) + "\n");
 
   //Serial4.print("S000S");
@@ -961,6 +985,7 @@ void loop() {
       }
     }
   }
+  
   if (digitalRead(PIN_BT) == HIGH)
   {
     String s_25;
@@ -968,6 +993,7 @@ void loop() {
     String s_120;
     String s_165;
     String US_data;
+    String Speed;
     //debug("\n");
 
 
@@ -983,17 +1009,18 @@ void loop() {
       s_120 += String(rgb_120[i]) + " ";
       s_165 += String(rgb_165[i]) + " ";
     }
+    Speed = String(Speed_right);
     US_data += String(abs(distanceCmLeft), DEC);
     US_data += " ";
     US_data += String(abs(distanceCmRight), DEC);
     US_data += " ";
-    String mainString = (" # " + s_25 + " $ " + s_75 + " $$ " + s_120 + " $$$ " + s_165 + " $$$$ " + US_data + " / " + "\n" + "&");
+    String mainString = (" # " + s_25 + " $ " + s_75 + " $$ " + s_120 + " $$$ " + s_165 + " $$$$ " + US_data + " / " + Speed + " // " + "\n" + "&");
     debug(mainString);
 
   }
 
   //  Serial.println(millis());
   Ultrasonic_LEFT();
-  Serial_receive();
+  
   Serial_KL25z_receive();
 }
