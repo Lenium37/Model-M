@@ -2816,7 +2816,7 @@ Autoselect
         <Interrupt_TxD_priority v="medium priority" />
         <Interrupt_Error v="INT_UART2" />
         <Interrupt_Error_priority v="medium priority" />
-        <Input_buffer_size v="5" />
+        <Input_buffer_size v="6" />
         <Output_buffer_size v="5" />
         <group name="Handshake">
           <boolgroup name="CTS" v="Disabled" />

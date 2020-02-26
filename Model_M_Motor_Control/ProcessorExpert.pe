@@ -3,7 +3,7 @@
   <Header>
     <Name>Model_M_Motor_control</Name>
     <SavedBy>Moritz</SavedBy>
-    <ModificationStamp>156</ModificationStamp>
+    <ModificationStamp>157</ModificationStamp>
     <Date>2019-10-31</Date>
     <IDE>Eclipse IDE</IDE>
     <PEversion>1.12.2.RT7_b1550-0615</PEversion>
@@ -29,7 +29,7 @@
     <UseExistingModules>true</UseExistingModules>
     <RenamePeripheries>false</RenamePeripheries>
     <Autodependency>true</Autodependency>
-    <ProjectCompNumb>363</ProjectCompNumb>
+    <ProjectCompNumb>366</ProjectCompNumb>
     <DelUnusedPreviouslyGenFiles>true</DelUnusedPreviouslyGenFiles>
     <GeneratedCodeFrozen>false</GeneratedCodeFrozen>
     <AssignInitComponentNameToPrph>true</AssignInitComponentNameToPrph>
@@ -25954,7 +25954,7 @@
             </ItemState>
             <ItemState>
               <ItemSymbol>MaximumTime</ItemSymbol>
-              <Value />
+              <Value>8388608 sec</Value>
             </ItemState>
             <ItemState>
               <ItemSymbol>_InitGrp</ItemSymbol>
@@ -37197,7 +37197,7 @@
         <ReadOnly>false</ReadOnly>
         <UserReadOnly>false</UserReadOnly>
         <PropertyModelIsAutomatic>false</PropertyModelIsAutomatic>
-        <Value>5</Value>
+        <Value>6</Value>
         <Base>DEC</Base>
       </ItemState>
       <ItemState>

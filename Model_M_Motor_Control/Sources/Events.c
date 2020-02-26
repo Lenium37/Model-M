@@ -77,7 +77,16 @@ extern struct {
   char Zener;
   char Einer;
   char straight_curve;
+  char align;
 } message;
+extern struct {
+  char Direction_buffer;
+  char Hundert_buffer;
+  char Zener_buffer;
+  char Einer_buffer;
+  char straight_curve_buffer;
+  char align_buffer;
+} message_buffer;
 /*
  ** ===================================================================
  **     Event       :  Cpu_OnNMIINT (module Events)
@@ -120,8 +129,6 @@ void RechtsINT_OnInterrupt(void)
 				float Rechts_time_real = Rechts_time - Rechst_time_prev;
 
 				velocity_Rechts += Abstand_Mag/Rechts_time_real;
-
-				//printf("SPEED: %f \n",velocity_Rechts);
 				avg_counter_rechts++;
 				first_pulse_rechts = 1;
 			}
@@ -398,9 +405,16 @@ void AS1_OnFullRxBuf(void)
 {
 	word Received;
 	byte err;
-	err = AS1_RecvBlock((byte*)&message, sizeof(message), &Received);
+	err = AS1_RecvBlock((byte*)&message_buffer, sizeof(message_buffer), &Received);
 	AS1_ClearRxBuf();
 	flag_buffer_empty = TRUE;
+
+	message.Direction = message_buffer.Direction_buffer;
+	message.Einer =	message_buffer.Einer_buffer;
+	message.Zener =	message_buffer.Zener_buffer;
+	message.Hundert = message_buffer.Hundert_buffer;
+	message.straight_curve = message_buffer.straight_curve_buffer;
+	message.align = message_buffer.align_buffer;
 
 }
 
