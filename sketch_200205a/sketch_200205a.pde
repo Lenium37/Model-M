@@ -25,6 +25,7 @@ ControlP5 cp21;
 Textarea myTextarea;
 Textlabel Left_US;
 Textlabel Right_US;
+Textlabel Speed_kl25z;
 Println console;
 Table table;
 
@@ -34,6 +35,7 @@ Button b2;
 Button b3;
 Button b4;
 Button b5;
+Button b6;
 
 int Brightness = 0;
 int Offset_at_75_to_Center = 0;
@@ -47,9 +49,9 @@ int Blue = 0;
 int Led_Brightness = 0;
 int LEFT_DISTANCE = 0;
 int RIGHT_DISTANCE = 0;
-int ULTRASONIC_SAMPELS = 0;
+float norminal_speed = 0;
 int THRESHOLD_DIFFERENCE = 0;
-
+int Stop_Start = 0;
 int Threshold_Gray_bar = 0;
 
 int Brightness_table = 0;
@@ -64,7 +66,7 @@ int Blue_table = 0;
 int Led_Brightness_table = 0;
 int LEFT_DISTANCE_table = 0;
 int RIGHT_DISTANCE_table = 0;
-int ULTRASONIC_SAMPELS_table = 0;
+float norminal_speed_table = 0;
 
 int Y_AXIS = 1;
 int X_AXIS = 2;
@@ -85,6 +87,7 @@ int Pixel_count = 63;
 boolean press_start = false;
 int button_counter = 0;
 int button2_counter = 0;
+int button3_counter = 0;
 int drop_counter = 0;
 int Console_status = 3;
 // The serial port
@@ -139,7 +142,7 @@ void setup() {
   table.addColumn("Led_Brightness", Table.INT);
   table.addColumn("LEFT_DISTANCE", Table.INT);
   table.addColumn("RIGHT_DISTANCE", Table.INT);
-  table.addColumn("ULTRASONIC_SAMPELS", Table.INT);
+  table.addColumn("norminal_speed", Table.FLOAT);
   table = loadTable("Settings.csv", "header");
 
   if (table != null)
@@ -157,7 +160,7 @@ void setup() {
     Led_Brightness_table = table.getInt(RowCount-1, "Led_Brightness");
     LEFT_DISTANCE_table = table.getInt(RowCount-1, "LEFT_DISTANCE");
     RIGHT_DISTANCE_table = table.getInt(RowCount-1, "RIGHT_DISTANCE");
-    ULTRASONIC_SAMPELS_table = table.getInt(RowCount-1, "ULTRASONIC_SAMPELS");
+    norminal_speed_table = table.getFloat(RowCount-1, "norminal_speed");
     Threshold_Gray_bar = Threshold_Gray_table;
   }
   f = createFont("Arial", 16, true);  
@@ -206,6 +209,12 @@ void setup() {
     .setFont(createFont("Georgia", 20))
     .setVisible(true);
   ;
+   Speed_kl25z = cp21.addTextlabel("Speed_kl25z")
+    .setPosition(280, 5)
+    .setColorValue(50)
+    .setFont(createFont("Georgia", 20))   
+    .setVisible(true);
+  ;
   // create a toggle
   cp17.addToggle("Serial_Monitor")
     .setPosition(540, 520)
@@ -221,9 +230,13 @@ void setup() {
     .setPosition(20, 680)
     .setSize(63,20)
     .setColorLabel(255)
+    ;  
+  b6 = cp18.addButton("Go")
+    .setPosition(100, 680)
+    .setSize(63,20)
+    .setColorLabel(255)
+    .setLabel("Go")
     ;   
-
-
   cp9.addSlider("Line_4")
     .setPosition(215, 490)
     .setSize(200,10)
@@ -319,12 +332,12 @@ void setup() {
     .setValue(RIGHT_DISTANCE_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("ULTRASONIC_SAMPELS")
+  cp12.addSlider("norminal_speed")
     .setPosition(350, 680)
     .setSize(200, 10)
-    .setRange(0, 40)
+    .setRange(0.0,5.0)
     .setColorLabel(100)
-    .setValue(ULTRASONIC_SAMPELS_table)
+    .setValue(norminal_speed_table)
     .setVisible(true); 
   ;
   cp12.addSlider("Red")
@@ -424,6 +437,7 @@ void setup() {
   cp17.setVisible(false); 
   Left_US.setVisible(false); 
   Right_US.setVisible(false); 
+  Speed_kl25z.setVisible(false);
   //String portName = Serial.list()[4];
   // myPort initialisieren, Übertragungsrate wie bei Arduino Sketch einstellen
   //myPort = new Serial(this, portName, 115200);
@@ -533,6 +547,7 @@ void draw() {
     int p3 = portStream.indexOf(" $$$ ");
     int p4 = portStream.indexOf(" $$$$ ");
     int p5 = portStream.indexOf(" / ");
+    int p6 = portStream.indexOf(" // ");
     //println(p2);
     //println(p3);
     //println(p4);
@@ -546,6 +561,7 @@ void draw() {
       Line_bottom_middel = portStream.substring(p2+3, p3);
       Line_bottom = portStream.substring(p3+4, p4);
       US_data  = portStream.substring(p4+1,p5);
+      String Speed_str = portStream.substring(p5+2,p6);
       print(Serial_Monitor_stream);
       if (Console_status == 0)
       {
@@ -563,7 +579,6 @@ void draw() {
       nums_bottom_middel = int(split(Line_bottom_middel, ' '));
       nums_bottom = int(split(Line_bottom, ' '));
       US_data_array = float(split(US_data, ' '));
-
 
       for (int x = 5; x<35; x++)
       {
@@ -585,8 +600,10 @@ void draw() {
         US_data_array_int_Left = - 1;
         String Left_stg = str(US_data_array_int_Left);
         String Right_stg = str(US_data_array_int_Right);
+        
         Left_US.setText(Left_stg);
         Right_US.setText(Right_stg);
+        Speed_kl25z.setText(Speed_str);
         //float Left = US_data_array[1];
         //float Right = US_data_array[2];
         if (US_data_array_int_Left < LEFT_DISTANCE  || US_data_array_int_Right < RIGHT_DISTANCE )
@@ -764,6 +781,7 @@ public void Start() {
     
     Left_US.setVisible(true); 
     Right_US.setVisible(true); 
+    Speed_kl25z.setVisible(true);
     cp17.setVisible(true); 
     cp18.setVisible(true); 
     cp9.setVisible(true); 
@@ -783,7 +801,8 @@ public void Stop() {
   if (button2_counter == 2)
   {
     Left_US.setVisible(false); 
-    Right_US.setVisible(false); 
+    Right_US.setVisible(false);
+    Speed_kl25z.setVisible(false);
     cp17.setVisible(false); 
     cp18.setVisible(false); 
     cp9.setVisible(false); 
@@ -801,6 +820,21 @@ public void Stop() {
 public void Pause() 
 {
   Console_status = 0;
+}
+public void Go() 
+{
+  button3_counter++;
+  if (button3_counter == 1)
+  {
+    Stop_Start = 1;
+    b6.setLabel("Brake");
+  }
+  if (button3_counter == 2)
+  {
+    Stop_Start = 2;
+    button3_counter = 0;
+    b6.setLabel("Go");
+  }
 }
 public void Play() 
 {
@@ -841,33 +875,33 @@ void Apply(boolean theFlag) {
   console.clear();
 
   Data_send =  str(Brightness);
-  Data_send += "$";
+  Data_send += "!";
   Data_send += str(Offset_at_75_to_Center);
-  Data_send += "$$";
-  Data_send += str(Offset_at_120_to_Center);
-  Data_send += "$$$";
-  Data_send += str(Threshold_Gray);
-  Data_send += "$$$$";
-  Data_send += str(Min_Track_width);
-  Data_send += "%";
-  Data_send += str(Red);
-  Data_send += "/";
-  Data_send += str(Blue);
-  Data_send += "//";
-  Data_send += str(Green);
-  Data_send += "///";
-  Data_send += str(Led_Brightness);
-  Data_send += "////";
-  Data_send += str(LEFT_DISTANCE);
   Data_send += "§";
+  Data_send += str(Offset_at_120_to_Center);
+  Data_send += "$";
+  Data_send += str(Threshold_Gray);
+  Data_send += "%";
+  Data_send += str(Min_Track_width);
+  Data_send += "/";
+  Data_send += str(Red);
+  Data_send += "(";
+  Data_send += str(Blue);
+  Data_send += ")";
+  Data_send += str(Green);
+  Data_send += "=";
+  Data_send += str(Led_Brightness);
+  Data_send += "?";
+  Data_send += str(LEFT_DISTANCE);
+  Data_send += "#";
   Data_send += str(RIGHT_DISTANCE);
-  Data_send += "§§";
-  Data_send += str(ULTRASONIC_SAMPELS);
-  Data_send += "§§§";
+  Data_send += "+";
+  Data_send += nf(norminal_speed,1,2);
+  Data_send += "*";
   Data_send += str(Offset_at_165_to_Center);
-  Data_send += "§§§§";
-  //Data_send += str(Offset_at_165_to_Center);
-  //Data_send += "&";
+  Data_send += "-";
+  Data_send += str(Stop_Start);
+  Data_send += ";";
 
   TableRow newRow = table.addRow();
 
@@ -883,13 +917,13 @@ void Apply(boolean theFlag) {
   newRow.setInt("Led_Brightness", Led_Brightness);
   newRow.setInt("LEFT_DISTANCE", LEFT_DISTANCE);
   newRow.setInt("RIGHT_DISTANCE", RIGHT_DISTANCE);
-  newRow.setInt("ULTRASONIC_SAMPELS", ULTRASONIC_SAMPELS);
+  newRow.setFloat("norminal_speed", norminal_speed);
   saveTable(table, "Settings.csv");
   Threshold_Gray_bar = Threshold_Gray;
   myPort.write(Data_send);
-  println(Data_send.length());
-  println(Data_send);
-  //myPort.write('&');
+  //println(Data_send.length());
+  //println(Data_send);
+  myPort.write('&');
 }
 void controlEvent(ControlEvent theEvent) {
 
@@ -965,4 +999,20 @@ void setGradient(int x, int y, float w, float h, color c1, color c2, int axis ) 
       line(i, y, i, y+h);
     }
   }
+}
+void norminal_speed(float norminal_speed_value) {
+  float correction_value = -0.15;
+  if(norminal_speed_value < 0.15)
+  {
+    correction_value = 0;
+  }
+  if(norminal_speed_value > 1.3)
+  {
+    correction_value = -0.3;
+  }
+  if(norminal_speed_value > 2.0)
+  {
+    correction_value = -0.4;
+  }
+  norminal_speed = norminal_speed_value+correction_value;
 }

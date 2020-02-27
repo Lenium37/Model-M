@@ -29,7 +29,7 @@
     <UseExistingModules>true</UseExistingModules>
     <RenamePeripheries>false</RenamePeripheries>
     <Autodependency>true</Autodependency>
-    <ProjectCompNumb>366</ProjectCompNumb>
+    <ProjectCompNumb>367</ProjectCompNumb>
     <DelUnusedPreviouslyGenFiles>true</DelUnusedPreviouslyGenFiles>
     <GeneratedCodeFrozen>false</GeneratedCodeFrozen>
     <AssignInitComponentNameToPrph>true</AssignInitComponentNameToPrph>
@@ -25954,7 +25954,7 @@
             </ItemState>
             <ItemState>
               <ItemSymbol>MaximumTime</ItemSymbol>
-              <Value>8388608 sec</Value>
+              <Value />
             </ItemState>
             <ItemState>
               <ItemSymbol>_InitGrp</ItemSymbol>

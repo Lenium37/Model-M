@@ -1,2 +1,2 @@
-Brightness,Offset_at_75_to_Center,Offset_at_120_to_Center,Offset_at_165_to_Center,Threshold_Gray,Min_Track_width,Red,Blue,Green,Led_Brightness,LEFT_DISTANCE,RIGHT_DISTANCE,ULTRASONIC_SAMPELS
+Brightness,Offset_at_75_to_Center,Offset_at_120_to_Center,Offset_at_165_to_Center,Threshold_Gray,Min_Track_width,Red,Blue,Green,Led_Brightness,LEFT_DISTANCE,RIGHT_DISTANCE,norminal_speed
 196,29,31,31,53,21,255,255,28,20,38,38,21
