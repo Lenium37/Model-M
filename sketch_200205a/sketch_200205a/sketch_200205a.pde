@@ -877,7 +877,7 @@ void Apply(boolean theFlag) {
   Data_send =  str(Brightness);
   Data_send += "!";
   Data_send += str(Offset_at_75_to_Center);
-  Data_send += "§";
+  Data_send += "[";
   Data_send += str(Offset_at_120_to_Center);
   Data_send += "$";
   Data_send += str(Threshold_Gray);
