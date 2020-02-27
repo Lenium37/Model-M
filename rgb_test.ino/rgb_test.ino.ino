@@ -199,7 +199,7 @@ void Serial_receive()
         data_eepromm[7] = THRESHOLD_GRAY;
 
         MIN_TRACK_WIDTH = MIN_TRACK_WIDTH_data.toInt();
-        data_eepromm[8] = THRESHOLD_GRAY;
+        data_eepromm[8] = MIN_TRACK_WIDTH;
 
         LEFT_DISTANCE_THRESHOLD = LEFT_DISTANCE_THRESHOLD_data.toInt();
         data_eepromm[9] = LEFT_DISTANCE_THRESHOLD;
@@ -246,7 +246,7 @@ void generate_steer_angle_string(int steer_angle) {
 
   if ((steer_angle >= 0 && steer_angle < 225) || (steer_angle <= 0 && steer_angle > -225)) {
     if (maybe_on_straight) {
-      if (millis() - begin_of_steering_straight > 100) {
+      if (millis() - begin_of_steering_straight > 50) {
         currently_in_curve = false;
       }
     } else {
