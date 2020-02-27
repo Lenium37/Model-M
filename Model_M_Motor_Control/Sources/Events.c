@@ -46,19 +46,16 @@ float velocity_Rechts_avg = 0.0;
 volatile uint16_t Speed_time_Links = 0;
 uint16_t Speed_time_Rechts = 0;
 
-extern bool flags_rev;
-extern bool errFlags_rev;
+
+
 extern bool flags_send;
-extern bool Start_up;
-extern byte cntr;
 extern byte flags;
 extern bool flag_buffer_empty;
 bool first_pulse_active = TRUE;
 
 extern uint16_t Pulse_counter;
 
-extern bool Serial;
-int count = 0;
+
 volatile int64_t Counter_OVF = 0;
 uint8_t avg_counter_rechts = 0;
 uint8_t avg_counter_links = 0;
@@ -69,8 +66,7 @@ int8_t first_pulse_rechts = 0;
 int8_t first_pulse_links = 0;
 float Rechst_time_prev = 0;
 float Links_time_prev = 0;
-byte data[5];
-word ret;
+
 extern struct {
   char Direction;
   char Hundert;

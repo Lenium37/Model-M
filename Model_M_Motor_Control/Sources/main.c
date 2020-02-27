@@ -74,11 +74,8 @@
 #include "PE_Const.h"
 #include "IO_Map.h"
 #include <stdlib.h>
-/* User includes (#include below this line is not maintained by Processor Expert) */
-#define TX_CHAR     1    /* Flag for OnTxChar event */
-#define BUFFER_FREE 2    /* Flag for OnFreeTxBuf event */
-#define TX_EMPTY    4    /* Flag for OnTxEmpty event */
-#define SLAVE  0x09
+
+
 byte flags;
 byte err;
 byte send_data[5];
@@ -162,9 +159,12 @@ uint16_t Break_intens = 0;
 uint16_t Start_point = 10000;
 uint16_t linescan_counter = 0;
 bool prev_S = FALSE;
+bool prev_C = FALSE;
+uint32_t after_curve_counter = 0;
+uint32_t higer_speed_after_curve = 300;
 float Speed_Ms = 0;
 
-uint8_t kp_Teiler = 36;
+uint8_t kp_Teiler = 30;
 struct {
 	char Direction;
 	char Hundert;
@@ -323,170 +323,6 @@ int Cal_Angle_Speed(uint8_t Hundred, uint8_t Ten, uint8_t Zero) {
 
 	return Hundred * 100 + Ten * 10 + Zero;
 }
-int Linien_zeahlen(uint8_t array_laenge, uint8_t MinBreite, uint8_t MaxBreite) {
-	uint8_t Linienbreite = 0;
-	uint8_t Linienerkannt = 0;
-	for (int i = 0; i < array_laenge + 1; i++) {
-		if (i == array_laenge && pre_null == 1) {
-			anzahl_linien++;
-			Pixel_Null[anzahl_linien] = anzahl_null_bar;
-			anzahl_null_bar = 0;
-		}
-		if (Pixel_Auswertung[i] == 1 && pre_null == 1) {
-			anzahl_linien++;
-			Pixel_Null[anzahl_linien] = anzahl_null_bar;
-			anzahl_null_bar = 0;
-			pre_null = 0;
-		}
-		if (Pixel_Auswertung[i] == 0) {
-			anzahl_null_bar++;
-
-			pre_null = 1;
-		}
-	}
-	null_diff = 0;
-	for (int i = 2; i < anzahl_linien; i++) {
-		if (Pixel_Null[i] >= MinBreite && Pixel_Null[i] <= MaxBreite) {
-			Linienerkannt++;
-		}
-		null_diff = null_diff + Pixel_Null[i];
-	}
-	if (Linienerkannt == 4) {
-		VierLinien++;
-		if (VierLinien >= 3) {
-			LED4_On();
-			LED3_Off();
-			VierLinien = 0;
-		}
-	}
-	if (Linienerkannt == 3) {
-		DreiLinien++;
-		if (DreiLinien >= 3) {
-			LED4_Off();
-			LED3_On();
-			DreiLinien = 0;
-		}
-	}
-	if (Linienerkannt > 4 || Linienerkannt < 3) {
-		LED4_Off();
-		LED3_Off();
-	}
-	if (Serialline == TRUE) {
-		//printf("Anzahl Linien: ");
-		//printf("%d\n", Linienerkannt);
-	}
-	anzahl_null_bar = 0;
-	anzahl_linien = 0;
-	Linienerkannt = 0;
-}
-int Auswertung(uint8_t array_laenge, uint16_t Black_Threshold) {
-	for (int i = 0; i < array_laenge; i++) {
-		if (Pixel[i] > Black_Threshold) {
-			Pixel_Auswertung[i] = 1;
-			anzahl_eins++;
-			erkennung_rechts == 1;
-			if (erkennung_links == 1) {
-				Linke_Linie = anzahl_null;
-				anzahl_null = 0;
-				erkennung_links = 0;
-			}
-		} else {
-			Pixel_Auswertung[i] = 0;
-			anzahl_null++;
-			if (erkennung_rechts == 1 && i == array_laenge - 1) {
-				Rechte_Linie = anzahl_null;
-				erkennung_rechts = 0;
-			}
-		}
-		if (Serialline == TRUE) {
-			//printf("%d", Pixel_Auswertung[i]);
-
-		}
-	}
-	//printf("\n");
-	Rechte_Linie = Rechte_Linie - null_diff;
-	erkennung_links = 1;
-	erkennung_rechts = 1;
-	Linien_zeahlen(array_laenge, 4, 7);
-}
-uint16_t Threshold_cal() {
-	uint16_t Threshold = 0;
-	uint16_t PixelVal = 0;
-	uint16_t MinVal = 65535;
-	uint16_t MaxVal = 0;
-	for (int i = 1; i < 126; i++) {
-		PixelVal = Pixel[i];
-		//printf("%d\n",PixelVal);
-		if (MinVal < PixelVal) {
-			MinVal = MinVal;
-		} else {
-			MinVal = PixelVal;
-		}
-		if (MaxVal > PixelVal) {
-			MaxVal = MaxVal;
-		} else {
-			MaxVal = PixelVal;
-		}
-
-	}
-	Threshold = (MaxVal - MinVal) / 2;
-	//printf("Max: %d\n", MaxVal);
-	//printf("Min: %d\n", MinVal);
-	return Threshold;
-}
-void LineKamera() {
-	uint16_t ADC_Wert = 0;
-	uint16_t Threshold = 0;
-	uint16_t exposure_time_on = 2;
-	uint16_t exposure_time_off = 2;
-	if (CLK_ON == FALSE) {
-		if (linescan_counter == 0 && Start_line == TRUE) //Kommunikation gestartet?
-		{
-			//SI_On();                 //Einschalten von SI PTD7
-
-			SI_PutVal(TRUE);
-			WAIT1_Waitus(5);
-			Start_line = TRUE;
-		}
-		CLK_On();      //CLK_Neg();                 //CLK Signal auf High  PTE1
-		if (Start_line == TRUE)             //Kommunikation gestartet?
-		{
-			WAIT1_Waitus(5);
-			//SI_Off();     //SI auf LOW vor der n�chsten Fallendenflanke von CLK
-			SI_PutVal(FALSE);
-			Start_line = FALSE;
-		}                   //1 = LOW pulse 2 = High Pulse = Eine Periode
-		CLK_ON = TRUE;
-	}
-	if (linescan_counter == exposure_time_on) {
-		CLK_OFF = TRUE;
-	}
-	if (CLK_OFF == TRUE)                     //Wenn CLK auf High lese ADC aus
-	{
-		(void) Potis_MeasureChan(TRUE, 2);
-		(void) Potis_GetChanValue16(2, &ADC_Wert);
-		Pixel[array_pos] = ADC_Wert; //Schreibe Aktuellen Analogwert in das Array
-		array_pos++;                    //Position des Arrays inkrementieren
-		CLK_Off();
-		if (array_pos == 129)             //Alle 129 Werte ausgelesen
-				{
-			array_pos = 0;                 //Array position wieder auf null
-			linescan_counter = 0;
-			startup = 0;
-			Start_line = TRUE;
-			//Threshold = Threshold_cal();
-			//Auswertung(128, Threshold);
-		}
-		CLK_OFF = FALSE;
-	}
-	//}
-	linescan_counter++;
-	if (linescan_counter == exposure_time_off + exposure_time_on) {
-		linescan_counter = 0;
-		CLK_ON = FALSE;
-
-	}
-}
 void Break(uint16_t Rev_Speed, uint16_t Block_Time) {
 	if (Break_Active == TRUE) {
 		Regler_Active = FALSE;
@@ -556,8 +392,7 @@ int main(void)
 		//printf("Speed_rechts: %0.2f Soll_rechts: %0.2f\n",velocity_Rechts_avg,Speed_Ms_rechts);
 		//printf("Speed_rechts: %0.2f\n",velocity_Rechts_avg);
 		//printf("\n");
-		Speed_regulated_rechts = map(Speed_regulated_rechts, 0, 65300, 65300,
-				0);
+		Speed_regulated_rechts = map(Speed_regulated_rechts, 0, 65300, 65300,0);
 		Speed_regulated_links = map(Speed_regulated_links, 0, 65300, 65300, 0);
 
 		send_message.Speed_Right = velocity_Rechts_avg * 100;
@@ -578,19 +413,6 @@ int main(void)
 			flag_buffer_empty = FALSE;
 		}
 
-		/*uint16_t LR_diff = 0;
-		 if(Angle > 400) {
-		 LR_diff = Speed_regulated / 5;
-		 if(Speed_regulated + LR_diff > 65300) {
-		 LR_diff = Speed_regulated / 8;
-		 if(Speed_regulated + LR_diff > 65300) {
-		 LR_diff = Speed_regulated / 10;
-		 if(Speed_regulated + LR_diff > 65300) {
-		 LR_diff = 0;
-		 }
-		 }
-		 }
-		 }*/
 		if(message.align != 'A')
 			{
 				if(message.Direction == 'A')
@@ -640,9 +462,9 @@ int main(void)
 
 				}
 			}
-		//printf("data %c%c%c%c%c%c \n", message.Direction,message.Hundert, message.Zener, message.Einer,message.straight_curve,message.align);
+
 		Break(Break_intens, Break_period);
-		//printf("data %c%c%c%c%c , Angle: %d\n", message.Direction,message.Hundert, message.Zener, message.Einer,message.straight_curve, Angle);
+
 		if (message.Direction != 'V') {
 			Hundred = char_int(message.Hundert);
 			Ten = char_int(message.Zener);
@@ -668,19 +490,32 @@ int main(void)
 				Regler_Active = TRUE;
 				Kp_drive_rechts = 250;
 				Kp_drive_links = 250;
+				if(prev_C == TRUE)
+				{
+					Kp_drive_rechts = 350;
+					Kp_drive_links = 350;
+					after_curve_counter++;
+					if(after_curve_counter > higer_speed_after_curve)
+						prev_C = FALSE;
+				}
 				MotorRechts_SetRatio16(Speed_regulated_rechts);
 				MotorLinks_SetRatio16(Speed_regulated_links);
 			}
 			if (message.straight_curve == 'C' && Break_Active == FALSE) {
 				//S_multi_rechts = 1.0;
 				//S_multi_links = 1.0;
+				prev_C = TRUE;
 				Kp_drive_rechts = 250;
 				Kp_drive_links = 250;
-				if (prev_S == TRUE && velocity_Rechts_avg > 0.5) {
+				if (prev_S == TRUE && (velocity_Rechts_avg > 1 || velocity_links_avg > 1)) {
 					//Kp_drive = 0;
 					LED1_Off();
-					Break_period = 100;
-					Break_intens = 30000;
+					if(velocity_Rechts_avg > 1)
+					Break_intens =	map(velocity_Rechts_avg,0,Speed_Ms_rechts,20000,50000);
+					if(velocity_links_avg > 1)
+					Break_intens =	map(velocity_Rechts_avg,0,Speed_Ms_links,20000,50000);
+					Break_period = 70;
+					//Break_intens = 30000;
 					Break_Active = TRUE;
 					prev_S = FALSE;
 				}
@@ -707,7 +542,6 @@ int main(void)
 				(void) Potis_GetChanValue16(0, &value);
 				Speed_Ms = map(value, 0, 65535, 0, 4.0);
 			} else {
-
 				Hundred = char_int(message.Hundert);
 				Ten = char_int(message.Zener);
 				Zero = char_int(message.Einer);
@@ -737,7 +571,7 @@ int main(void)
 			Regler_Active = FALSE;
 			Break_Active = TRUE;
 			Break_period = 1000;
-			Break_intens = 20000;
+			Break_intens = 40000;
 			LED1_Off();
 			//EN_Off();
 		}
@@ -786,7 +620,6 @@ int main(void)
 			}
 			LED2_Off();
 		}
-		//LineKamera();
 		Programmcounter++;
 		if (Programmcounter >= 150) {
 			if (data[0] == '0' && data[1] == '0' && data[2] == '0'
