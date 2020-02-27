@@ -16,6 +16,7 @@
 #define TRIGGER_PIN_RIGHT 4
 #define ECHO_PIN_RIGHT 2
 #define ARRAY_EEPROMM_SIZE 13
+#define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 5
 
 Pixy2 pixy;
 
@@ -44,10 +45,6 @@ uint8_t rgb_165[63];
 uint8_t differences_75[63];
 uint8_t differences_120[63];
 uint8_t differences_165[63];
-int line_25_until_border = 0;
-int line_75_until_border = 0;
-int line_120_until_border = 0;
-int line_165_until_border = 0;
 bool currently_in_curve = false;
 String current_angle_string;
 float voltage_of_battery = 10;
@@ -77,6 +74,9 @@ bool flag_serial4 = true;
 uint8_t Start_Stop = 1;
 float Speed_left = 0.0;
 float Speed_right = 0.0;
+uint8_t counter_ultrasonics_triggered = 0;
+
+
 void debug(String s) {
   if (digitalRead(PIN_BT) == HIGH)
   {
@@ -86,6 +86,8 @@ void debug(String s) {
   // if changing Serial number don't forget to change it in setup() as well!
 }
 void KL25z_data(String s) {
+  //Serial.println("Start_Stop: " + String(Start_Stop));
+  //Serial.println(s);
   if (Start_Stop == 1)
   {
     Serial4.print(s + "A");
@@ -125,7 +127,7 @@ void Serial_receive()
       if (start_stream == true)
       {
         int p1 = incomingData.indexOf("!");
-        int p2 = incomingData.indexOf("§", p1);
+        int p2 = incomingData.indexOf("[", p1);
         int p3 = incomingData.indexOf("$", p2);
         int p4 = incomingData.indexOf("%", p3);
         int p5 = incomingData.indexOf("/", p4);
@@ -153,19 +155,19 @@ void Serial_receive()
         String Speed_data = incomingData.substring(p11 + 1, p12);
         String OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER_data = incomingData.substring(p12 + 1, p13);
         String Start_Stop_data = incomingData.substring(p13 + 1, p14);
-        
+
+        Speed_data.replace(",", ".");
         float Speed_data_float = Speed_data.toFloat();
-        int Speed_data_int = Speed_data_float*100;
-        if(Speed_data_int < 100)
-        {
-          Speed_data = "V0" + String(abs(Speed_data_int)) + "V";
-        }else if(Speed_data_int > 100)
-        {
-        Speed_data = "V" + String(abs(Speed_data_int)) + "V";
-        }
+        int Speed_data_int = Speed_data_float * 100;
         if(Speed_data_int < 10)
         {
           Speed_data = "V00" + String(abs(Speed_data_int)) + "V";
+        } else if(Speed_data_int < 100)
+        {
+          Speed_data = "V0" + String(abs(Speed_data_int)) + "V";
+        } else if(Speed_data_int >= 100)
+        {
+          Speed_data = "V" + String(abs(Speed_data_int)) + "V";
         }
         Led_Brightness = 21 - Led_Brightness_data.toInt();
         data_eepromm[0] = Led_Brightness;
@@ -614,15 +616,10 @@ void loop() {
   uint8_t gray;
   //debug(String(millis()) + "\n");
 
-  line_25_until_border = 0;
-  line_75_until_border = 0;
-  line_120_until_border = 0;
-  line_165_until_border = 0;
   //int look_towards_right_or_left = 0;
 
 
   for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
-
 
     if (digitalRead(PIN_BT) == HIGH) {
       pixy.video.getRGB(i, 25, &r, &g, &b, false);
@@ -682,36 +679,8 @@ void loop() {
 
     //debug(String(gray) + "\n");
 
-    pixy.video.getRGB(i, 120, &r, &g, &b, false);
-    gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (DEBUG_GRAY_VALUES) {
-      rgb_120[j] = gray;
-
-      if (j >= 1) {
-        differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
-      }
-    }
-    if (gray > THRESHOLD_GRAY)
-      black_or_white_at_120[j] = 1;
-    else
-      black_or_white_at_120[j] = 0;
-
-
-
-    pixy.video.getRGB(i, 165, &r, &g, &b, false);
-    gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (DEBUG_GRAY_VALUES) {
-      rgb_165[j] = gray;
-
-      if (j >= 1) {
-        differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
-      }
-    }
-    if (gray > THRESHOLD_GRAY)
-      black_or_white_at_165[j] = 1;
-    else
-      black_or_white_at_165[j] = 0;
   }
+
   differences_75[62] = 255;
   connect_line_edges(differences_75, 62);
   if(digitalRead(PIN_BT) == HIGH) {
@@ -1019,8 +988,17 @@ void loop() {
 
   }
 
-  //  Serial.println(millis());
   Ultrasonic_LEFT();
+
+  // check ultrasonic values, if something is close: break
+  if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD)
+    counter_ultrasonics_triggered++;
+  else
+    counter_ultrasonics_triggered = 0;
+  if(counter_ultrasonics_triggered >= NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP) {
+    Start_Stop = 2;
+    counter_ultrasonics_triggered = 0;
+  }
   
   Serial_KL25z_receive();
 }
