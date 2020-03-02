@@ -26,7 +26,7 @@ Textarea myTextarea;
 Textlabel Left_US;
 Textlabel Right_US;
 Textlabel Speed_kl25z;
-Println console;
+Println Console;
 Table table;
 
 DropdownList d1, d2;
@@ -53,6 +53,7 @@ float norminal_speed = 0;
 int THRESHOLD_DIFFERENCE = 0;
 int Stop_Start = 0;
 int Threshold_Gray_bar = 0;
+int diff_top;
 
 int Brightness_table = 0;
 int Offset_at_75_to_Center_table = 0;
@@ -100,6 +101,7 @@ String Line_bottom_middel;
 String Line_bottom;
 String US_data;
 String Serial_Monitor_stream;
+String line_detection_data;
 PFont f;  // Global font variable
 float x;  // horizontal location of headline
 int index = 0;
@@ -117,6 +119,7 @@ int nums_top[];
 int nums_top_middel[];
 int nums_bottom_middel[];
 int nums_bottom[];
+int nums_line_detection[];
 int[] differences_top = new int[64];
 int[] differences_top_middle = new int[64];
 int[] differences_bottom_middle = new int[64];
@@ -126,7 +129,7 @@ float US_data_array[];
 // setup() wird einmal zu Beginn dea Programms ausgeführt
 void setup() {
   // Ausgabefenster und Vorder-/Hintergrundfarben definieren
-  size(930,700);
+  size(930, 700);
 
   table = new Table();
 
@@ -209,7 +212,7 @@ void setup() {
     .setFont(createFont("Georgia", 20))
     .setVisible(true);
   ;
-   Speed_kl25z = cp21.addTextlabel("Speed_kl25z")
+  Speed_kl25z = cp21.addTextlabel("Speed_kl25z")
     .setPosition(280, 5)
     .setColorValue(50)
     .setFont(createFont("Georgia", 20))   
@@ -223,23 +226,23 @@ void setup() {
     ;   
   cp17.addToggle("Settings")
     .setPosition(20, 520)
-    .setSize(63,20)
+    .setSize(63, 20)
     .setColorLabel(100)
     ;   
   cp18.addButton("Apply")
     .setPosition(20, 680)
-    .setSize(63,20)
+    .setSize(63, 20)
     .setColorLabel(255)
     ;  
   b6 = cp18.addButton("Go")
     .setPosition(100, 680)
-    .setSize(63,20)
+    .setSize(63, 20)
     .setColorLabel(255)
     .setLabel("Go")
     ;   
   cp9.addSlider("Line_4")
     .setPosition(215, 490)
-    .setSize(200,10)
+    .setSize(200, 10)
     .setRange(0, 200)
     .setColorLabel(100)
     .setValue(128)  
@@ -292,7 +295,7 @@ void setup() {
     .setColorLabel(100)
     .setValue(Offset_at_120_to_Center_table)
     .setVisible(true); 
-     cp12.addSlider("Offset_at_165_to_Center")
+  cp12.addSlider("Offset_at_165_to_Center")
     .setPosition(20, 620)
     .setSize(200, 10)
     .setRange(0, 40)
@@ -335,7 +338,7 @@ void setup() {
   cp12.addSlider("norminal_speed")
     .setPosition(350, 680)
     .setSize(200, 10)
-    .setRange(0.0,5.0)
+    .setRange(0.0, 5.0)
     .setColorLabel(100)
     .setValue(norminal_speed_table)
     .setVisible(true); 
@@ -422,7 +425,7 @@ void setup() {
     .setColorBackground(color(0, 100))
     .setColorForeground(color(255, 100));
   ;
-  console = cp5.addConsole(myTextarea);
+  Console = cp5.addConsole(myTextarea);
 
   cp9.setVisible(false); 
   cp10.setVisible(false);
@@ -482,31 +485,30 @@ void connect_line_edges(int[] array) {
   int line_width_counter = 0;
 
   THRESHOLD_DIFFERENCE = Threshold_Gray_bar;
-  for(int i = 1; i < array.length - 1; i++) {
-    if(array[i] < THRESHOLD_DIFFERENCE && !line_edge_found) {
+  for (int i = 1; i < array.length - 1; i++) {
+    if (array[i] < THRESHOLD_DIFFERENCE && !line_edge_found) {
       array[i] = 255;
     } else {
-      if(array[i] > THRESHOLD_DIFFERENCE && !line_edge_found) {
+      if (array[i] > THRESHOLD_DIFFERENCE && !line_edge_found) {
         array[i] = 0;
         line_edge_found = true;
         line_width_counter = 0;
         line_edge_index = i;
       }
 
-      if(line_edge_found && ((array[i] > THRESHOLD_DIFFERENCE && array[i] < 255)) && i > line_edge_index) {
-        for(int j = line_edge_index; j < i; j++)
+      if (line_edge_found && ((array[i] > THRESHOLD_DIFFERENCE && array[i] < 255)) && i > line_edge_index) {
+        for (int j = line_edge_index; j < i; j++)
           array[j] = array[line_edge_index];
         array[i] = 0;
       }
     }
 
-    if(line_edge_found) {
+    if (line_edge_found) {
       line_width_counter++;
     }
 
-    if(line_width_counter > 4)
+    if (line_width_counter > 4)
       line_edge_found = false;
-
   }
 }
 
@@ -524,7 +526,7 @@ void draw() {
     // Entspricht der Datenblock dem Format "SxxE\r\n"? Wenn ja, dann weiter
     //println(portStream);
     //println("\n");
-    
+
     setGradient(0, 0, 629, 39, c4, c5, Y_AXIS);
     setGradient(0, 110, 629, 19, c5, c4, Y_AXIS);
     setGradient(0, 140, 629, 19, c4, c5, Y_AXIS);
@@ -533,7 +535,7 @@ void draw() {
     setGradient(0, 350, 630, 19, c5, c4, Y_AXIS);
     setGradient(0, 380, 630, 19, c4, c5, Y_AXIS);
     setGradient(0, 470, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 520, 630, 200, c4, c5,Y_AXIS);
+    setGradient(0, 520, 630, 200, c4, c5, Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
 
@@ -541,45 +543,60 @@ void draw() {
     // If x is less than the negative width, 
     // then it is off the screen
     int Serial_Monitor = portStream.indexOf(" # ");    
-    //println(Serial_Monitor);
+    
     int p1 = portStream.indexOf(" $ ");
-    int p2 = portStream.indexOf(" $$ ");
-    int p3 = portStream.indexOf(" $$$ ");
-    int p4 = portStream.indexOf(" $$$$ ");
-    int p5 = portStream.indexOf(" / ");
-    int p6 = portStream.indexOf(" // ");
-    //println(p2);
-    //println(p3);
-    //println(p4);
-    //println(p5);
-    if (Serial_Monitor != -1 && p1 != -1 && p2 != -1 && p3 != -1 && p3 != -1&& p4 != -1&& p5 != -1)
+    int p2 = portStream.indexOf(" ! ");
+    int p3 = portStream.indexOf(" % ");
+    int p4 = portStream.indexOf(" / ");
+    int p5 = portStream.indexOf(" ( ");
+    int p6 = portStream.indexOf(" ; ");
+    int p7 = portStream.indexOf(" ? ");
+    //println(portStream);
+
+
+     /*println(p1);
+     println(p2);
+     println(p3);
+     println(p4);
+     println(p5);
+     println(p6);
+     println(p7);*/
+     //println(portStream.length());
+
+    //if (Serial_Monitor != -1 && p1 != -1 && p2 != -1 && p3 != -1 && p3 != -1&& p4 != -1&& p5 != -1 && p6 != -1)
+    if (Serial_Monitor >= 0 && p1 >= 0 && p2 >= 0 && p3 >= 0 && p4 >= 0&& p5 >= 0&& p6 >= 0 && p7 >= 0 /*&& p6 == -4*/ && portStream.length() >= p7)
     {
-      
+
       Serial_Monitor_stream = portStream.substring(0, Serial_Monitor);
-      Line_top = portStream.substring(Serial_Monitor+2, p1);
-      Line_top_middel = portStream.substring(p1+2, p2);
-      Line_bottom_middel = portStream.substring(p2+3, p3);
-      Line_bottom = portStream.substring(p3+4, p4);
-      US_data  = portStream.substring(p4+1,p5);
-      String Speed_str = portStream.substring(p5+2,p6);
-      print(Serial_Monitor_stream);
+      Line_top = portStream.substring(Serial_Monitor+1, p1);
+      Line_top_middel = portStream.substring(p1+1, p2);
+      Line_bottom_middel = portStream.substring(p2+1, p3);
+      Line_bottom = portStream.substring(p3+1, p4);
+      US_data  = portStream.substring(p4+1, p5);
+      String Speed_str = portStream.substring(p5+2, p6);
+      line_detection_data = portStream.substring(p6+2, p7);
+      println(Serial_Monitor_stream);
       if (Console_status == 0)
       {
-        console.pause();
+        Console.pause();
       } else if (Console_status == 1)
       {
-        console.play();
+        Console.play();
       } else if (Console_status == 2)
       {
-        console.clear();
+        Console.clear();
       }
-
+      //47  
       nums_top = int(split(Line_top, ' '));
       nums_top_middel = int(split(Line_top_middel, ' '));
       nums_bottom_middel = int(split(Line_bottom_middel, ' '));
       nums_bottom = int(split(Line_bottom, ' '));
       US_data_array = float(split(US_data, ' '));
-
+      nums_line_detection = int(split(line_detection_data, ' '));
+      println(nums_line_detection[0]);
+      println(nums_line_detection[1]);
+      println(nums_line_detection[2]);
+      println(nums_line_detection[3]);
       for (int x = 5; x<35; x++)
       {
         for (int y = 5; y<35; y++)
@@ -590,17 +607,17 @@ void draw() {
       }
       // println(US_data_array[1]);
       //println(US_data_array[2]);
-      if (US_data_array.length >= 2)
+      if (US_data_array.length >= 3)
       {
         int US_data_array_int_Right = Math.round(US_data_array[2]);
         int US_data_array_int_Left = Math.round(US_data_array[1]);
-        if(US_data_array_int_Right > 400 || US_data_array_int_Right == 1)
-        US_data_array_int_Right = -1;
-        if(US_data_array_int_Left > 400 || US_data_array_int_Left == 1)
-        US_data_array_int_Left = - 1;
+        if (US_data_array_int_Right > 400 || US_data_array_int_Right == 1)
+          US_data_array_int_Right = -1;
+        if (US_data_array_int_Left > 400 || US_data_array_int_Left == 1)
+          US_data_array_int_Left = - 1;
         String Left_stg = str(US_data_array_int_Left);
         String Right_stg = str(US_data_array_int_Right);
-        
+
         Left_US.setText(Left_stg);
         Right_US.setText(Right_stg);
         Speed_kl25z.setText(Speed_str);
@@ -626,23 +643,14 @@ void draw() {
         minimum = nums_bottom.length;
       }
 
-      for(int i = 0; i < minimum-1; i++) {
-        if(i >= 1) {
+      for (int i = 0; i < minimum-1; i++) {
+        if (i >= 1) {
           differences_top[i - 1] = abs(nums_top[i - 1] - nums_top[i]);
-          differences_top_middle[i - 1] = abs(nums_top_middel[i - 1] - nums_top_middel[i]);
-          differences_bottom_middle[i - 1] = abs(nums_bottom_middel[i - 1] - nums_bottom_middel[i]);
-          differences_bottom[i - 1] = abs(nums_bottom[i - 1] - nums_bottom[i]);
         }
       }
       differences_top[differences_top.length - 1] = 255;
-      differences_top_middle[differences_top_middle.length - 1] = 255;
-      differences_bottom_middle[differences_bottom_middle.length - 1] = 255;
-      differences_bottom[differences_bottom.length - 1] = 255;
-
       connect_line_edges(differences_top);
-      connect_line_edges(differences_top_middle);
-      connect_line_edges(differences_bottom_middle);
-      connect_line_edges(differences_bottom);
+
 
 
       for (int k = 0; k < minimum-1; k++)
@@ -652,38 +660,28 @@ void draw() {
         int Gray_bottom_middel = nums_bottom_middel[k];
         int Gray_bottom = nums_bottom[k];
 
-        int diff_top = differences_top[k];
-        int diff_top_middle = differences_top_middle[k];
-        int diff_bottom_middle = differences_bottom_middle[k];
-        int diff_bottom = differences_bottom[k];
+        if(k < differences_top.length)
+        diff_top = differences_top[k];
 
-        
 
         color black_top = color(Gray_top);
         color black_top_middel = color(Gray_top_middel);
         color black_bottom_middel = color(Gray_bottom_middel);
         color black_bottom = color(Gray_bottom);
-        
+
         x_line++;
         if (x_line == 64)
         {
           x_line = 0;
         }
-       for (int x = 0+Pixel_size*k-10; x < Pixel_size+Pixel_size*k-10; x++)
+        for (int x = 0+Pixel_size*k-10; x < Pixel_size+Pixel_size*k-10; x++)
         {
           for (int y = 0+Pixel_size*counter+40; y < Pixel_size+Pixel_size*counter+40; y++)
           {
             set(x, y, black_top);
             if (y < 50)
             {
-              /*if (Gray_top < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
-              {
-                set(x, y+90, White);
-              }*/
-              if(diff_top > 100)
+              if (diff_top > 100)
                 set(x, y+90, White);
               else
                 set(x, y+90, Black);
@@ -694,17 +692,42 @@ void draw() {
             set(x, y, black_top_middel);
             if (y < 50+120)
             {
-              /*if (Gray_top_middel < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
+              if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 165)
+                set(x, y+90, White);   
+              else if (nums_line_detection[1] == 75)
               {
-                set(x, y+90, White);
-              }*/
-              if(diff_top_middle > 100)
-                set(x, y+90, White);
-              else
-                set(x, y+90, Black);
+                //if ((nums_line_detection[2]*10 > x-9 || nums_line_detection[2]*10 < x) && (nums_line_detection[3]*10 > x-9 || nums_line_detection[3]*10 < x));
+                if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
+                  set(x, y+90, White);
+                  
+                if (nums_line_detection[2]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+                if (nums_line_detection[3]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+                
+              }
             }
           }
           for (int y = 0+Pixel_size*counter+280; y < Pixel_size+Pixel_size*counter+280; y++)
@@ -712,17 +735,39 @@ void draw() {
             set(x, y, black_bottom_middel);
             if (y < 50+240)
             {
-              /*if (Gray_bottom_middel < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
+              if (nums_line_detection[1] == 0 || nums_line_detection[1] == 75 || nums_line_detection[1] == 165)
+                set(x, y+90, White);   
+              else if (nums_line_detection[1] == 120)
               {
-                set(x, y+90, White);
-              }*/
-              if(diff_bottom_middle > 100)
-                set(x, y+90, White);
-              else
-                set(x, y+90, Black);
+                if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
+                  set(x, y+90, White);
+                if (nums_line_detection[2]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+                if (nums_line_detection[3]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+              }
             }
           }
           for (int y = 0+Pixel_size*counter+400; y < Pixel_size+Pixel_size*counter+400; y++)
@@ -730,23 +775,43 @@ void draw() {
             set(x, y, black_bottom);
             if (y < 410)
             {
-              /*if (Gray_bottom < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
+              if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 75)
+                set(x, y+90, White);   
+              else if (nums_line_detection[1] == 165)
               {
-                set(x, y+90, White);
-              }*/
-              if(diff_bottom > 100)
-                set(x, y+90, White);
-              else
-                set(x, y+90, Black);
+                if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
+                  set(x, y+90, White);
+                if (nums_line_detection[2]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+                if (nums_line_detection[3]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+              }
             }
           }
         }
-        
       }
-      
     }
     //portStream = "";
     //myPort.clear();
@@ -763,14 +828,14 @@ void draw() {
 void serialEvent(Serial myPort) {
   portStream = myPort.readStringUntil('&');
   //myPort.clear();
-  
-/*  string_counter++;
-  if(string_counter == 40)
-  {
-    portStream = "";
-    string_counter = 0;
-}*/
-  
+
+  /*  string_counter++;
+   if(string_counter == 40)
+   {
+   portStream = "";
+   string_counter = 0;
+   }*/
+
   //println(portStream);
 }
 public void Start() {
@@ -778,7 +843,7 @@ public void Start() {
   if (button_counter == 2)
   {
     //myPort.write("((!!!!!))&");
-    
+
     Left_US.setVisible(true); 
     Right_US.setVisible(true); 
     Speed_kl25z.setVisible(true);
@@ -851,33 +916,33 @@ void Serial_Monitor(boolean theFlag) {
     b4.setPosition(730, 540);
     b5.setPosition(830, 540);
     myTextarea.setSize(300, 540);
-    console.clear();
-    console.play();
+    Console.clear();
+    Console.play();
   } 
   if (theFlag==false) {
     surface.setSize(630, 560);
-    console.clear();
-    console.pause();
+    Console.clear();
+    Console.pause();
   }
 }
 void Settings(boolean theFlag) {
   if (theFlag==true) {
     surface.setSize(630, 720);
-    console.clear();
-    console.pause();
+    Console.clear();
+    Console.pause();
   } 
   if (theFlag==false) {
     surface.setSize(630, 560);
   }
 }
 void Apply(boolean theFlag) {
-  console.pause();
-  console.clear();
+  Console.pause();
+  Console.clear();
 
   Data_send =  str(Brightness);
   Data_send += "!";
   Data_send += str(Offset_at_75_to_Center);
-  Data_send += "§";
+  Data_send += "[";
   Data_send += str(Offset_at_120_to_Center);
   Data_send += "$";
   Data_send += str(Threshold_Gray);
@@ -896,7 +961,7 @@ void Apply(boolean theFlag) {
   Data_send += "#";
   Data_send += str(RIGHT_DISTANCE);
   Data_send += "+";
-  Data_send += nf(norminal_speed,1,2);
+  Data_send += nf(norminal_speed, 1, 2);
   Data_send += "*";
   Data_send += str(Offset_at_165_to_Center);
   Data_send += "-";
@@ -1002,15 +1067,15 @@ void setGradient(int x, int y, float w, float h, color c1, color c2, int axis ) 
 }
 void norminal_speed(float norminal_speed_value) {
   float correction_value = -0.15;
-  if(norminal_speed_value < 0.15)
+  if (norminal_speed_value < 0.15)
   {
     correction_value = 0;
   }
-  if(norminal_speed_value > 1.3)
+  if (norminal_speed_value > 1.3)
   {
     correction_value = -0.3;
   }
-  if(norminal_speed_value > 2.0)
+  if (norminal_speed_value > 2.0)
   {
     correction_value = -0.4;
   }

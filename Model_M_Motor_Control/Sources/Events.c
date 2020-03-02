@@ -56,7 +56,7 @@ bool first_pulse_active = TRUE;
 extern uint16_t Pulse_counter;
 
 
-volatile int64_t Counter_OVF = 0;
+extern volatile int64_t Counter_OVF;
 uint8_t avg_counter_rechts = 0;
 uint8_t avg_counter_links = 0;
 
