@@ -17,7 +17,7 @@
 #define ECHO_PIN_RIGHT 2
 #define ARRAY_EEPROMM_SIZE 13
 #define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 5
-#define DURATION_OF_DODGE 2000
+#define DURATION_OF_DODGE 1000
 
 Pixy2 pixy;
 
@@ -259,7 +259,7 @@ void generate_steer_angle_string(int steer_angle) {
       begin_of_steering_straight = millis();
       maybe_on_straight = true;
     }
-    steer_angle = steer_angle / 2;
+    steer_angle = steer_angle * 0.75;
   } else {
     maybe_on_straight = false;
     currently_in_curve = true;
@@ -433,7 +433,7 @@ int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
     angle = 450;
 
   if (distance_from_ideallinie <= 5)
-    angle = angle / 2;
+    angle = angle * 0.75;
 
   return angle;
 }
@@ -512,15 +512,15 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
 
 
   if(dodge_to_the_left) {
-    index_of_left_line -= (track_width_at_current_line / 3);
-    index_of_right_line -= (track_width_at_current_line / 3);
+    index_of_left_line -= (track_width_at_current_line / 4);
+    index_of_right_line -= (track_width_at_current_line / 4);
     track_center = (index_of_left_line + index_of_right_line) / 2;
     debug("dodging to the left\n");
     debug("new center at: " + String(track_center) + "\n");
   }
   if(dodge_to_the_right) {
-    index_of_left_line += (track_width_at_current_line / 3);
-    index_of_right_line += (track_width_at_current_line / 3);
+    index_of_left_line += (track_width_at_current_line / 4);
+    index_of_right_line += (track_width_at_current_line / 4);
     track_center = (index_of_left_line + index_of_right_line) / 2;
     debug("dodging to the right\n");
     debug("new center at: " + String(track_center) + "\n");
@@ -892,6 +892,8 @@ void loop() {
     }
   }
   
+  debug(current_angle_string);
+
   if (digitalRead(PIN_BT) == HIGH)
   {
     String s_25;
@@ -936,31 +938,33 @@ void loop() {
   else
     counter_ultrasonics_triggered = 0;
   if(counter_ultrasonics_triggered >= NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP) {
-    Start_Stop = 2;
+    //Start_Stop = 2;
     counter_ultrasonics_triggered = 0;
   }
 
-  /*if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
+  if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
     dodge_to_the_left = false;
     dodge_to_the_right = true;
-    timer_of_dodge_to_the_left = millis();
-    debug("DODGE TO THE LEFT!");
+    timer_of_dodge_to_the_right = millis();
+    debug("DODGE TO THE RIGHT!\n");
   } else if(distanceCmLeft > LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD) {
     dodge_to_the_left = true;
     dodge_to_the_right = false;
-    timer_of_dodge_to_the_right = millis();
-    debug("DODGE TO THE RIGHT!");
-  }*/
+    timer_of_dodge_to_the_left = millis();
+    debug("DODGE TO THE LEFT!\n");
+  }
 
-  if(dodge_to_the_left && millis() - timer_of_dodge_to_the_left > DURATION_OF_DODGE) {
+  /*if(dodge_to_the_left && millis() - timer_of_dodge_to_the_left > DURATION_OF_DODGE) {
     dodge_to_the_left = false;
     dodge_to_the_right = false;
   }
   if(dodge_to_the_right && millis() - timer_of_dodge_to_the_right > DURATION_OF_DODGE) {
     dodge_to_the_left = false;
     dodge_to_the_right = false;
-  }
+  }*/
 
+  debug("dodge_to_the_left: " + String(dodge_to_the_left) + "\n");
+  debug("dodge_to_the_right: " + String(dodge_to_the_right) + "\n");
   
   Serial_KL25z_receive();
 }
