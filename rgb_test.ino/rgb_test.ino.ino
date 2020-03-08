@@ -77,7 +77,7 @@ float Speed_left = 0.0;
 float Speed_right = 0.0;
 uint8_t counter_ultrasonics_triggered = 0;
 int number_of_lines = 0;
-int track_center = 32;
+int track_center = 30;
 bool dodge_to_the_left = false;
 bool dodge_to_the_right = false;
 unsigned long timer_of_dodge_to_the_left = 0;
@@ -289,6 +289,9 @@ void generate_steer_angle_string(int steer_angle) {
   else if (steer_angle > 0) { // steer right
     //if(last_steering_direction == "left")
     //steer_angle = steer_angle / 2;
+    steer_angle = steer_angle * 1.25;
+    if(steer_angle > 550)
+      steer_angle = 550;
 
     if (steer_angle < 10) {
       if (currently_in_curve)
@@ -747,8 +750,8 @@ void loop() {
   current_line = 75;
 
   if (number_of_lines > 0) {
-    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 32));
-    if (track_center >= 32) {
+    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+    if (track_center >= 30) {
       debug("steer right: " + String(steer_angle) + "\n");
     }
     else {
@@ -794,8 +797,8 @@ void loop() {
     current_line = 120;
 
     if (number_of_lines > 0) {
-      int steer_angle_120 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 32));
-      if (track_center >= 32) {
+      int steer_angle_120 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+      if (track_center >= 30) {
         debug("steer right: " + String(steer_angle_120) + "\n");
       }
       else {
@@ -851,8 +854,8 @@ void loop() {
       current_line = 165;
 
       if (number_of_lines > 0) {
-        int steer_angle_165 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 32));
-        if (track_center >= 32) {
+        int steer_angle_165 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+        if (track_center >= 30) {
           debug("steer right: " + String(steer_angle_165) + "\n");
         }
         else {
@@ -887,7 +890,7 @@ void loop() {
         //write_i2c(current_angle_string);
         generate_steer_angle_string(last_steer_angle);
         KL25z_data(current_angle_string);
-        last_steer_angle = last_steer_angle * 0.8;
+        last_steer_angle = last_steer_angle * 0.9;
       }
     }
   }
@@ -942,7 +945,7 @@ void loop() {
     counter_ultrasonics_triggered = 0;
   }
 
-  if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
+  /*if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
     dodge_to_the_left = false;
     dodge_to_the_right = true;
     timer_of_dodge_to_the_right = millis();
@@ -952,16 +955,16 @@ void loop() {
     dodge_to_the_right = false;
     timer_of_dodge_to_the_left = millis();
     debug("DODGE TO THE LEFT!\n");
-  }
+  }*/
 
-  /*if(dodge_to_the_left && millis() - timer_of_dodge_to_the_left > DURATION_OF_DODGE) {
+  if(dodge_to_the_left && millis() - timer_of_dodge_to_the_left > DURATION_OF_DODGE) {
     dodge_to_the_left = false;
     dodge_to_the_right = false;
   }
   if(dodge_to_the_right && millis() - timer_of_dodge_to_the_right > DURATION_OF_DODGE) {
     dodge_to_the_left = false;
     dodge_to_the_right = false;
-  }*/
+  }
 
   debug("dodge_to_the_left: " + String(dodge_to_the_left) + "\n");
   debug("dodge_to_the_right: " + String(dodge_to_the_right) + "\n");
