@@ -18,6 +18,7 @@
 #define ARRAY_EEPROMM_SIZE 13
 #define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 5
 #define DURATION_OF_DODGE 1000
+#define RGB_THRESHOLD_FOR_SYMBOLS 75
 
 Pixy2 pixy;
 
@@ -25,10 +26,10 @@ uint16_t LEFT_DISTANCE_THRESHOLD = 10;
 uint16_t RIGHT_DISTANCE_THRESHOLD = 10;
 uint8_t  ULTRASONIC_SAMPELS = 10;
 uint8_t  THRESHOLD_GRAY = 100;
-uint8_t  MIN_TRACK_WIDTH = 20;
 uint8_t  OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = 23;
 uint8_t  OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = 29;
 uint8_t  OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = 35;
+uint8_t  MIN_TRACK_WIDTH = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER * 1.7;
 uint8_t  THRESHOLD_DIFFERENCE = 40;
 int data_eepromm[ARRAY_EEPROMM_SIZE];
 
@@ -96,7 +97,7 @@ void debug(String s , String s1) {
       if (Serial_monitor_stream == true)
       {
         Serial1.print(s);
-        delay(1);
+        delay(2);
       }
       string_counter = 0;
     }
@@ -511,6 +512,8 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
 
   bool left_one_found = false;
   bool right_one_found = false;
+  int last_index_left = index_of_left_line;
+  int last_index_right = index_of_right_line;
 
 
   for (int i = track_center; i >= 0; i--) {
@@ -544,8 +547,28 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
     debug("MIN_TRACK_WIDTH: " + String(MIN_TRACK_WIDTH) + "\n", "");
     debug("abs(index_of_right_line - index_of_left_line): " + String(abs(index_of_right_line - index_of_left_line)) + "\n", "");
     if (abs(index_of_right_line - index_of_left_line) < MIN_TRACK_WIDTH) {
-      debug("+++++ FOUND SYMBOL ON TRACK +++++\n", "");
+      int rgb_average = 0;
+      if(which_line == 75) {
+       for(int i = 0; i < 63; i++)
+          rgb_average += rgb_75[i];
+      } else if(which_line == 120) {
+        for(int i = 0; i < 63; i++)
+          rgb_average += rgb_120[i];
+      } else if(which_line == 165) {
+        for(int i = 0; i < 63; i++)
+          rgb_average += rgb_165[i];
+      }
+      rgb_average /= 63;
+      debug("RGB average on line " + String(which_line) + " is: " + String(rgb_average) + "\n", "");
+      if(rgb_average > RGB_THRESHOLD_FOR_SYMBOLS) {
+        debug("+++++ FOUND SYMBOL ON TRACK +++++\n", "");
+        int num_lines = count_lines(array);
+        debug("number of lines: " + String(num_lines) + "\n", "");
+      }
       // TODO: continue with last steering angle
+      index_of_left_line = 0;
+      index_of_right_line = 63;
+      track_center = (index_of_left_line + index_of_right_line) / 2;
     } else {
       track_center = (index_of_left_line + index_of_right_line) / 2;
     }
