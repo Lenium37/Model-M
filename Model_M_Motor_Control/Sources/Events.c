@@ -134,9 +134,9 @@ void RechtsINT_OnInterrupt(void)
 				first_pulse_active = FALSE;
 			}
 
-			if(avg_counter_rechts > 8)
+			if(avg_counter_rechts > 4)
 			{
-				velocity_Rechts_avg = velocity_Rechts/8;
+				velocity_Rechts_avg = velocity_Rechts/4;
 				//printf("Speed_rechts: %f\n\n",velocity_Rechts_avg);
 				if(velocity_Rechts_avg > 5.5
 						)
@@ -221,9 +221,9 @@ void LinksINT_OnInterrupt(void)
 					first_pulse_active = FALSE;
 				}
 
-				if(avg_counter_links > 8)
+				if(avg_counter_links > 4)
 				{
-					velocity_links_avg = velocity_Links/8;
+					velocity_links_avg = velocity_Links/4;
 					//printf("Speed_links: %f\n\n",velocity_links_avg);
 					velocity_Links = 0;
 					avg_counter_links = 0;

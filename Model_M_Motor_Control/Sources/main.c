@@ -167,7 +167,7 @@ uint32_t higer_speed_after_curve = 300;
 volatile int64_t Counter_OVF;
 float Speed_Ms = 0;
 float Time_left = 0;
-uint8_t kp_Teiler = 20;
+uint8_t kp_Teiler = 26;
 float pid_i = 0.0;
 float pid_d = 0.0;
 float previous_error = 0.0;
@@ -493,13 +493,17 @@ int main(void)
 			}
 		//PID_left(1,1,1,1,1);
 		Break(Break_intens, Break_period,brake_left_out,brake_right_out);
-
+		if(message.straight_curve == 'S')
+			prev_S = TRUE;
+		if(message.straight_curve == 'C')
+			prev_C = TRUE;
 		if (message.Direction != 'V') {
 			Hundred = char_int(message.Hundert);
 			Ten = char_int(message.Zener);
 			Zero = char_int(message.Einer);
 			Angle = Cal_Angle_Speed(Hundred, Ten, Zero);
 			SerVal = map_long(Angle, 0, 450, 0, 819);
+			//printf("Angle: %d Servo: %d\n",Angle,SerVal);
 		}
 		if (message.straight_curve == 'S' && Break_Active == FALSE) {
 			//Kp_drive = 175;
@@ -517,12 +521,12 @@ int main(void)
 		} else {
 			if (message.Direction == 'S' && Break_Active == FALSE) {
 				Regler_Active = TRUE;
-				Kp_drive_rechts = 250;
-				Kp_drive_links = 250;
+				Kp_drive_rechts = 350;
+				Kp_drive_links = 350;
 				if(prev_C == TRUE)
 				{
-					Kp_drive_rechts = 350;
-					Kp_drive_links = 350;
+					Kp_drive_rechts = 450;
+					Kp_drive_links = 450;
 					after_curve_counter++;
 					if(after_curve_counter > higer_speed_after_curve)
 						prev_C = FALSE;
@@ -534,18 +538,18 @@ int main(void)
 				//S_multi_rechts = 1.0;
 				//S_multi_links = 1.0;
 				prev_C = TRUE;
-				Kp_drive_rechts = 300;
-				Kp_drive_links = 300;
+				Kp_drive_rechts = 500;
+				Kp_drive_links = 500;
 				Regler_Active = TRUE;
-				if (prev_S == TRUE && (velocity_Rechts_avg > 1.3 || velocity_links_avg > 1.3)) {
+				if (prev_S == TRUE && (velocity_Rechts_avg > 0.7 || velocity_links_avg > 0.7)) {
 					//Kp_drive = 0;
 
 					LED1_Off();
-					if(velocity_Rechts_avg > 1)
-					Break_intens =	map(velocity_Rechts_avg,0,Speed_Ms_rechts,20000,50000);
-					if(velocity_links_avg > 1)
-					Break_intens =	map(velocity_Rechts_avg,0,Speed_Ms_links,20000,50000);
-					Break_period = 70;
+					if(velocity_Rechts_avg > 0.7)
+					Break_intens =	map(velocity_Rechts_avg,0,Speed_Ms_rechts,20000,35000);
+					if(velocity_links_avg > 0.7)
+					Break_intens =	map(velocity_Rechts_avg,0,Speed_Ms_links,20000,35000);
+					Break_period = 30;
 					brake_left_out = TRUE;
 					brake_right_out = TRUE;
 					//Break_intens = 30000;
@@ -553,12 +557,13 @@ int main(void)
 					prev_S = FALSE;
 				}
 				if (message.Direction == 'L' && Break_Active == FALSE) {
-					S_multi_rechts = 1.1;
+					S_multi_rechts = 1.3;
 					S_multi_links = 0;
-					if(velocity_Rechts_avg > 1.1)
+					if(velocity_Rechts_avg > 2)
 					{
 					Break_period = 10;
-					Break_intens = 30000;
+					Break_intens = 20000;
+					Break_Active = TRUE;
 					brake_left_out = TRUE;
 					brake_right_out = FALSE;
 					}
@@ -567,11 +572,12 @@ int main(void)
 				}
 				if (message.Direction == 'R' && Break_Active == FALSE) {
 					S_multi_rechts = 0;
-					S_multi_links = 1.1;
-					if(velocity_Rechts_avg > 1.1)
+					S_multi_links = 1.3;
+							;
+					if(velocity_links_avg > 2)
 					{
 					Break_period = 10;
-					Break_intens = 30000;
+					Break_intens = 20000;
 					Break_Active = TRUE;
 					brake_left_out = FALSE;
 					brake_right_out = TRUE;
@@ -594,7 +600,6 @@ int main(void)
 				Zero = char_int(message.Einer);
 				Speed_Ms = Cal_Angle_Speed(Hundred, Ten, Zero);
 				Speed_Ms = Speed_Ms / 100;
-
 				AS1_ClearRxBuf();
 				message.Direction = '0';
 			}
@@ -635,18 +640,7 @@ int main(void)
 			//Winkel_prev_R = diff;
 		}
 
-		if (abs(servo_value - servo_value_regulated) > 50) {
-			//printf("servo_value too large, taking only a step\n");
-			if (servo_value > servo_value_regulated)
-				servo_value_regulated += 50;
-			else
-				servo_value_regulated -= 50;
-		} else {
-			//printf("jumping exactly to servo_value\n");
-			servo_value_regulated = servo_value;
-		}
-
-		Servo_SetRatio16(servo_value_regulated);
+		Servo_SetRatio16(servo_value);
 		Servo_Enable();
 
 		if (message.Direction == 'S') {
