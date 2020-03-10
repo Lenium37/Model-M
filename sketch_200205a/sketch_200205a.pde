@@ -36,6 +36,7 @@ Button b3;
 Button b4;
 Button b5;
 Button b6;
+Knob Modus;
 
 int Brightness = 0;
 int Offset_at_75_to_Center = 0;
@@ -54,7 +55,7 @@ int THRESHOLD_DIFFERENCE = 0;
 int Stop_Start = 0;
 int Threshold_Gray_bar = 0;
 int diff_top;
-
+int prev_modus = 0;
 int Brightness_table = 0;
 int Offset_at_75_to_Center_table = 0;
 int Offset_at_120_to_Center_table = 0;
@@ -114,7 +115,7 @@ String portStream;
 int string_counter = 0;
 
 int button_counter3 = 0;
-
+boolean ready_stream = true;
 int nums_top[];
 int nums_top_middel[];
 int nums_bottom_middel[];
@@ -126,11 +127,12 @@ int[] differences_bottom_middle = new int[64];
 int[] differences_bottom = new int[64];
 byte Bool_bin = 0b00000000;
 float US_data_array[];
+int reset_counter = 0;
 // setup() wird einmal zu Beginn dea Programms ausgeführt
 void setup() {
   // Ausgabefenster und Vorder-/Hintergrundfarben definieren
   size(930, 700);
-
+  smooth(2);
   table = new Table();
 
   table.addColumn("Brightness", Table.INT);
@@ -300,7 +302,7 @@ void setup() {
     .setSize(200, 10)
     .setRange(0, 40)
     .setColorLabel(100)
-    .setValue(Offset_at_120_to_Center_table)
+    .setValue(Offset_at_165_to_Center_table)
     .setVisible(true); 
   ;
   cp12.addSlider("Threshold_Gray")
@@ -416,6 +418,7 @@ void setup() {
     .close() 
     ;        
   customize2(d2); // customize the first list
+
   myTextarea = cp5.addTextarea("txt")
     .setPosition(630, 0)
     .setSize(300, 540)
@@ -424,17 +427,37 @@ void setup() {
     .setColor(color(200))
     .setColorBackground(color(0, 100))
     .setColorForeground(color(255, 100));
-  ;
+  ; 
+  Modus = cp20.addKnob("Modus")
+    .setRange(0, 5)
+    .setValue(0)
+    .setPosition(265, 395)
+    .setRadius(50)
+    .setNumberOfTickMarks(5)
+    .setTickMarkLength(4)
+    .snapToTickMarks(true)
+    .setColorLabel(0)
+    .setColorValue(0)
+    .setColorValueLabel(0)
+    .setColorCaptionLabel(0)
+    .setColorForeground(0)
+    .setColorBackground(color(255, 120, 117))
+    .setColorActive(color(115, 188, 255))
+    .setDragDirection(Knob.VERTICAL)
+    .setVisible(true)
+    ;
+
   Console = cp5.addConsole(myTextarea);
 
   cp9.setVisible(false); 
   cp10.setVisible(false);
   cp11.setVisible(false);
   cp12.setVisible(false); 
+  Modus.setVisible(false);
   surface.setResizable(false);
 
 
-  smooth(0);
+  smooth(2);
   surface.setSize(630, 560); //+140
   cp18.setVisible(false); 
   cp17.setVisible(false); 
@@ -473,6 +496,7 @@ void customize2(DropdownList ddl) {
   ddl.addItem("115200", 2);
   ddl.addItem("230400", 3);
   ddl.addItem("460800", 4);
+  ddl.addItem("1382400", 5);
   //ddl.scroll(0);
   ddl.setColorBackground(color(60));
   ddl.setColorActive(color(255, 128));
@@ -514,6 +538,7 @@ void connect_line_edges(int[] array) {
 
 // Wie loop() beim Arduino wird draw() immer wieder aufgerufen, solange das Programm ausgeführt wird.
 void draw() {
+  smooth(2);
   if (press_start == false)
   {
     //background(132, 195, 232);
@@ -522,6 +547,8 @@ void draw() {
   }
   //println(frameRate);
   // Steht was in portStream? (d.h. wurde ein vollständiger Datenblock übertragen)
+
+
   if (portStream != null&&press_start == true) {
     // Entspricht der Datenblock dem Format "SxxE\r\n"? Wenn ja, dann weiter
     //println(portStream);
@@ -533,9 +560,9 @@ void draw() {
     setGradient(0, 230, 629, 19, c5, c4, Y_AXIS);
     setGradient(0, 260, 629, 19, c4, c5, Y_AXIS);
     setGradient(0, 350, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 380, 630, 19, c4, c5, Y_AXIS);
-    setGradient(0, 470, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 520, 630, 200, c4, c5, Y_AXIS);
+    setGradient(0, 380, 630, 490, c4, c5, Y_AXIS);
+    //setGradient(0, 470, 630, 19, c5, c4, Y_AXIS);
+    //setGradient(0, 520, 630, 200, c4, c5, Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
 
@@ -543,7 +570,7 @@ void draw() {
     // If x is less than the negative width, 
     // then it is off the screen
     int Serial_Monitor = portStream.indexOf(" # ");    
-    
+
     int p1 = portStream.indexOf(" $ ");
     int p2 = portStream.indexOf(" ! ");
     int p3 = portStream.indexOf(" % ");
@@ -552,19 +579,33 @@ void draw() {
     int p6 = portStream.indexOf(" ; ");
     int p7 = portStream.indexOf(" ? ");
     //println(portStream);
+    if (Console_status == 0)
+    {
+      Console.pause();
+    } else if (Console_status == 1)
+    {
+      Console.play();
+    } else if (Console_status == 2)
+    {
+      Console.clear();
+    }
 
+    /*print(p1);
+     print(" ");
+     print(p2);
+     print(" ");
+     print(p3);
+     print(" ");
+     print(p4);
+     print(" ");
+     print(p5);
+     print(" ");
+     println(p6);*/
+    //println(portStream);
 
-     /*println(p1);
-     println(p2);
-     println(p3);
-     println(p4);
-     println(p5);
-     println(p6);
-     println(p7);*/
-     //println(portStream.length());
 
     //if (Serial_Monitor != -1 && p1 != -1 && p2 != -1 && p3 != -1 && p3 != -1&& p4 != -1&& p5 != -1 && p6 != -1)
-    if (Serial_Monitor >= 0 && p1 >= 0 && p2 >= 0 && p3 >= 0 && p4 >= 0&& p5 >= 0&& p6 >= 0 && p7 >= 0 /*&& p6 == -4*/ && portStream.length() >= p7)
+    if (Serial_Monitor >= 0 && (p1 >= 0 && p1 > Serial_Monitor) && (p2 >= 0 && p2 > p1) && (p3 >= 0 && p3 > p2) && (p4 >= 0&& p4 > p3) && (p5 >= 0 && p5 > p4)&& (p6 >= 0&&p6>p5) && p6 < portStream.length())
     {
 
       Serial_Monitor_stream = portStream.substring(0, Serial_Monitor);
@@ -574,29 +615,25 @@ void draw() {
       Line_bottom = portStream.substring(p3+1, p4);
       US_data  = portStream.substring(p4+1, p5);
       String Speed_str = portStream.substring(p5+2, p6);
-      line_detection_data = portStream.substring(p6+2, p7);
+      line_detection_data = portStream.substring(p6+2, portStream.length());
       println(Serial_Monitor_stream);
-      if (Console_status == 0)
-      {
-        Console.pause();
-      } else if (Console_status == 1)
-      {
-        Console.play();
-      } else if (Console_status == 2)
-      {
+      reset_counter++;
+      if (reset_counter == 1)
+      {         
         Console.clear();
+        reset_counter = 0;
       }
-      //47  
+ 
       nums_top = int(split(Line_top, ' '));
       nums_top_middel = int(split(Line_top_middel, ' '));
       nums_bottom_middel = int(split(Line_bottom_middel, ' '));
       nums_bottom = int(split(Line_bottom, ' '));
       US_data_array = float(split(US_data, ' '));
       nums_line_detection = int(split(line_detection_data, ' '));
-      println(nums_line_detection[0]);
-      println(nums_line_detection[1]);
-      println(nums_line_detection[2]);
-      println(nums_line_detection[3]);
+      /*println(nums_line_detection[0]);
+       println(nums_line_detection[1]);
+       println(nums_line_detection[2]);
+       println(nums_line_detection[3]);*/
       for (int x = 5; x<35; x++)
       {
         for (int y = 5; y<35; y++)
@@ -645,7 +682,7 @@ void draw() {
 
       for (int i = 0; i < minimum-1; i++) {
         if (i >= 1) {
-          differences_top[i - 1] = abs(nums_top[i - 1] - nums_top[i]);
+          //differences_top[i - 1] = abs(nums_top[i - 1] - nums_top[i]);
         }
       }
       differences_top[differences_top.length - 1] = 255;
@@ -660,8 +697,8 @@ void draw() {
         int Gray_bottom_middel = nums_bottom_middel[k];
         int Gray_bottom = nums_bottom[k];
 
-        if(k < differences_top.length)
-        diff_top = differences_top[k];
+        if (k < differences_top.length)
+          diff_top = differences_top[k];
 
 
         color black_top = color(Gray_top);
@@ -676,21 +713,21 @@ void draw() {
         }
         for (int x = 0+Pixel_size*k-10; x < Pixel_size+Pixel_size*k-10; x++)
         {
+          /*for (int y = 0+Pixel_size*counter+40; y < Pixel_size+Pixel_size*counter+40; y++)
+           {
+           set(x, y, black_top);
+           if (y < 50)
+           {
+           if (diff_top > 100)
+           set(x, y+90, White);
+           else
+           set(x, y+90, Black);
+           }
+           }*/
           for (int y = 0+Pixel_size*counter+40; y < Pixel_size+Pixel_size*counter+40; y++)
           {
-            set(x, y, black_top);
-            if (y < 50)
-            {
-              if (diff_top > 100)
-                set(x, y+90, White);
-              else
-                set(x, y+90, Black);
-            }
-          }
-          for (int y = 0+Pixel_size*counter+160; y < Pixel_size+Pixel_size*counter+160; y++)
-          {
             set(x, y, black_top_middel);
-            if (y < 50+120)
+            if (y < 50)
             {
               if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 165)
                 set(x, y+90, White);   
@@ -699,7 +736,7 @@ void draw() {
                 //if ((nums_line_detection[2]*10 > x-9 || nums_line_detection[2]*10 < x) && (nums_line_detection[3]*10 > x-9 || nums_line_detection[3]*10 < x));
                 if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
                   set(x, y+90, White);
-                  
+
                 if (nums_line_detection[2]*10 == x)
                 {
                   set(x, y+90, Black);
@@ -726,14 +763,13 @@ void draw() {
                   set(x+8, y+90, Black);
                   set(x+9, y+90, Black);
                 }
-                
               }
             }
           }
-          for (int y = 0+Pixel_size*counter+280; y < Pixel_size+Pixel_size*counter+280; y++)
+          for (int y = 0+Pixel_size*counter+160; y < Pixel_size+Pixel_size*counter+160; y++)//280
           {
             set(x, y, black_bottom_middel);
-            if (y < 50+240)
+            if (y < 50+120)//240
             {
               if (nums_line_detection[1] == 0 || nums_line_detection[1] == 75 || nums_line_detection[1] == 165)
                 set(x, y+90, White);   
@@ -770,10 +806,10 @@ void draw() {
               }
             }
           }
-          for (int y = 0+Pixel_size*counter+400; y < Pixel_size+Pixel_size*counter+400; y++)
+          for (int y = 0+Pixel_size*counter+280; y < Pixel_size+Pixel_size*counter+280; y++)
           {
             set(x, y, black_bottom);
-            if (y < 410)
+            if (y < 50+240)
             {
               if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 75)
                 set(x, y+90, White);   
@@ -812,31 +848,30 @@ void draw() {
           }
         }
       }
-    }
+    }    
     //portStream = "";
     //myPort.clear();
-    //portStream = "";
-    //myPort.write("((!!!!!))&");
+    ready_stream = true;
     counter++;
+
     if (counter == 560/Pixel_size/8)
     {
       counter = 0;
     }
   }
+  //myPort.clear();
+  /*if (ready_stream == true && press_start == true)
+   {
+   myPort.write("Ready &"); 
+   myPort.write("Ready &"); 
+   myPort.write("Ready &"); 
+   myPort.write("Ready &"); 
+   ready_stream = false;
+   }*/
 }
-
 void serialEvent(Serial myPort) {
   portStream = myPort.readStringUntil('&');
-  //myPort.clear();
-
-  /*  string_counter++;
-   if(string_counter == 40)
-   {
-   portStream = "";
-   string_counter = 0;
-   }*/
-
-  //println(portStream);
+  myPort.clear();
 }
 public void Start() {
   button_counter++;
@@ -847,13 +882,14 @@ public void Start() {
     Left_US.setVisible(true); 
     Right_US.setVisible(true); 
     Speed_kl25z.setVisible(true);
+    Modus.setVisible(true);
     cp17.setVisible(true); 
     cp18.setVisible(true); 
     cp9.setVisible(true); 
     cp10.setVisible(true);
     cp11.setVisible(true);
     cp12.setVisible(true);
-    b1.setVisible(false); 
+    //b1.setVisible(false); 
     b2.setVisible(true); 
     d1.setVisible(false); 
     d2.setVisible(false); 
@@ -867,6 +903,7 @@ public void Stop() {
   {
     Left_US.setVisible(false); 
     Right_US.setVisible(false);
+    Modus.setVisible(false);
     Speed_kl25z.setVisible(false);
     cp17.setVisible(false); 
     cp18.setVisible(false); 
@@ -916,11 +953,15 @@ void Serial_Monitor(boolean theFlag) {
     b4.setPosition(730, 540);
     b5.setPosition(830, 540);
     myTextarea.setSize(300, 540);
+    myPort.write("Stop ");
+    myPort.write('&');
     Console.clear();
     Console.play();
   } 
   if (theFlag==false) {
     surface.setSize(630, 560);
+    myPort.write("Start ");
+    myPort.write('&');     
     Console.clear();
     Console.pause();
   }
@@ -936,8 +977,8 @@ void Settings(boolean theFlag) {
   }
 }
 void Apply(boolean theFlag) {
-  Console.pause();
-  Console.clear();
+  //Console.pause();
+  //Console.clear();
 
   Data_send =  str(Brightness);
   Data_send += "!";
@@ -1007,7 +1048,8 @@ public void Port_dropdown(ControlEvent theEvent) {
   d1.setVisible(false);  
   d2.setVisible(false);
 }
-public void Baud_Dropdown(ControlEvent theEvent) { 
+public void 
+  Dropdown(ControlEvent theEvent) { 
   Drop_down_button_baud = theEvent.getController().getValue();
   baud = Math.round(Drop_down_button_baud); // 3
   //println(baud);
@@ -1026,6 +1068,9 @@ public void Baud_Dropdown(ControlEvent theEvent) {
   } else if (baud == 4)
   {
     baud = 460800;
+  } else if (baud == 5)
+  {
+    baud = 1382400;
   }
   //println(baud);
 }
@@ -1080,4 +1125,10 @@ void norminal_speed(float norminal_speed_value) {
     correction_value = -0.4;
   }
   norminal_speed = norminal_speed_value+correction_value;
+}
+void Modus(int theValue) {
+  if (prev_modus != theValue)
+    myPort.write("Modus "+ theValue + "&");
+    delay(5);
+  prev_modus = theValue;
 }
