@@ -16,7 +16,8 @@
 #define TRIGGER_PIN_RIGHT 4
 #define ECHO_PIN_RIGHT 2
 #define ARRAY_EEPROMM_SIZE 13
-#define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 1
+#define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 5
+#define DURATION_OF_DODGE 1000
 
 Pixy2 pixy;
 
@@ -76,14 +77,37 @@ float Speed_left = 0.0;
 float Speed_right = 0.0;
 uint8_t counter_ultrasonics_triggered = 0;
 int number_of_lines = 0;
-int track_center = 32;
-
-
-void debug(String s) {
+int track_center = 30;
+bool dodge_to_the_left = false;
+bool dodge_to_the_right = false;
+unsigned long timer_of_dodge_to_the_left = 0;
+unsigned long timer_of_dodge_to_the_right = 0;
+int current_line = 0;
+bool Serial_monitor_stream = false;
+String mainString;
+String add_debug_string;
+uint8_t string_counter = 0;
+uint8_t string_max_add = 5;
+uint8_t Modus = 0;
+void debug(String s , String s1) {
   if (digitalRead(PIN_BT) == HIGH)
   {
-    Serial1.print(s);
-    delay(3);
+    {
+      if (Serial_monitor_stream == true)
+      {
+        Serial1.print(s);
+        delay(1);
+      }
+      string_counter = 0;
+    }
+    if (Serial_monitor_stream == false && s1 != "")
+    {
+      //Serial.println(s1);
+      Serial1.print(s1);
+      //Serial.println("Stop");
+      delay(15);
+    }
+    string_counter++;
   }
   // if changing Serial number don't forget to change it in setup() as well!
 }
@@ -94,7 +118,7 @@ void KL25z_data(String s) {
   {
     Serial4.print(s + "A");
     flag_serial4 = false;
-  }if (Start_Stop == 2)
+  } if (Start_Stop == 2)
   {
     Serial4.print("XXXXXX");
     Serial4.print("XXXXXX");
@@ -107,14 +131,14 @@ void Serial_KL25z_receive() {
     // Lies das eingehende Byte:
     byte buffer[4];
     Serial4.readBytesUntil('&', buffer, 4);
-    if(buffer[2] == 1)
+    if (buffer[2] == 1)
     {
       Speed_right = buffer[1];
-      Speed_right = (Speed_right+255)/100;
-    }else
+      Speed_right = (Speed_right + 255) / 100;
+    } else
     {
       Speed_right = buffer[1];
-      Speed_right = Speed_right/100;
+      Speed_right = Speed_right / 100;
     }
   }
 }
@@ -126,7 +150,38 @@ void Serial_receive()
       // Lies das eingehende Byte:
       String incomingData = Serial1.readStringUntil('&');
       incomingData.trim();
-      if (start_stream == true)
+      if (incomingData == "Stop")
+      {
+        Serial_monitor_stream = true;
+        //set_LED(0, 255, 255);
+      }
+      else if (incomingData == "Start")
+      {
+        Serial_monitor_stream = false;
+        //set_LED(255, 0, 255);
+      }
+      if(incomingData.length() <= 9)
+      {
+        String Modus_string = incomingData.substring(6,7);
+        Modus = Modus_string.toInt();
+        Serial.println(Modus);
+        switch (Modus)
+        {
+          case 0:set_LED(0, 255, 255);
+          break;
+          case 1:set_LED(255, 0, 255);
+          break;
+          case 2:set_LED(255, 255, 0);
+          break;
+          case 3:set_LED(0, 0, 255);
+          break;
+          case 4:set_LED(255, 0, 0);
+          break;
+          case 5:set_LED(0,255,0);
+          break;
+        }
+      }
+      if (start_stream == true && incomingData != "Stop"  && incomingData != "Start" && incomingData.length() > 15)
       {
         int p1 = incomingData.indexOf("!");
         int p2 = incomingData.indexOf("[", p1);
@@ -161,13 +216,13 @@ void Serial_receive()
         Speed_data.replace(",", ".");
         float Speed_data_float = Speed_data.toFloat();
         int Speed_data_int = Speed_data_float * 100;
-        if(Speed_data_int < 10)
+        if (Speed_data_int < 10)
         {
           Speed_data = "V00" + String(abs(Speed_data_int)) + "V";
-        } else if(Speed_data_int < 100)
+        } else if (Speed_data_int < 100)
         {
           Speed_data = "V0" + String(abs(Speed_data_int)) + "V";
-        } else if(Speed_data_int >= 100)
+        } else if (Speed_data_int >= 100)
         {
           Speed_data = "V" + String(abs(Speed_data_int)) + "V";
         }
@@ -222,6 +277,7 @@ void Serial_receive()
         KL25z_data(Speed_data);
         pixy.setCameraBrightness(Brightness);
       }
+      incomingData = "";
     }
   }
 }
@@ -253,7 +309,7 @@ void generate_steer_angle_string(int steer_angle) {
       begin_of_steering_straight = millis();
       maybe_on_straight = true;
     }
-    steer_angle = steer_angle / 2;
+    steer_angle = steer_angle * 0.75;
   } else {
     maybe_on_straight = false;
     currently_in_curve = true;
@@ -283,6 +339,9 @@ void generate_steer_angle_string(int steer_angle) {
   else if (steer_angle > 0) { // steer right
     //if(last_steering_direction == "left")
     //steer_angle = steer_angle / 2;
+    steer_angle = steer_angle * 1.25;
+    if (steer_angle > 550)
+      steer_angle = 550;
 
     if (steer_angle < 10) {
       if (currently_in_curve)
@@ -389,20 +448,20 @@ void setup() {
   attachInterrupt(ECHO_PIN_RIGHT, Ultrasonic_RIGHT_ISR, CHANGE);
   attachInterrupt(ECHO_PIN_LEFT, Ultrasonic_LEFT_ISR, CHANGE);
   voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
-  debug("Voltage");
-  debug(String(voltage_of_battery) + "\n");
+  debug("Voltage", "");
+  debug(String(voltage_of_battery) + "\n", "");
   if (voltage_of_battery < 6.25) {
-    debug("voltage of battery too low on startup");
+    debug("voltage of battery too low on startup", "");
     digitalWrite(PIN_RELAY, LOW);
   } else {
-    debug("turned on relay");
+    debug("turned on relay", "");
     digitalWrite(PIN_RELAY, HIGH);
   }
   pixy.init();
 
   //Serial.println(pixy.changeProg("video"));
   current_lamp_status = 1;
-  pixy.setLamp(current_lamp_status, current_lamp_status);
+  //pixy.setLamp(current_lamp_status, current_lamp_status);
   //Serial.print("Turned on lamps...\n");
   pinMode(I2C_READY_PIN, INPUT);
   //attachInterrupt(I2C_READY_PIN, send_interpolated_string, RISING);
@@ -411,7 +470,8 @@ void setup() {
 
   load_eeprom();
   //Serial1.begin(38400); // Default communication rate of the Bluetooth module
-  Serial1.begin(460800);
+  Serial1.begin(1382400);
+
   Serial4.begin(115200);
 }
 
@@ -421,13 +481,13 @@ int return_map(int value_to_map, int in_min, int in_max, int out_min, int out_ma
 
 int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
   //int angle = return_map(distance_from_ideallinie, 0, 20, 0, 450);
-  debug("distance_from_ideallinie: " + String(distance_from_ideallinie) + "\n");
+  debug("distance_from_ideallinie: " + String(distance_from_ideallinie) + "\n", "");
   int angle = return_map(distance_from_ideallinie, 0, 70, 0, 1350);
   if (angle > 450)
     angle = 450;
 
   if (distance_from_ideallinie <= 5)
-    angle = angle / 2;
+    angle = angle * 0.75;
 
   return angle;
 }
@@ -435,30 +495,30 @@ int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
 void detect_lines(uint8_t array[63], uint8_t which_line) {
   number_of_lines = 0;
   uint8_t track_width_at_current_line = 0;
-  if(which_line == 75)
+  if (which_line == 75)
     track_width_at_current_line = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER * 2;
-  else if(which_line == 120)
+  else if (which_line == 120)
     track_width_at_current_line = OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER * 2;
   else
     track_width_at_current_line = OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER * 2;
 
-  debug("THRESHOLD_GRAY: " + String(THRESHOLD_GRAY) + "\n");
-  debug("track_width_at_current_line: " + String(track_width_at_current_line) + "\n");
+  debug("THRESHOLD_GRAY: " + String(THRESHOLD_GRAY) + "\n", "");
+  debug("track_width_at_current_line: " + String(track_width_at_current_line) + "\n", "");
 
   /*for(int i = 0; i < 63; i++) {
     debug(String(array[i]) + "\n");
-  }*/
+    }*/
 
   bool left_one_found = false;
   bool right_one_found = false;
 
 
-  for(int i = track_center; i >= 0; i--) {
-    if(i >= 0 && i < 63) {
-      //if(array[i] >= THRESHOLD_GRAY) {
-      if(array[i] == 0) {
+  for (int i = track_center; i >= 0; i--) {
+    if (i >= 0 && i < 63) {
+      if (array[i] >= THRESHOLD_GRAY) {
+        //if(array[i] == 0) {
         index_of_left_line = i;
-        debug("found left line at: " + String(i) + "\n");
+        debug("found left line at: " + String(i) + "\n", "");
         left_one_found = true;
         number_of_lines++;
         break;
@@ -466,12 +526,12 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
     }
   }
 
-  for(int i = track_center; i < 63; i++) {
-    if(i >= 0 && i < 63) {
-      //if(array[i] >= THRESHOLD_GRAY) {
-      if(array[i] == 0) {
+  for (int i = track_center; i < 63; i++) {
+    if (i >= 0 && i < 63) {
+      if (array[i] >= THRESHOLD_GRAY) {
+        //if(array[i] == 0) {
         index_of_right_line = i;
-        debug("found right line at: " + String(i) + "\n");
+        debug("found right line at: " + String(i) + "\n", "");
         right_one_found = true;
         number_of_lines++;
         break;
@@ -480,28 +540,45 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
   }
 
 
-  if(left_one_found && right_one_found) {
-    debug("MIN_TRACK_WIDTH: " + String(MIN_TRACK_WIDTH) + "\n");
-    debug("abs(index_of_right_line - index_of_left_line): " + String(abs(index_of_right_line - index_of_left_line)) + "\n");
-    if(abs(index_of_right_line - index_of_left_line) < MIN_TRACK_WIDTH) {
-      debug("+++++ FOUND SYMBOL ON TRACK +++++\n");
+  if (left_one_found && right_one_found) {
+    debug("MIN_TRACK_WIDTH: " + String(MIN_TRACK_WIDTH) + "\n", "");
+    debug("abs(index_of_right_line - index_of_left_line): " + String(abs(index_of_right_line - index_of_left_line)) + "\n", "");
+    if (abs(index_of_right_line - index_of_left_line) < MIN_TRACK_WIDTH) {
+      debug("+++++ FOUND SYMBOL ON TRACK +++++\n", "");
       // TODO: continue with last steering angle
     } else {
       track_center = (index_of_left_line + index_of_right_line) / 2;
     }
-  } else if(left_one_found && !right_one_found) {
+  } else if (left_one_found && !right_one_found) {
     index_of_right_line = index_of_left_line + track_width_at_current_line;
     track_center = (index_of_left_line + index_of_right_line) / 2;
-  } else if(!left_one_found && right_one_found) {
+  } else if (!left_one_found && right_one_found) {
     index_of_left_line = index_of_right_line - track_width_at_current_line;
     track_center = (index_of_left_line + index_of_right_line) / 2;
   }
 
-  debug("found " + String(number_of_lines) + " lines\n");
-  debug("found left line: " + String(left_one_found) + "\n");
-  debug("found right line: " + String(right_one_found) + "\n");
-  debug("left line at: " + String(index_of_left_line) + "\n");
-  debug("right line at: " + String(index_of_right_line) + "\n");
+  debug("found " + String(number_of_lines) + " lines\n", "");
+  debug("found left line: " + String(left_one_found) + "\n", "");
+  debug("found right line: " + String(right_one_found) + "\n", "");
+  debug("left line at: " + String(index_of_left_line) + "\n", "");
+  debug("right line at: " + String(index_of_right_line) + "\n", "");
+  debug("center at: " + String(track_center) + "\n", "");
+
+
+  if (dodge_to_the_left) {
+    index_of_left_line -= (track_width_at_current_line / 4);
+    index_of_right_line -= (track_width_at_current_line / 4);
+    track_center = (index_of_left_line + index_of_right_line) / 2;
+    debug("dodging to the left\n", "");
+    debug("new center at: " + String(track_center) + "\n", "");
+  }
+  if (dodge_to_the_right) {
+    index_of_left_line += (track_width_at_current_line / 4);
+    index_of_right_line += (track_width_at_current_line / 4);
+    track_center = (index_of_left_line + index_of_right_line) / 2;
+    debug("dodging to the right\n", "");
+    debug("new center at: " + String(track_center) + "\n", "");
+  }
 
 }
 
@@ -525,52 +602,6 @@ uint8_t count_lines(uint8_t array[63]) {
   return number_of_lines;
 }
 
-void update_indexes_of_lines(uint8_t array[63]) {
-  bool left_line_found = false;
-  bool right_line_found = false;
-  bool first_one_found = false;
-
-  for (int i = 32; i >= 0; i--) {
-    if (array[i] == 1 || array[i] == 255)
-      first_one_found = true;
-    if (array[i] == 0 && first_one_found) {
-      index_of_left_line = i;
-      left_line_found = true;
-      break;
-    }
-  }
-  if (!left_line_found) {
-    for (int i = 32; i >= 0; i--) {
-      if (array[i] == 0) {
-        index_of_left_line = i;
-        left_line_found = true;
-        break;
-      }
-    }
-  }
-
-  first_one_found = false;
-
-  for (int i = 32; i < 63; i++) {
-    if (array[i] == 1 || array[i] == 255)
-      first_one_found = true;
-    if (array[i] == 0 && first_one_found) {
-      index_of_right_line = i;
-      right_line_found = true;
-      break;
-    }
-  }
-  if (!right_line_found) {
-    for (int i = 32; i < 63; i++) {
-      if (array[i] == 0) {
-        index_of_right_line = i;
-        right_line_found = true;
-        break;
-      }
-    }
-  }
-}
-
 void connect_line_edges(uint8_t array[], uint8_t size) {
   bool line_edge_found = false;
   uint8_t line_edge_index = 0;
@@ -579,7 +610,7 @@ void connect_line_edges(uint8_t array[], uint8_t size) {
 
   for (int i = 0; i < size; i++) {
     if (array[i] < THRESHOLD_DIFFERENCE && !line_edge_found)
-      array[i] = 255;
+      array[i] = 0;
     else {
       if (array[i] > THRESHOLD_DIFFERENCE && !line_edge_found) {
         array[i] = 0;
@@ -605,7 +636,7 @@ void connect_line_edges(uint8_t array[], uint8_t size) {
   }
 }
 
-void detect_if_left_or_right_line(uint8_t array[63]) {
+/*void detect_if_left_or_right_line(uint8_t array[63]) {
   if (index_of_left_line == index_of_right_line) {
     index_of_left_line -= 1;
     index_of_right_line += 1;
@@ -632,7 +663,8 @@ void detect_if_left_or_right_line(uint8_t array[63]) {
     currently_seeing_only_right_line = false;
   }
 
-}
+  }*/
+
 void set_LED(uint8_t R, uint8_t G, uint8_t B) {
   analogWrite(PIN_LED_2, R);
   analogWrite(PIN_LED_3, G);
@@ -671,16 +703,16 @@ void Ultrasonic_LEFT()
 void loop() {
 
   Serial_receive();
-  debug("light sensor value: " + String(analogRead(PIN_LIGHT_SENSOR)) + "\n");
+  debug("light sensor value: " + String(analogRead(PIN_LIGHT_SENSOR)) + "\n", "");
 
   //Serial4.print("S000S");
   voltage_of_battery = analogRead(PIN_BATTERY_VOLTAGE) * 0.000806 * 16;
-  debug("Voltage ");
-  debug(String(voltage_of_battery) + "\n");
+  debug("Voltage ", "");
+  debug(String(voltage_of_battery) + "\n", "");
   if (voltage_of_battery < 6.25) {
     battery_low_counter++;
     if (battery_low_counter > 500) {
-      debug("voltage of battery too low");
+      debug("voltage of battery too low", "");
       digitalWrite(PIN_RELAY, LOW);
       return;
     }
@@ -713,7 +745,7 @@ void loop() {
       if (DEBUG_GRAY_VALUES) {
         rgb_120[j] = gray;
 
-        if(j >= 1) {
+        if (j >= 1) {
           differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
         }
       }
@@ -727,7 +759,7 @@ void loop() {
       if (DEBUG_GRAY_VALUES) {
         rgb_165[j] = gray;
 
-        if(j >= 1) {
+        if (j >= 1) {
           differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
         }
       }
@@ -756,72 +788,25 @@ void loop() {
 
   }
 
-  differences_75[62] = 255;
-  connect_line_edges(differences_75, 62);
-  if(digitalRead(PIN_BT) == HIGH) {
-    differences_120[62] = 255;
-    connect_line_edges(differences_120, 62);
-    differences_165[62] = 255;
-    connect_line_edges(differences_165, 62);
+  differences_75[62] = 0;
+  //connect_line_edges(differences_75, 62);
+  if (digitalRead(PIN_BT) == HIGH) {
+    differences_120[62] = 0;
+    //connect_line_edges(differences_120, 62);
+    differences_165[62] = 0;
+    //connect_line_edges(differences_165, 62);
   }
 
   detect_lines(differences_75, 75);
-  /*uint8_t number_of_lines = count_lines(differences_75);
-  debug("number of lines: " + String(number_of_lines) + "\n");
-  if (number_of_lines == 2) {
-    currently_seeing_both_lines = true;
-    currently_seeing_only_left_line = false;
-    currently_seeing_only_right_line = false;
-    update_indexes_of_lines(differences_75);
-    debug("index_of_left_line: " + String(index_of_left_line) + "\n");
-    debug("index_of_right_line: " + String(index_of_right_line) + "\n");
-  } else if (number_of_lines == 1) {
-    detect_if_left_or_right_line(differences_75);
-  } else if (number_of_lines == 0) {
-    currently_seeing_both_lines = false;
-    currently_seeing_only_left_line = false;
-    currently_seeing_only_right_line = false;
-  } else {
-    for (int i = 0; i < number_of_lines; i++) {
-      debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
-    }
-  }
-
-  int center = 0;
-  if (currently_seeing_both_lines) {
-    debug("currently seeing both lines!\n");
-    center = (index_of_left_line + index_of_right_line) / 2;
-  }
-  if (currently_seeing_only_left_line) {
-    debug("currently seeing only left line\n");
-    debug("index_of_left_line: " + String(index_of_left_line) + "\n");
-    center = index_of_left_line + OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
-    index_of_right_line = index_of_left_line + 2 * OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
-    //if (index_of_left_line > 55)
-      //index_of_right_line = 66;
-      /7else
-      //index_of_right_line = 62;
-  }
-  if (currently_seeing_only_right_line) {
-    debug("currently seeing only right line\n");
-    debug("index_of_right_line: " + String(index_of_right_line) + "\n");
-    center = index_of_right_line - OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
-    index_of_left_line = index_of_right_line - 2 * OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER;
-    //if (index_of_right_line < 7)
-      //index_of_left_line = -5;
-      //else
-      //index_of_left_line = 0;
-  }*/
-
-
+  current_line = 75;
 
   if (number_of_lines > 0) {
-    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 32));
-    if (track_center >= 32) {
-      debug("steer right: " + String(steer_angle) + "\n");
+    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+    if (track_center >= 30) {
+      debug("steer right: " + String(steer_angle) + "\n", "");
     }
     else {
-      debug("steer left: " + String(steer_angle) + "\n");
+      debug("steer left: " + String(steer_angle) + "\n", "");
       steer_angle = steer_angle * -1;
     }
 
@@ -836,7 +821,7 @@ void loop() {
     KL25z_data(current_angle_string);
     last_steer_angle = steer_angle;
   } else {
-    debug("did not find a line at 75, now looking at 120\n");
+    debug("did not find a line at 75, now looking at 120\n", "");
 
     for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
 
@@ -845,7 +830,7 @@ void loop() {
       if (DEBUG_GRAY_VALUES) {
         rgb_120[j] = gray;
 
-        if(j >= 1) {
+        if (j >= 1) {
           differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
         }
       }
@@ -855,66 +840,31 @@ void loop() {
         black_or_white_at_120[j] = 0;
 
     }
-    differences_120[62] = 255;
-    connect_line_edges(differences_120, 62);
+    differences_120[62] = 0;
+    //connect_line_edges(differences_120, 62);
 
 
     detect_lines(differences_120, 120);
-    /*uint8_t number_of_lines_120 = count_lines(differences_120);
-    debug("number of lines: " + String(number_of_lines_120) + "\n");
-    if (number_of_lines_120 == 2) {
-      currently_seeing_both_lines = true;
-      currently_seeing_only_left_line = false;
-      currently_seeing_only_right_line = false;
-      update_indexes_of_lines(differences_120);
-      debug("index_of_left_line: " + String(index_of_left_line) + "\n");
-      debug("index_of_right_line: " + String(index_of_right_line) + "\n");
-    } else if (number_of_lines_120 == 1) {
-      detect_if_left_or_right_line(differences_120);
-    } else if (number_of_lines_120 == 0) {
-      currently_seeing_both_lines = false;
-      currently_seeing_only_left_line = false;
-      currently_seeing_only_right_line = false;
-      // reset indexes cause currently probably on cross
-      index_of_left_line = 0;
-      index_of_right_line = 62;
-    } else {
-      for (int i = 0; i < number_of_lines_120; i++) {
-        debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
-      }
-    }
+    current_line = 120;
 
-    int center = 0;
-    if (currently_seeing_both_lines) {
-      debug("currently seeing both lines!\n");
-      center = (index_of_left_line + index_of_right_line) / 2;
-    }
-    if (currently_seeing_only_left_line) {
-      debug("currently seeing only left line\n");
-      debug("index_of_left_line: " + String(index_of_left_line) + "\n");
-      center = index_of_left_line + OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER;
-      index_of_right_line = index_of_left_line + 2 * OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER;
-    }
-    if (currently_seeing_only_right_line) {
-      debug("currently seeing only right line\n");
-      debug("index_of_right_line: " + String(index_of_right_line) + "\n");
-      center = index_of_right_line - OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER;
-      index_of_left_line = index_of_right_line - 2 * OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER;
-    }*/
-
-    /*if (number_of_lines > 0) {
-      int steer_angle_120 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 32));
-      if (track_center >= 32) {
-        debug("steer right: " + String(steer_angle_120) + "\n");
+    if (number_of_lines > 0) {
+      int steer_angle_120 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+      if (track_center >= 30) {
+        debug("steer right: " + String(steer_angle_120) + "\n", "");
       }
       else {
-        debug("steer left: " + String(steer_angle_120) + "\n");
+        debug("steer left: " + String(steer_angle_120) + "\n", "");
         steer_angle_120 = steer_angle_120 * -1;
       }
 
-      steer_angle_120 = steer_angle_120 * 1.2;
+      steer_angle_120 = steer_angle_120 * 1.3;
       //if((last_steer_angle > 400 && steer_angle_120 < 100 && steer_angle_120 > 0) || (last_steer_angle < -400 && steer_angle_120 > -100 && steer_angle_120 < 0))
       //steer_angle_120 = steer_angle_120 * 4;
+
+      if (steer_angle_120 > 0 && steer_angle_120 < 100)
+        steer_angle_120 = 100;
+      else if (steer_angle_120 < 0 && steer_angle_120 > -100)
+        steer_angle_120 = -100;
 
       if (steer_angle_120 > 450)
         steer_angle_120 = 450;
@@ -926,9 +876,9 @@ void loop() {
       //write_i2c(current_angle_string);
       KL25z_data(current_angle_string);
       last_steer_angle = steer_angle_120;
-    } else {
-      //write_i2c(current_angle_string);
-      debug("did not find a line at 120, now looking at 165\n");
+    }
+    else {
+      debug("did not find a line at 120, now looking at 165\n", "");
 
       for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
 
@@ -937,7 +887,7 @@ void loop() {
         if (DEBUG_GRAY_VALUES) {
           rgb_165[j] = gray;
 
-          if(j >= 1) {
+          if (j >= 1) {
             differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
           }
         }
@@ -945,62 +895,22 @@ void loop() {
           black_or_white_at_165[j] = 1;
         else
           black_or_white_at_165[j] = 0;
+
       }
-      differences_165[62] = 255;
-      connect_line_edges(differences_165, 62);
+      differences_165[62] = 0;
+      //connect_line_edges(differences_165, 62);
+
 
       detect_lines(differences_165, 165);
-      /*uint8_t number_of_lines_165 = count_lines(differences_165);
-      debug("number of lines: " + String(number_of_lines_165) + "\n");
-      if (number_of_lines_165 == 2) {
-        currently_seeing_both_lines = true;
-        currently_seeing_only_left_line = false;
-        currently_seeing_only_right_line = false;
-        update_indexes_of_lines(differences_165);
-        debug("index_of_left_line: " + String(index_of_left_line) + "\n");
-        debug("index_of_right_line: " + String(index_of_right_line) + "\n");
-      } else if (number_of_lines_165 == 1) {
-        detect_if_left_or_right_line(differences_165);
-      } else if (number_of_lines_165 == 0) {
-        currently_seeing_both_lines = false;
-        currently_seeing_only_left_line = false;
-        currently_seeing_only_right_line = false;
-        // reset indexes cause currently probably on cross
-        index_of_left_line = 0;
-        index_of_right_line = 62;
-      } else {
-        for (int i = 0; i < number_of_lines_165; i++) {
-          debug("index of line " + String(i) + ": " + String(indexes_of_lines[i]) + "\n");
-        }
-      }
-
-      int center = 0;
-      if (currently_seeing_both_lines) {
-        debug("currently seeing both lines!\n");
-        center = (index_of_left_line + index_of_right_line) / 2;
-      }
-      if (currently_seeing_only_left_line) {
-        debug("currently seeing only left line\n");
-        debug("index_of_left_line: " + String(index_of_left_line) + "\n");
-        center = index_of_left_line + OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
-        debug("center: " + String(center));
-        index_of_right_line = index_of_left_line + 2 * OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
-      }
-      if (currently_seeing_only_right_line) {
-        debug("currently seeing only right line\n");
-        debug("index_of_right_line: " + String(index_of_right_line) + "\n");
-        center = index_of_right_line - OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
-        debug("center: " + String(center));
-        index_of_left_line = index_of_right_line - 2 * OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER;
-      }*/
+      current_line = 165;
 
       if (number_of_lines > 0) {
-        int steer_angle_165 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 32));
-        if (track_center >= 32) {
-          debug("steer right: " + String(steer_angle_165) + "\n");
+        int steer_angle_165 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+        if (track_center >= 30) {
+          debug("steer right: " + String(steer_angle_165) + "\n", "");
         }
         else {
-          debug("steer left: " + String(steer_angle_165) + "\n");
+          debug("steer left: " + String(steer_angle_165) + "\n", "");
           steer_angle_165 = steer_angle_165 * -1;
         }
 
@@ -1023,15 +933,21 @@ void loop() {
         //write_i2c(current_angle_string);
         KL25z_data(current_angle_string);
         last_steer_angle = steer_angle_165;
-      }
-      else { // write last steer angle
-        //debug("seeing no line, sending last angle string\n");
+      } else { // write last steer angle
+        debug("seeing no line, sending last angle string\n", "");
+        current_line = 0;
+        index_of_left_line = 999;
+        index_of_right_line = 999;
         //write_i2c(current_angle_string);
+        generate_steer_angle_string(last_steer_angle);
         KL25z_data(current_angle_string);
+        last_steer_angle = last_steer_angle * 0.9;
       }
-    //}
+    }
   }
-  
+
+  debug(current_angle_string, "");
+
   if (digitalRead(PIN_BT) == HIGH)
   {
     String s_25;
@@ -1040,6 +956,9 @@ void loop() {
     String s_165;
     String US_data;
     String Speed;
+    String s_current_line;
+    String s_index_of_left_line;
+    String s_index_of_right_line;
     //debug("\n");
 
 
@@ -1047,35 +966,59 @@ void loop() {
       //debug(String(black_or_white_at_75[i]));
 
       s_25 += String(rgb_25[i]) + " ";
-      //if(i == 62)
-      //s_25 += "255 ";
-      //else
-      //s_25 += String(differences_75[i]) + " ";
       s_75 += String(rgb_75[i]) + " ";
       s_120 += String(rgb_120[i]) + " ";
       s_165 += String(rgb_165[i]) + " ";
     }
+    s_current_line = String(current_line);
+    s_index_of_left_line = String(index_of_left_line);
+    s_index_of_right_line = String(index_of_right_line);
+    String line_indexes = s_current_line + " " + s_index_of_left_line + " " + s_index_of_right_line;
     Speed = String(Speed_right);
-    US_data += String(abs(distanceCmLeft), DEC);
+    US_data += String(round(abs(distanceCmLeft)), DEC);
     US_data += " ";
-    US_data += String(abs(distanceCmRight), DEC);
+    US_data += String(round(abs(distanceCmRight)), DEC);
     US_data += " ";
-    String mainString = (" # " + s_25 + " $ " + s_75 + " $$ " + s_120 + " $$$ " + s_165 + " $$$$ " + US_data + " / " + Speed + " // " + "\n" + "&");
-    debug(mainString);
+    mainString = (" # " + s_25 + " $ " + s_75 + " ! " + s_120 + " % " + s_165 + " / " + US_data + " ( " + Speed + " ; " + line_indexes + " ? " + "\n" + "&");
+    debug(mainString, mainString);
 
   }
 
   Ultrasonic_LEFT();
 
   // check ultrasonic values, if something is close: break
-  if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD)
+  if (distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD)
     counter_ultrasonics_triggered++;
   else
     counter_ultrasonics_triggered = 0;
-  if(counter_ultrasonics_triggered >= NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP) {
-    Start_Stop = 2;
+  if (counter_ultrasonics_triggered >= NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP) {
+    //Start_Stop = 2;
     counter_ultrasonics_triggered = 0;
   }
-  
+
+  /*if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
+    dodge_to_the_left = false;
+    dodge_to_the_right = true;
+    timer_of_dodge_to_the_right = millis();
+    debug("DODGE TO THE RIGHT!\n");
+    } else if(distanceCmLeft > LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD) {
+    dodge_to_the_left = true;
+    dodge_to_the_right = false;
+    timer_of_dodge_to_the_left = millis();
+    debug("DODGE TO THE LEFT!\n");
+    }*/
+
+  if (dodge_to_the_left && millis() - timer_of_dodge_to_the_left > DURATION_OF_DODGE) {
+    dodge_to_the_left = false;
+    dodge_to_the_right = false;
+  }
+  if (dodge_to_the_right && millis() - timer_of_dodge_to_the_right > DURATION_OF_DODGE) {
+    dodge_to_the_left = false;
+    dodge_to_the_right = false;
+  }
+
+  debug("dodge_to_the_left: " + String(dodge_to_the_left) + "\n", "");
+  debug("dodge_to_the_right: " + String(dodge_to_the_right) + "\n", "");
+
   Serial_KL25z_receive();
 }
