@@ -1528,7 +1528,7 @@ Autoselect
         <Properties>
           <Component_name v="ExtIntLdd1" />
           <Pin v="PTA12/TPM1_CH0" />
-          <Generate_interrupt_on v="rising edge" />
+          <Generate_interrupt_on v="falling edge" />
           <Interrupt v="INT_PORTA" />
           <Interrupt_priority v="medium priority" />
           <group name="Initialization">
@@ -1553,7 +1553,7 @@ Autoselect
           </event>
         </Events>
       </inhrbean>
-      <Generate_interrupt_on v="rising edge" />
+      <Generate_interrupt_on v="falling edge" />
       <Interrupt v="INT_PORTA" />
       <Interrupt_priority v="medium priority" />
       <group name="Initialization">
@@ -2816,7 +2816,7 @@ Autoselect
         <Interrupt_TxD_priority v="medium priority" />
         <Interrupt_Error v="INT_UART2" />
         <Interrupt_Error_priority v="medium priority" />
-        <Input_buffer_size v="5" />
+        <Input_buffer_size v="6" />
         <Output_buffer_size v="5" />
         <group name="Handshake">
           <boolgroup name="CTS" v="Disabled" />

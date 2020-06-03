@@ -429,11 +429,11 @@ void setup() {
     .setColorForeground(color(255, 100));
   ; 
   Modus = cp20.addKnob("Modus")
-    .setRange(0, 5)
+    .setRange(0, 4)
     .setValue(0)
     .setPosition(265, 395)
     .setRadius(50)
-    .setNumberOfTickMarks(5)
+    .setNumberOfTickMarks(4)
     .setTickMarkLength(4)
     .snapToTickMarks(true)
     .setColorLabel(0)
@@ -623,7 +623,7 @@ void draw() {
         Console.clear();
         reset_counter = 0;
       }
- 
+
       nums_top = int(split(Line_top, ' '));
       nums_top_middel = int(split(Line_top_middel, ' '));
       nums_bottom_middel = int(split(Line_bottom_middel, ' '));
@@ -1128,7 +1128,23 @@ void norminal_speed(float norminal_speed_value) {
 }
 void Modus(int theValue) {
   if (prev_modus != theValue)
+  {
     myPort.write("Modus "+ theValue + "&");
-    delay(5);
+    switch(theValue)
+    {
+      case 0: Modus.setLabel("Normal");
+      break;
+      case 1: Modus.setLabel("Slow/Fast Zone");
+      break;
+      case 2: Modus.setLabel("Obstacle avoidance");
+      break;
+      case 3: Modus.setLabel("Emergency brake");
+      break;
+      case 4: Modus.setLabel("Eight");
+      break;      
+    }
+    
+    delay(15);
+  }
   prev_modus = theValue;
 }

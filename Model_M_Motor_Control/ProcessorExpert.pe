@@ -3,7 +3,7 @@
   <Header>
     <Name>Model_M_Motor_control</Name>
     <SavedBy>Moritz</SavedBy>
-    <ModificationStamp>157</ModificationStamp>
+    <ModificationStamp>159</ModificationStamp>
     <Date>2019-10-31</Date>
     <IDE>Eclipse IDE</IDE>
     <PEversion>1.12.2.RT7_b1550-0615</PEversion>
@@ -29,7 +29,7 @@
     <UseExistingModules>true</UseExistingModules>
     <RenamePeripheries>false</RenamePeripheries>
     <Autodependency>true</Autodependency>
-    <ProjectCompNumb>371</ProjectCompNumb>
+    <ProjectCompNumb>374</ProjectCompNumb>
     <DelUnusedPreviouslyGenFiles>true</DelUnusedPreviouslyGenFiles>
     <GeneratedCodeFrozen>false</GeneratedCodeFrozen>
     <AssignInitComponentNameToPrph>true</AssignInitComponentNameToPrph>
@@ -20777,7 +20777,7 @@
         <ReadOnly>false</ReadOnly>
         <UserReadOnly>false</UserReadOnly>
         <PropertyModelIsAutomatic>false</PropertyModelIsAutomatic>
-        <Index>1</Index>
+        <Index>2</Index>
       </ItemState>
       <ItemState>
         <ItemSymbol>HCS08grp</ItemSymbol>
@@ -23675,7 +23675,7 @@
         <ItemSymbol>_Pin</ItemSymbol>
         <ReadOnly>false</ReadOnly>
         <UserReadOnly>false</UserReadOnly>
-        <Value>PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4</Value>
+        <Value>PTD0/SPI0_PCS0/TPM0_CH0</Value>
         <SharedPrphMode>false</SharedPrphMode>
       </ItemState>
       <ItemState>
@@ -23721,7 +23721,7 @@
               <ItemSymbol>_Pin</ItemSymbol>
               <ReadOnly>false</ReadOnly>
               <UserReadOnly>false</UserReadOnly>
-              <Value>PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4</Value>
+              <Value>PTD0/SPI0_PCS0/TPM0_CH0</Value>
               <SharedPrphMode>false</SharedPrphMode>
             </ItemState>
             <ItemState>

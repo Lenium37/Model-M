@@ -1528,7 +1528,7 @@ Autoselect
         <Properties>
           <Component_name v="ExtIntLdd1" />
           <Pin v="PTA12/TPM1_CH0" />
-          <Generate_interrupt_on v="rising edge" />
+          <Generate_interrupt_on v="falling edge" />
           <Interrupt v="INT_PORTA" />
           <Interrupt_priority v="medium priority" />
           <group name="Initialization">
@@ -1553,7 +1553,7 @@ Autoselect
           </event>
         </Events>
       </inhrbean>
-      <Generate_interrupt_on v="rising edge" />
+      <Generate_interrupt_on v="falling edge" />
       <Interrupt v="INT_PORTA" />
       <Interrupt_priority v="medium priority" />
       <group name="Initialization">
@@ -1838,13 +1838,13 @@ Autoselect
     <Enabled v="Y" />
     <Properties>
       <Component_name v="LinksINT" />
-      <Pin v="PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4" />
+      <Pin v="PTD0/SPI0_PCS0/TPM0_CH0" />
       <inhrbean type="ExtInt_LDD">
         <Enabled v="Y" />
         <Template v="ExtInt_LDD" />
         <Properties>
           <Component_name v="ExtIntLdd2" />
-          <Pin v="PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4" />
+          <Pin v="PTD0/SPI0_PCS0/TPM0_CH0" />
           <Generate_interrupt_on v="rising edge" />
           <Interrupt v="INT_PORTD" />
           <Interrupt_priority v="high priority" />

@@ -7,7 +7,7 @@
 **     Version     : Component 02.156, Driver 01.02, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-02-19, 23:00, # CodeGen: 78
+**     Date/Time   : 2020-03-13, 13:57, # CodeGen: 124
 **     Abstract    :
 **         This component, "ExtInt_LDD", provide a low level API 
 **         for unified access of external interrupts handling
@@ -16,7 +16,7 @@
 **         selected edge.
 **     Settings    :
 **          Component name                                 : ExtIntLdd2
-**          Pin                                            : PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4
+**          Pin                                            : PTD0/SPI0_PCS0/TPM0_CH0
 **          Pin signal                                     : 
 **          Generate interrupt on                          : rising edge
 **          Interrupt                                      : INT_PORTD
@@ -113,8 +113,8 @@ extern "C" {
 #define ExtIntLdd2_OnInterrupt_EVENT_ENABLED /*!< OnInterrupt event of the component ExtIntLdd2 is enabled (generated) */
 
 /* Definition of implementation constants */
-#define ExtIntLdd2_PIN_INDEX 0x04U     /*!< Index of the used pin from the port */
-#define ExtIntLdd2_PIN_MASK 0x10U      /*!< Mask of the used pin from the port */
+#define ExtIntLdd2_PIN_INDEX 0x00U     /*!< Index of the used pin from the port */
+#define ExtIntLdd2_PIN_MASK 0x01U      /*!< Mask of the used pin from the port */
 
 /*
 ** ===================================================================

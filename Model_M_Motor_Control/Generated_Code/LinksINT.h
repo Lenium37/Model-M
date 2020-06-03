@@ -7,7 +7,7 @@
 **     Version     : Component 02.105, Driver 01.00, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-02-19, 23:00, # CodeGen: 78
+**     Date/Time   : 2020-03-13, 13:57, # CodeGen: 124
 **     Abstract    :
 **         This component "ExtInt" implements an external 
 **         interrupt, its control methods and interrupt/event 
@@ -16,7 +16,7 @@
 **         selected edge.
 **     Settings    :
 **          Component name                                 : LinksINT
-**          Pin                                            : PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4
+**          Pin                                            : PTD0/SPI0_PCS0/TPM0_CH0
 **          Pin signal                                     : 
 **          ExtInt_LDD                                     : ExtInt_LDD
 **          Generate interrupt on                          : rising edge

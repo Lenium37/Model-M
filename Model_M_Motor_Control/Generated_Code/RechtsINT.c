@@ -7,7 +7,7 @@
 **     Version     : Component 02.105, Driver 01.00, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-01-16, 19:11, # CodeGen: 29
+**     Date/Time   : 2020-03-13, 13:45, # CodeGen: 123
 **     Abstract    :
 **         This component "ExtInt" implements an external 
 **         interrupt, its control methods and interrupt/event 
@@ -19,7 +19,7 @@
 **          Pin                                            : PTA12/TPM1_CH0
 **          Pin signal                                     : 
 **          ExtInt_LDD                                     : ExtInt_LDD
-**          Generate interrupt on                          : rising edge
+**          Generate interrupt on                          : falling edge
 **          Interrupt                                      : INT_PORTA
 **          Interrupt priority                             : medium priority
 **          Initialization                                 : 

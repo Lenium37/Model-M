@@ -43,7 +43,10 @@ ControlP5 cp20;
 ControlP5 cp21;
 
 Textarea myTextarea;
-Println console;
+Textlabel Left_US;
+Textlabel Right_US;
+Textlabel Speed_kl25z;
+Println Console;
 Table table;
 
 DropdownList d1, d2;
@@ -52,34 +55,40 @@ Button b2;
 Button b3;
 Button b4;
 Button b5;
+Button b6;
+Knob Modus;
 
 int Brightness = 0;
 int Offset_at_75_to_Center = 0;
-int Offset_at_175_to_Center = 0;
+int Offset_at_120_to_Center = 0;
+int Offset_at_165_to_Center = 0;
 int Threshold_Gray = 0;
 int Min_Track_width = 0;
 int Red = 0;
 int Green = 0;
 int Blue = 0;
 int Led_Brightness = 0;
-int LEFT_DISTANCE_THRESHOLD = 0;
-int RIGHT_DISTANCE_THRESHOLD = 0;
-int ULTRASONIC_SAMPELS = 0;
-
+int LEFT_DISTANCE = 0;
+int RIGHT_DISTANCE = 0;
+float norminal_speed = 0;
+int THRESHOLD_DIFFERENCE = 0;
+int Stop_Start = 0;
 int Threshold_Gray_bar = 0;
-
+int diff_top;
+int prev_modus = 0;
 int Brightness_table = 0;
 int Offset_at_75_to_Center_table = 0;
-int Offset_at_175_to_Center_table = 0;
+int Offset_at_120_to_Center_table = 0;
+int Offset_at_165_to_Center_table = 0;
 int Threshold_Gray_table = 0;
 int Min_Track_width_table = 0;
 int Red_table = 0;
 int Green_table = 0;
 int Blue_table = 0;
 int Led_Brightness_table = 0;
-int LEFT_DISTANCE_THRESHOLD_table = 0;
-int RIGHT_DISTANCE_THRESHOLD_table = 0;
-int ULTRASONIC_SAMPELS_table = 0;
+int LEFT_DISTANCE_table = 0;
+int RIGHT_DISTANCE_table = 0;
+float norminal_speed_table = 0;
 
 int Y_AXIS = 1;
 int X_AXIS = 2;
@@ -100,6 +109,7 @@ int Pixel_count = 63;
 boolean press_start = false;
 int button_counter = 0;
 int button2_counter = 0;
+int button3_counter = 0;
 int drop_counter = 0;
 int Console_status = 3;
 // The serial port
@@ -112,6 +122,7 @@ String Line_bottom_middel;
 String Line_bottom;
 String US_data;
 String Serial_Monitor_stream;
+String line_detection_data;
 PFont f;  // Global font variable
 float x;  // horizontal location of headline
 int index = 0;
@@ -121,25 +132,42 @@ int Black = color(0);
 int White = color(255);
 // String für empfangene Daten
 String portStream;
+int string_counter = 0;
+
+int button_counter3 = 0;
+boolean ready_stream = true;
+int nums_top[];
+int nums_top_middel[];
+int nums_bottom_middel[];
+int nums_bottom[];
+int nums_line_detection[];
+int[] differences_top = new int[64];
+int[] differences_top_middle = new int[64];
+int[] differences_bottom_middle = new int[64];
+int[] differences_bottom = new int[64];
+byte Bool_bin = 0b00000000;
+float US_data_array[];
+int reset_counter = 0;
 // setup() wird einmal zu Beginn dea Programms ausgeführt
 public void setup() {
   // Ausgabefenster und Vorder-/Hintergrundfarben definieren
   
-
+  
   table = new Table();
 
   table.addColumn("Brightness", Table.INT);
   table.addColumn("Offset_at_75_to_Center", Table.INT);
-  table.addColumn("Offset_at_175_to_Center", Table.INT);
+  table.addColumn("Offset_at_120_to_Center", Table.INT);
+  table.addColumn("Offset_at_165_to_Center", Table.INT);
   table.addColumn("Threshold_Gray", Table.INT);
   table.addColumn("Min_Track_width", Table.INT);
   table.addColumn("Red", Table.INT);
   table.addColumn("Blue", Table.INT);
   table.addColumn("Green", Table.INT);
   table.addColumn("Led_Brightness", Table.INT);
-  table.addColumn("LEFT_DISTANCE_THRESHOLD", Table.INT);
-  table.addColumn("RIGHT_DISTANCE_THRESHOLD", Table.INT);
-  table.addColumn("ULTRASONIC_SAMPELS", Table.INT);
+  table.addColumn("LEFT_DISTANCE", Table.INT);
+  table.addColumn("RIGHT_DISTANCE", Table.INT);
+  table.addColumn("norminal_speed", Table.FLOAT);
   table = loadTable("Settings.csv", "header");
 
   if (table != null)
@@ -147,16 +175,17 @@ public void setup() {
     RowCount = table.getRowCount();       
     Brightness_table = table.getInt(RowCount-1, "Brightness");
     Offset_at_75_to_Center_table = table.getInt(RowCount-1, "Offset_at_75_to_Center");
-    Offset_at_175_to_Center_table = table.getInt(RowCount-1, "Offset_at_175_to_Center");
+    Offset_at_120_to_Center_table = table.getInt(RowCount-1, "Offset_at_120_to_Center");
+    Offset_at_165_to_Center_table = table.getInt(RowCount-1, "Offset_at_165_to_Center");
     Threshold_Gray_table = table.getInt(RowCount-1, "Threshold_Gray");
     Min_Track_width_table = table.getInt(RowCount-1, "Min_Track_width");
     Red_table = table.getInt(RowCount-1, "Red");
     Blue_table = table.getInt(RowCount-1, "Blue");
     Green_table = table.getInt(RowCount-1, "Green");
     Led_Brightness_table = table.getInt(RowCount-1, "Led_Brightness");
-    LEFT_DISTANCE_THRESHOLD_table = table.getInt(RowCount-1, "LEFT_DISTANCE_THRESHOLD");
-    RIGHT_DISTANCE_THRESHOLD_table = table.getInt(RowCount-1, "RIGHT_DISTANCE_THRESHOLD");
-    ULTRASONIC_SAMPELS_table = table.getInt(RowCount-1, "ULTRASONIC_SAMPELS_table");
+    LEFT_DISTANCE_table = table.getInt(RowCount-1, "LEFT_DISTANCE");
+    RIGHT_DISTANCE_table = table.getInt(RowCount-1, "RIGHT_DISTANCE");
+    norminal_speed_table = table.getFloat(RowCount-1, "norminal_speed");
     Threshold_Gray_bar = Threshold_Gray_table;
   }
   f = createFont("Arial", 16, true);  
@@ -193,6 +222,24 @@ public void setup() {
   cp20 = new ControlP5(this);
   cp21 = new ControlP5(this);
 
+  Left_US = cp21.addTextlabel("Left_US")
+    .setPosition(45, 5)
+    .setColorValue(255)   
+    .setFont(createFont("Georgia", 20))
+    .setVisible(true);
+  ;
+  Right_US = cp21.addTextlabel("Right_US")
+    .setPosition(540, 5)
+    .setColorValue(255)
+    .setFont(createFont("Georgia", 20))
+    .setVisible(true);
+  ;
+  Speed_kl25z = cp21.addTextlabel("Speed_kl25z")
+    .setPosition(280, 5)
+    .setColorValue(50)
+    .setFont(createFont("Georgia", 20))   
+    .setVisible(true);
+  ;
   // create a toggle
   cp17.addToggle("Serial_Monitor")
     .setPosition(540, 520)
@@ -205,14 +252,15 @@ public void setup() {
     .setColorLabel(100)
     ;   
   cp18.addButton("Apply")
-    .setPosition(20, 660)
+    .setPosition(20, 680)
     .setSize(63, 20)
     .setColorLabel(255)
-    ;   
-  cp18.addButton("Load")
-    .setPosition(146, 660)
+    ;  
+  b6 = cp18.addButton("Go")
+    .setPosition(100, 680)
     .setSize(63, 20)
     .setColorLabel(255)
+    .setLabel("Go")
     ;   
   cp9.addSlider("Line_4")
     .setPosition(215, 490)
@@ -262,16 +310,23 @@ public void setup() {
     .setValue(Offset_at_75_to_Center_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("Offset_at_175_to_Center")
+  cp12.addSlider("Offset_at_120_to_Center")
     .setPosition(20, 600)
     .setSize(200, 10)
     .setRange(0, 40)
     .setColorLabel(100)
-    .setValue(Offset_at_175_to_Center_table)
+    .setValue(Offset_at_120_to_Center_table)
+    .setVisible(true); 
+  cp12.addSlider("Offset_at_165_to_Center")
+    .setPosition(20, 620)
+    .setSize(200, 10)
+    .setRange(0, 40)
+    .setColorLabel(100)
+    .setValue(Offset_at_165_to_Center_table)
     .setVisible(true); 
   ;
   cp12.addSlider("Threshold_Gray")
-    .setPosition(20, 620)
+    .setPosition(20, 640)
     .setSize(200, 10)
     .setRange(0, 255)
     .setColorLabel(100)
@@ -279,35 +334,35 @@ public void setup() {
     .setVisible(true); 
   ;
   cp12.addSlider("Min_Track_width")
-    .setPosition(20, 640)
+    .setPosition(20, 660)
     .setSize(200, 10)
     .setRange(0, 40)
     .setColorLabel(100)
     .setValue(Min_Track_width_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("LEFT_DISTANCE_THRESHOLD")
+  cp12.addSlider("LEFT_DISTANCE")
     .setPosition(350, 640)
     .setSize(200, 10)
-    .setRange(0, 40)
+    .setRange(0, 200)
     .setColorLabel(100)
-    .setValue(LEFT_DISTANCE_THRESHOLD_table)
+    .setValue(LEFT_DISTANCE_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("RIGHT_DISTANCE_THRESHOLD")
+  cp12.addSlider("RIGHT_DISTANCE")
     .setPosition(350, 660)
     .setSize(200, 10)
-    .setRange(0, 40)
+    .setRange(0, 200)
     .setColorLabel(100)
-    .setValue(RIGHT_DISTANCE_THRESHOLD_table)
+    .setValue(RIGHT_DISTANCE_table)
     .setVisible(true); 
   ;
-  cp12.addSlider("ULTRASONIC_SAMPELS")
+  cp12.addSlider("norminal_speed")
     .setPosition(350, 680)
     .setSize(200, 10)
-    .setRange(0, 40)
+    .setRange(0.0f, 5.0f)
     .setColorLabel(100)
-    .setValue(ULTRASONIC_SAMPELS_table)
+    .setValue(norminal_speed_table)
     .setVisible(true); 
   ;
   cp12.addSlider("Red")
@@ -383,6 +438,7 @@ public void setup() {
     .close() 
     ;        
   customize2(d2); // customize the first list
+
   myTextarea = cp5.addTextarea("txt")
     .setPosition(630, 0)
     .setSize(300, 540)
@@ -391,20 +447,43 @@ public void setup() {
     .setColor(color(200))
     .setColorBackground(color(0, 100))
     .setColorForeground(color(255, 100));
-  ;
-  console = cp5.addConsole(myTextarea);
+  ; 
+  Modus = cp20.addKnob("Modus")
+    .setRange(0, 4)
+    .setValue(0)
+    .setPosition(265, 395)
+    .setRadius(50)
+    .setNumberOfTickMarks(4)
+    .setTickMarkLength(4)
+    .snapToTickMarks(true)
+    .setColorLabel(0)
+    .setColorValue(0)
+    .setColorValueLabel(0)
+    .setColorCaptionLabel(0)
+    .setColorForeground(0)
+    .setColorBackground(color(255, 120, 117))
+    .setColorActive(color(115, 188, 255))
+    .setDragDirection(Knob.VERTICAL)
+    .setVisible(true)
+    ;
+
+  Console = cp5.addConsole(myTextarea);
 
   cp9.setVisible(false); 
   cp10.setVisible(false);
   cp11.setVisible(false);
   cp12.setVisible(false); 
+  Modus.setVisible(false);
   surface.setResizable(false);
 
 
-  
+  smooth(2);
   surface.setSize(630, 560); //+140
   cp18.setVisible(false); 
   cp17.setVisible(false); 
+  Left_US.setVisible(false); 
+  Right_US.setVisible(false); 
+  Speed_kl25z.setVisible(false);
   //String portName = Serial.list()[4];
   // myPort initialisieren, Übertragungsrate wie bei Arduino Sketch einstellen
   //myPort = new Serial(this, portName, 115200);
@@ -437,34 +516,73 @@ public void customize2(DropdownList ddl) {
   ddl.addItem("115200", 2);
   ddl.addItem("230400", 3);
   ddl.addItem("460800", 4);
+  ddl.addItem("1382400", 5);
   //ddl.scroll(0);
   ddl.setColorBackground(color(60));
   ddl.setColorActive(color(255, 128));
-  frameRate(60);
+  frameRate(600);
 }
+
+public void connect_line_edges(int[] array) {
+  boolean line_edge_found = false;
+  int line_edge_index = 0;
+  int line_width_counter = 0;
+
+  THRESHOLD_DIFFERENCE = Threshold_Gray_bar;
+  for (int i = 1; i < array.length - 1; i++) {
+    if (array[i] < THRESHOLD_DIFFERENCE && !line_edge_found) {
+      array[i] = 255;
+    } else {
+      if (array[i] > THRESHOLD_DIFFERENCE && !line_edge_found) {
+        array[i] = 0;
+        line_edge_found = true;
+        line_width_counter = 0;
+        line_edge_index = i;
+      }
+
+      if (line_edge_found && ((array[i] > THRESHOLD_DIFFERENCE && array[i] < 255)) && i > line_edge_index) {
+        for (int j = line_edge_index; j < i; j++)
+          array[j] = array[line_edge_index];
+        array[i] = 0;
+      }
+    }
+
+    if (line_edge_found) {
+      line_width_counter++;
+    }
+
+    if (line_width_counter > 4)
+      line_edge_found = false;
+  }
+}
+
 // Wie loop() beim Arduino wird draw() immer wieder aufgerufen, solange das Programm ausgeführt wird.
 public void draw() {
+  smooth(2);
   if (press_start == false)
   {
     //background(132, 195, 232);
     setGradient(0, 0, 315, 700, c4, c5, X_AXIS);
     setGradient(315, 0, 315, 7000, c5, c4, X_AXIS);
   }
-
+  //println(frameRate);
   // Steht was in portStream? (d.h. wurde ein vollständiger Datenblock übertragen)
+
+
   if (portStream != null&&press_start == true) {
     // Entspricht der Datenblock dem Format "SxxE\r\n"? Wenn ja, dann weiter
     //println(portStream);
     //println("\n");
-    setGradient(0, 0, 630, 39, c4, c5, Y_AXIS);
-    setGradient(0, 110, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 140, 630, 19, c4, c5, Y_AXIS);
-    setGradient(0, 230, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 260, 630, 19, c4, c5, Y_AXIS);
+
+    setGradient(0, 0, 629, 39, c4, c5, Y_AXIS);
+    setGradient(0, 110, 629, 19, c5, c4, Y_AXIS);
+    setGradient(0, 140, 629, 19, c4, c5, Y_AXIS);
+    setGradient(0, 230, 629, 19, c5, c4, Y_AXIS);
+    setGradient(0, 260, 629, 19, c4, c5, Y_AXIS);
     setGradient(0, 350, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 380, 630, 19, c4, c5, Y_AXIS);
-    setGradient(0, 470, 630, 19, c5, c4, Y_AXIS);
-    setGradient(0, 500, 630, 200, c4, c5, Y_AXIS);
+    setGradient(0, 380, 630, 490, c4, c5, Y_AXIS);
+    //setGradient(0, 470, 630, 19, c5, c4, Y_AXIS);
+    //setGradient(0, 520, 630, 200, c4, c5, Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
     //setGradient(0, 0, 630, 40, c4, c5, Y_AXIS);
 
@@ -472,71 +590,126 @@ public void draw() {
     // If x is less than the negative width, 
     // then it is off the screen
     int Serial_Monitor = portStream.indexOf(" # ");    
-    //println(Serial_Monitor);
+
     int p1 = portStream.indexOf(" $ ");
-    int p2 = portStream.indexOf(" $$ ");
-    int p3 = portStream.indexOf(" $$$ ");
-    int p4 = portStream.indexOf(" $$$$ ");
-    int p5 = portStream.indexOf(" / ");
-
-    if (Serial_Monitor != -1 && p1 != -1 && p2 != -1 && p3 != -1 && p3 != -1&& p4 != -1&& p5 != -1)
+    int p2 = portStream.indexOf(" ! ");
+    int p3 = portStream.indexOf(" % ");
+    int p4 = portStream.indexOf(" / ");
+    int p5 = portStream.indexOf(" ( ");
+    int p6 = portStream.indexOf(" ; ");
+    int p7 = portStream.indexOf(" ? ");
+    //println(portStream);
+    if (Console_status == 0)
     {
-      Serial_Monitor_stream = portStream.substring(0, Serial_Monitor);
-      Line_top = portStream.substring(Serial_Monitor+2, p1);
-      Line_top_middel = portStream.substring(p1+2, p2);
-      Line_bottom_middel = portStream.substring(p2+3, p3);
-      Line_bottom = portStream.substring(p3+4, p4);
-      US_data =  portStream.substring(p4+5, p5);
+      Console.pause();
+    } else if (Console_status == 1)
+    {
+      Console.play();
+    } else if (Console_status == 2)
+    {
+      Console.clear();
+    }
 
-      //print(Serial_Monitor_stream);
-      if (Console_status == 0)
-      {
-        console.pause();
-      } else if (Console_status == 1)
-      {
-        console.play();
-      } else if (Console_status == 2)
-      {
-        console.clear();
+    /*print(p1);
+     print(" ");
+     print(p2);
+     print(" ");
+     print(p3);
+     print(" ");
+     print(p4);
+     print(" ");
+     print(p5);
+     print(" ");
+     println(p6);*/
+    //println(portStream);
+
+
+    //if (Serial_Monitor != -1 && p1 != -1 && p2 != -1 && p3 != -1 && p3 != -1&& p4 != -1&& p5 != -1 && p6 != -1)
+    if (Serial_Monitor >= 0 && (p1 >= 0 && p1 > Serial_Monitor) && (p2 >= 0 && p2 > p1) && (p3 >= 0 && p3 > p2) && (p4 >= 0&& p4 > p3) && (p5 >= 0 && p5 > p4)&& (p6 >= 0&&p6>p5) && p6 < portStream.length())
+    {
+
+      Serial_Monitor_stream = portStream.substring(0, Serial_Monitor);
+      Line_top = portStream.substring(Serial_Monitor+1, p1);
+      Line_top_middel = portStream.substring(p1+1, p2);
+      Line_bottom_middel = portStream.substring(p2+1, p3);
+      Line_bottom = portStream.substring(p3+1, p4);
+      US_data  = portStream.substring(p4+1, p5);
+      String Speed_str = portStream.substring(p5+2, p6);
+      line_detection_data = portStream.substring(p6+2, portStream.length());
+      println(Serial_Monitor_stream);
+      reset_counter++;
+      if (reset_counter == 1)
+      {         
+        Console.clear();
+        reset_counter = 0;
       }
 
-      int nums_top[] = PApplet.parseInt(split(Line_top, ' '));
-      int nums_top_middel[] = PApplet.parseInt(split(Line_top_middel, ' '));
-      int nums_bottom_middel[] = PApplet.parseInt(split(Line_bottom_middel, ' '));
-      int nums_bottom[] = PApplet.parseInt(split(Line_bottom, ' '));
-      float US_data_array[] = PApplet.parseFloat(split(US_data, ' '));
+      nums_top = PApplet.parseInt(split(Line_top, ' '));
+      nums_top_middel = PApplet.parseInt(split(Line_top_middel, ' '));
+      nums_bottom_middel = PApplet.parseInt(split(Line_bottom_middel, ' '));
+      nums_bottom = PApplet.parseInt(split(Line_bottom, ' '));
+      US_data_array = PApplet.parseFloat(split(US_data, ' '));
+      nums_line_detection = PApplet.parseInt(split(line_detection_data, ' '));
+      /*println(nums_line_detection[0]);
+       println(nums_line_detection[1]);
+       println(nums_line_detection[2]);
+       println(nums_line_detection[3]);*/
       for (int x = 5; x<35; x++)
-        {
-          for (int y = 5; y<35; y++)
-          {
-            set(x, y, White);
-            set(x+590, y, White);
-          }
-        }
-      //println(US_data_array[1]);
-      if(US_data_array.length >= 2)
       {
-      float Left = US_data_array[1];
-      float Right = US_data_array[2];
-       if (Left < LEFT_DISTANCE_THRESHOLD  || Right < RIGHT_DISTANCE_THRESHOLD)
-        for (int x = 5; x<35; x++)
+        for (int y = 5; y<35; y++)
         {
-          for (int y = 5; y<35; y++)
-          {
-            if(Left < LEFT_DISTANCE_THRESHOLD)
-            set(x, y, Black);
-            if(Right < RIGHT_DISTANCE_THRESHOLD)
-            set(x+590, y, Black);
-          }
+          set(x, y, White);
+          set(x+590, y, White);
         }
-       }
-     
+      }
+      // println(US_data_array[1]);
+      //println(US_data_array[2]);
+      if (US_data_array.length >= 3)
+      {
+        int US_data_array_int_Right = Math.round(US_data_array[2]);
+        int US_data_array_int_Left = Math.round(US_data_array[1]);
+        if (US_data_array_int_Right > 400 || US_data_array_int_Right == 1)
+          US_data_array_int_Right = -1;
+        if (US_data_array_int_Left > 400 || US_data_array_int_Left == 1)
+          US_data_array_int_Left = - 1;
+        String Left_stg = str(US_data_array_int_Left);
+        String Right_stg = str(US_data_array_int_Right);
+
+        Left_US.setText(Left_stg);
+        Right_US.setText(Right_stg);
+        Speed_kl25z.setText(Speed_str);
+        //float Left = US_data_array[1];
+        //float Right = US_data_array[2];
+        if (US_data_array_int_Left < LEFT_DISTANCE  || US_data_array_int_Right < RIGHT_DISTANCE )
+          for (int x = 5; x<35; x++)
+          {
+            for (int y = 5; y<35; y++)
+            {
+              if (US_data_array_int_Left < LEFT_DISTANCE && US_data_array_int_Left > 0)
+                set(x, y, Black);
+              if (US_data_array_int_Right < RIGHT_DISTANCE && US_data_array_int_Right > 0)
+                set(x+590, y, Black);
+            }
+          }
+      }
+
 
       int minimum = min(nums_top.length, nums_top_middel.length, nums_bottom_middel.length);
       if (minimum > nums_bottom.length)
       {
         minimum = nums_bottom.length;
-      } 
+      }
+
+      for (int i = 0; i < minimum-1; i++) {
+        if (i >= 1) {
+          //differences_top[i - 1] = abs(nums_top[i - 1] - nums_top[i]);
+        }
+      }
+      differences_top[differences_top.length - 1] = 255;
+      connect_line_edges(differences_top);
+
+
+
       for (int k = 0; k < minimum-1; k++)
       {
         int Gray_top = nums_top[k];
@@ -544,10 +717,14 @@ public void draw() {
         int Gray_bottom_middel = nums_bottom_middel[k];
         int Gray_bottom = nums_bottom[k];
 
+        if (k < differences_top.length)
+          diff_top = differences_top[k];
+
+
         int black_top = color(Gray_top);
         int black_top_middel = color(Gray_top_middel);
         int black_bottom_middel = color(Gray_bottom_middel);
-        int black_bottom = color(Gray_bottom);      
+        int black_bottom = color(Gray_bottom);
 
         x_line++;
         if (x_line == 64)
@@ -556,87 +733,183 @@ public void draw() {
         }
         for (int x = 0+Pixel_size*k-10; x < Pixel_size+Pixel_size*k-10; x++)
         {
+          /*for (int y = 0+Pixel_size*counter+40; y < Pixel_size+Pixel_size*counter+40; y++)
+           {
+           set(x, y, black_top);
+           if (y < 50)
+           {
+           if (diff_top > 100)
+           set(x, y+90, White);
+           else
+           set(x, y+90, Black);
+           }
+           }*/
           for (int y = 0+Pixel_size*counter+40; y < Pixel_size+Pixel_size*counter+40; y++)
           {
-            set(x, y, black_top);
+            set(x, y, black_top_middel);
             if (y < 50)
             {
-              if (Gray_top < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
+              if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 165)
+                set(x, y+90, White);   
+              else if (nums_line_detection[1] == 75)
               {
-                set(x, y+90, White);
+                //if ((nums_line_detection[2]*10 > x-9 || nums_line_detection[2]*10 < x) && (nums_line_detection[3]*10 > x-9 || nums_line_detection[3]*10 < x));
+                if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
+                  set(x, y+90, White);
+
+                if (nums_line_detection[2]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+                if (nums_line_detection[3]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
               }
             }
           }
-          for (int y = 0+Pixel_size*counter+160; y < Pixel_size+Pixel_size*counter+160; y++)
+          for (int y = 0+Pixel_size*counter+160; y < Pixel_size+Pixel_size*counter+160; y++)//280
           {
-            set(x, y, black_top_middel);
-            if (y < 50+120)
+            set(x, y, black_bottom_middel);
+            if (y < 50+120)//240
             {
-              if (Gray_top_middel < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
+              if (nums_line_detection[1] == 0 || nums_line_detection[1] == 75 || nums_line_detection[1] == 165)
+                set(x, y+90, White);   
+              else if (nums_line_detection[1] == 120)
               {
-                set(x, y+90, White);
+                if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
+                  set(x, y+90, White);
+                if (nums_line_detection[2]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+                if (nums_line_detection[3]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
               }
             }
           }
           for (int y = 0+Pixel_size*counter+280; y < Pixel_size+Pixel_size*counter+280; y++)
           {
-            set(x, y, black_bottom_middel);
+            set(x, y, black_bottom);
             if (y < 50+240)
             {
-              if (Gray_bottom_middel < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
+              if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 75)
+                set(x, y+90, White);   
+              else if (nums_line_detection[1] == 165)
               {
-                set(x, y+90, White);
-              }
-            }
-          }
-          for (int y = 0+Pixel_size*counter+400; y < Pixel_size+Pixel_size*counter+400; y++)
-          {
-            set(x, y, black_bottom);
-            if (y < 410)
-            {
-              if (Gray_bottom < Threshold_Gray_bar)
-              {        
-                set(x, y+90, Black);
-              } else
-              {
-                set(x, y+90, White);
+                if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
+                  set(x, y+90, White);
+                if (nums_line_detection[2]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
+                if (nums_line_detection[3]*10 == x)
+                {
+                  set(x, y+90, Black);
+                  set(x+1, y+90, Black);
+                  set(x+2, y+90, Black);
+                  set(x+3, y+90, Black);
+                  set(x+4, y+90, Black);
+                  set(x+5, y+90, Black);
+                  set(x+6, y+90, Black);
+                  set(x+7, y+90, Black);
+                  set(x+8, y+90, Black);
+                  set(x+9, y+90, Black);
+                }
               }
             }
           }
         }
       }
-    }
+    }    
+    //portStream = "";
+    //myPort.clear();
+    ready_stream = true;
     counter++;
+
     if (counter == 560/Pixel_size/8)
     {
       counter = 0;
     }
   }
+  //myPort.clear();
+  /*if (ready_stream == true && press_start == true)
+   {
+   myPort.write("Ready &"); 
+   myPort.write("Ready &"); 
+   myPort.write("Ready &"); 
+   myPort.write("Ready &"); 
+   ready_stream = false;
+   }*/
 }
-
 public void serialEvent(Serial myPort) {
   portStream = myPort.readStringUntil('&');
+  myPort.clear();
 }
 public void Start() {
   button_counter++;
   if (button_counter == 2)
   {
+    //myPort.write("((!!!!!))&");
+
+    Left_US.setVisible(true); 
+    Right_US.setVisible(true); 
+    Speed_kl25z.setVisible(true);
+    Modus.setVisible(true);
     cp17.setVisible(true); 
     cp18.setVisible(true); 
     cp9.setVisible(true); 
     cp10.setVisible(true);
     cp11.setVisible(true);
     cp12.setVisible(true);
-    b1.setVisible(false); 
+    //b1.setVisible(false); 
     b2.setVisible(true); 
     d1.setVisible(false); 
     d2.setVisible(false); 
@@ -648,6 +921,10 @@ public void Stop() {
   button2_counter++;
   if (button2_counter == 2)
   {
+    Left_US.setVisible(false); 
+    Right_US.setVisible(false);
+    Modus.setVisible(false);
+    Speed_kl25z.setVisible(false);
     cp17.setVisible(false); 
     cp18.setVisible(false); 
     cp9.setVisible(false); 
@@ -666,6 +943,21 @@ public void Pause()
 {
   Console_status = 0;
 }
+public void Go() 
+{
+  button3_counter++;
+  if (button3_counter == 1)
+  {
+    Stop_Start = 1;
+    b6.setLabel("Brake");
+  }
+  if (button3_counter == 2)
+  {
+    Stop_Start = 2;
+    button3_counter = 0;
+    b6.setLabel("Go");
+  }
+}
 public void Play() 
 {
   Console_status = 1;
@@ -681,71 +973,82 @@ public void Serial_Monitor(boolean theFlag) {
     b4.setPosition(730, 540);
     b5.setPosition(830, 540);
     myTextarea.setSize(300, 540);
-    console.clear();
-    console.play();
+    myPort.write("Stop ");
+    myPort.write('&');
+    Console.clear();
+    Console.play();
   } 
   if (theFlag==false) {
     surface.setSize(630, 560);
-    console.clear();
-    console.pause();
+    myPort.write("Start ");
+    myPort.write('&');     
+    Console.clear();
+    Console.pause();
   }
 }
 public void Settings(boolean theFlag) {
   if (theFlag==true) {
-    surface.setSize(630, 700);
-    console.clear();
-    console.pause();
+    surface.setSize(630, 720);
+    Console.clear();
+    Console.pause();
   } 
   if (theFlag==false) {
     surface.setSize(630, 560);
   }
 }
 public void Apply(boolean theFlag) {
-  console.pause();
-  console.clear();
+  //Console.pause();
+  //Console.clear();
 
   Data_send =  str(Brightness);
-  Data_send += "$";
+  Data_send += "!";
   Data_send += str(Offset_at_75_to_Center);
-  Data_send += "$$";
-  Data_send += str(Offset_at_175_to_Center);
-  Data_send += "$$$";
+  Data_send += "[";
+  Data_send += str(Offset_at_120_to_Center);
+  Data_send += "$";
   Data_send += str(Threshold_Gray);
-  Data_send += "$$$$";
-  Data_send += str(Min_Track_width);
   Data_send += "%";
-  Data_send += str(Red);
+  Data_send += str(Min_Track_width);
   Data_send += "/";
+  Data_send += str(Red);
+  Data_send += "(";
   Data_send += str(Blue);
-  Data_send += "//";
+  Data_send += ")";
   Data_send += str(Green);
-  Data_send += "///";
+  Data_send += "=";
   Data_send += str(Led_Brightness);
-  Data_send += "////";
-  Data_send += str(LEFT_DISTANCE_THRESHOLD);
-  Data_send += "§";
-  Data_send += str(RIGHT_DISTANCE_THRESHOLD);
-  Data_send += "§§";
-  Data_send += str(ULTRASONIC_SAMPELS);
-  Data_send += "§§§";
+  Data_send += "?";
+  Data_send += str(LEFT_DISTANCE);
+  Data_send += "#";
+  Data_send += str(RIGHT_DISTANCE);
+  Data_send += "+";
+  Data_send += nf(norminal_speed, 1, 2);
+  Data_send += "*";
+  Data_send += str(Offset_at_165_to_Center);
+  Data_send += "-";
+  Data_send += str(Stop_Start);
+  Data_send += ";";
 
   TableRow newRow = table.addRow();
 
   newRow.setInt("Brightness", Brightness);
   newRow.setInt("Offset_at_75_to_Center", Offset_at_75_to_Center);
-  newRow.setInt("Offset_at_175_to_Center", Offset_at_175_to_Center);
+  newRow.setInt("Offset_at_120_to_Center", Offset_at_120_to_Center);
+  newRow.setInt("Offset_at_165_to_Center", Offset_at_165_to_Center);
   newRow.setInt("Threshold_Gray", Threshold_Gray);
   newRow.setInt("Min_Track_width", Min_Track_width);
   newRow.setInt("Red", Red);
   newRow.setInt("Blue", Blue);
   newRow.setInt("Green", Green);
   newRow.setInt("Led_Brightness", Led_Brightness);
-  newRow.setInt("LEFT_DISTANCE_THRESHOLD", LEFT_DISTANCE_THRESHOLD);
-  newRow.setInt("RIGHT_DISTANCE_THRESHOLD", RIGHT_DISTANCE_THRESHOLD);
-  newRow.setInt("ULTRASONIC_SAMPELS", ULTRASONIC_SAMPELS);
+  newRow.setInt("LEFT_DISTANCE", LEFT_DISTANCE);
+  newRow.setInt("RIGHT_DISTANCE", RIGHT_DISTANCE);
+  newRow.setFloat("norminal_speed", norminal_speed);
   saveTable(table, "Settings.csv");
   Threshold_Gray_bar = Threshold_Gray;
   myPort.write(Data_send);
+  //println(Data_send.length());
+  //println(Data_send);
   myPort.write('&');
 }
 public void controlEvent(ControlEvent theEvent) {
@@ -765,7 +1068,8 @@ public void Port_dropdown(ControlEvent theEvent) {
   d1.setVisible(false);  
   d2.setVisible(false);
 }
-public void Baud_Dropdown(ControlEvent theEvent) { 
+public void 
+  Dropdown(ControlEvent theEvent) { 
   Drop_down_button_baud = theEvent.getController().getValue();
   baud = Math.round(Drop_down_button_baud); // 3
   //println(baud);
@@ -784,6 +1088,9 @@ public void Baud_Dropdown(ControlEvent theEvent) {
   } else if (baud == 4)
   {
     baud = 460800;
+  } else if (baud == 5)
+  {
+    baud = 1382400;
   }
   //println(baud);
 }
@@ -823,33 +1130,45 @@ public void setGradient(int x, int y, float w, float h, int c1, int c2, int axis
     }
   }
 }
-public void Line_1(float theColor) {
-  float Silder_value = theColor;
-  int  Silder_value_int = Math.round(Silder_value); // 3
-  //println(Silder_value_int);
-  //myPort.write(Silder_value_int);
+public void norminal_speed(float norminal_speed_value) {
+  float correction_value = -0.15f;
+  if (norminal_speed_value < 0.15f)
+  {
+    correction_value = 0;
+  }
+  if (norminal_speed_value > 1.3f)
+  {
+    correction_value = -0.3f;
+  }
+  if (norminal_speed_value > 2.0f)
+  {
+    correction_value = -0.4f;
+  }
+  norminal_speed = norminal_speed_value+correction_value;
 }
-public void Line_2(float theColor) {
-  float Silder_value = theColor;
-  int  Silder_value_int = Math.round(Silder_value); // 3
-  //println(Silder_value_int);
-  //myPort.write(Silder_value_int);
+public void Modus(int theValue) {
+  if (prev_modus != theValue)
+  {
+    myPort.write("Modus "+ theValue + "&");
+    switch(theValue)
+    {
+      case 0: Modus.setLabel("Normal");
+      break;
+      case 1: Modus.setLabel("Slow/Fast Zone");
+      break;
+      case 2: Modus.setLabel("Obstacle avoidance");
+      break;
+      case 3: Modus.setLabel("Emergency brake");
+      break;
+      case 4: Modus.setLabel("Eight");
+      break;      
+    }
+    
+    delay(15);
+  }
+  prev_modus = theValue;
 }
-public void Line_3(float theColor) {
-  float Silder_value = theColor;
-  int  Silder_value_int = Math.round(Silder_value); // 3
-  //println(Silder_value_int);
-  //myPort.write(Silder_value_int);
-}
-public void Line_4(float theColor) {
-  float Silder_value = theColor;
-  int  Silder_value_int = Math.round(Silder_value); // 3
-
-  //println(Silder_value_int);
-  //myPort.write(Silder_value_int);
-}
-
-  public void settings() {  size(930, 700);  smooth(0); }
+  public void settings() {  size(930, 700);  smooth(2); }
   static public void main(String[] passedArgs) {
     String[] appletArgs = new String[] { "sketch_200205a" };
     if (passedArgs != null) {

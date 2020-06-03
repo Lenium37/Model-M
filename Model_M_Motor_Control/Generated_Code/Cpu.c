@@ -8,7 +8,7 @@
 **     Repository  : Kinetis
 **     Datasheet   : KL25P80M48SF0RM, Rev.3, Sep 2012
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-02-24, 13:32, # CodeGen: 104
+**     Date/Time   : 2020-03-13, 13:57, # CodeGen: 124
 **     Abstract    :
 **
 **     Settings    :
@@ -490,8 +490,8 @@ void PE_low_level_init(void)
   /* Common initialization of the CPU registers */
   /* GPIOA_PDDR: PDD&=~0x1000 */
   GPIOA_PDDR &= (uint32_t)~(uint32_t)(GPIO_PDDR_PDD(0x1000));
-  /* GPIOD_PDDR: PDD&=~0x10 */
-  GPIOD_PDDR &= (uint32_t)~(uint32_t)(GPIO_PDDR_PDD(0x10));
+  /* GPIOD_PDDR: PDD&=~1 */
+  GPIOD_PDDR &= (uint32_t)~(uint32_t)(GPIO_PDDR_PDD(0x01));
   /* PORTA_PCR20: ISF=0,MUX=7 */
   PORTA_PCR20 = (uint32_t)((PORTA_PCR20 & (uint32_t)~(uint32_t)(
                  PORT_PCR_ISF_MASK

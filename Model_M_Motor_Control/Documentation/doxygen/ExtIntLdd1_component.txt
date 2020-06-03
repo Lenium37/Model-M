@@ -18,7 +18,7 @@ by the component.
 <tr><td colspan="4" class="ttitle1">ExtIntLdd1 Initialization</td></tr>
 <tr><td class="ttitle2">Address</td><td class="ttitle2">Register</td><td class="ttitle2">Register Value</td><td class="ttitle2">Register Description</td></tr>
 <tr><td>0x40049030</td><td>PORTA_PCR12</td>
-<td class="regNotResetVal">0x01090100</td>
+<td class="regNotResetVal">0x010A0100</td>
  <td>PORTA_PCR12 register, peripheral ExtIntLdd1.</td></tr>
 <tr><td>0xE000E41C</td><td>NVIC_IPR7</td>
 <td class="regNotResetVal">0x00800000</td>
@@ -78,7 +78,7 @@ registers of the peripheral(s) configured by the component.
         
 </div>
 <table class="regtbl2"><tr><td class="trowtit" colspan="2">Address</td><td colspan="2">0x40049030</td></tr>
-<tr class="trowtit"><td  class="trowtit" colspan="2">Initial value</td><td colspan="2">0x01090100</td></tr>
+<tr class="trowtit"><td  class="trowtit" colspan="2">Initial value</td><td colspan="2">0x010A0100</td></tr>
 <tr class="trowtit"><td  class="trowtit" colspan="2">After-reset value</td><td colspan="2">0x00000000</td></tr>
 <tr><td class="ttitle2">Bit</td><td class="ttitle2">Field</td><td class="ttitle2">Value</td><td class="ttitle2">Description</td></tr>
 <tr><td>24</td><td>ISF</td><td>0x01</td><td>Interrupt Status Flag</td>
@@ -184,7 +184,7 @@ registers of the peripheral(s) configured by the component.
 **          Component name                                 : ExtIntLdd1
 **          Pin                                            : PTA12/TPM1_CH0
 **          Pin signal                                     : 
-**          Generate interrupt on                          : rising edge
+**          Generate interrupt on                          : falling edge
 **          Interrupt                                      : INT_PORTA
 **          Interrupt priority                             : medium priority
 **          Initialization                                 : 

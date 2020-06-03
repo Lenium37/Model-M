@@ -514,7 +514,7 @@
     </GenFiles>
     <SignalListFile>Documentation\Model_M_Motor_control_SIGNALS.txt</SignalListFile>
     <DestinationCompiler>GNUC</DestinationCompiler>
-    <ProjectModificationStamp>157</ProjectModificationStamp>
+    <ProjectModificationStamp>159</ProjectModificationStamp>
   </Options>
   <CpuID_16>
     <Generated>true</Generated>
@@ -523,7 +523,7 @@
     <GenDriverVersion>01.04</GenDriverVersion>
     <GenEventModule>Events</GenEventModule>
     <HeaderAge>1348121148</HeaderAge>
-    <CodeAge>1348121148</CodeAge>
+    <CodeAge>1349349198</CodeAge>
     <AsemblAge>-1</AsemblAge>
     <GenNumMethods>11</GenNumMethods>
     <SetClockConfiguration>false</SetClockConfiguration>
@@ -1067,7 +1067,7 @@
         <ExtraFile0>Documentation\doxygen\BitIoLdd1_component.txt</ExtraFile0>
       </InhrCompID_318>
     </InhrCompID_317>
-    <InhrCompID_370>
+    <InhrCompID_373>
       <Generated>false</Generated>
       <GenCompName />
       <GenComponentVersion>??.???</GenComponentVersion>
@@ -1110,7 +1110,7 @@
       <GenSmartUserChangesDetected_Asembl>false</GenSmartUserChangesDetected_Asembl>
       <GenMethodPos>0</GenMethodPos>
       <GenExtraFilesCount>0</GenExtraFilesCount>
-    </InhrCompID_370>
+    </InhrCompID_373>
   </ComponentID_23>
   <ComponentID_26>
     <Generated>true</Generated>
@@ -3825,8 +3825,8 @@
     <GenComponentVersion>02.105</GenComponentVersion>
     <GenDriverVersion>01.00</GenDriverVersion>
     <GenEventModule>Events</GenEventModule>
-    <HeaderAge>1348121148</HeaderAge>
-    <CodeAge>1348121148</CodeAge>
+    <HeaderAge>1349348812</HeaderAge>
+    <CodeAge>1349348812</CodeAge>
     <AsemblAge>-1</AsemblAge>
     <GenNumMethods>5</GenNumMethods>
     <Enable>true</Enable>
@@ -3905,8 +3905,8 @@
       <GenComponentVersion>02.156</GenComponentVersion>
       <GenDriverVersion>01.02</GenDriverVersion>
       <GenEventModule>Events</GenEventModule>
-      <HeaderAge>1348121148</HeaderAge>
-      <CodeAge>1348121148</CodeAge>
+      <HeaderAge>1349348812</HeaderAge>
+      <CodeAge>1349348813</CodeAge>
       <AsemblAge>-1</AsemblAge>
       <GenNumMethods>9</GenNumMethods>
       <Init>true</Init>
@@ -4640,8 +4640,8 @@
     <GenComponentVersion>02.105</GenComponentVersion>
     <GenDriverVersion>01.00</GenDriverVersion>
     <GenEventModule>Events</GenEventModule>
-    <HeaderAge>1348121148</HeaderAge>
-    <CodeAge>1348121148</CodeAge>
+    <HeaderAge>1349349198</HeaderAge>
+    <CodeAge>1349349198</CodeAge>
     <AsemblAge>-1</AsemblAge>
     <GenNumMethods>5</GenNumMethods>
     <Enable>true</Enable>
@@ -4720,8 +4720,8 @@
       <GenComponentVersion>02.156</GenComponentVersion>
       <GenDriverVersion>01.02</GenDriverVersion>
       <GenEventModule>Events</GenEventModule>
-      <HeaderAge>1348121148</HeaderAge>
-      <CodeAge>1348121148</CodeAge>
+      <HeaderAge>1349349198</HeaderAge>
+      <CodeAge>1349349198</CodeAge>
       <AsemblAge>-1</AsemblAge>
       <GenNumMethods>9</GenNumMethods>
       <Init>true</Init>

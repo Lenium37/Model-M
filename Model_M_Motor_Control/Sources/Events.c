@@ -66,6 +66,7 @@ int8_t first_pulse_rechts = 0;
 int8_t first_pulse_links = 0;
 float Rechst_time_prev = 0;
 float Links_time_prev = 0;
+float LPF_Beta = 0.5;
 
 extern struct {
   char Direction;
@@ -134,12 +135,11 @@ void RechtsINT_OnInterrupt(void)
 				first_pulse_active = FALSE;
 			}
 
-			if(avg_counter_rechts > 4)
+			if(avg_counter_rechts > 0)
 			{
-				velocity_Rechts_avg = velocity_Rechts/4;
+				 velocity_Rechts_avg = velocity_Rechts_avg - (LPF_Beta * (velocity_Rechts_avg - velocity_Rechts));
 				//printf("Speed_rechts: %f\n\n",velocity_Rechts_avg);
-				if(velocity_Rechts_avg > 5.5
-						)
+				if(velocity_Rechts_avg > 5.5)
 				{
 					velocity_Rechts_avg = 0;
 				}
@@ -204,7 +204,7 @@ void LinksINT_OnInterrupt(void)
 				Speed_time_Links = TU3_GetCounterValue(TU3_Pointer);
 				TU3_CounterValue_links = Speed_time_Links+(Counter_OVF*65535);
 				Links_time = 0.0000000417*TU3_CounterValue_links;
-
+				//printf("Links \n");
 				first_pulse_links++;
 				if(first_pulse_links == 2)
 				{
@@ -221,9 +221,9 @@ void LinksINT_OnInterrupt(void)
 					first_pulse_active = FALSE;
 				}
 
-				if(avg_counter_links > 4)
+				if(avg_counter_links > 0)
 				{
-					velocity_links_avg = velocity_Links/4;
+					velocity_links_avg = velocity_links_avg - (LPF_Beta * (velocity_links_avg - velocity_Links));
 					//printf("Speed_links: %f\n\n",velocity_links_avg);
 					velocity_Links = 0;
 					avg_counter_links = 0;
@@ -411,6 +411,56 @@ void AS1_OnFullRxBuf(void)
 	message.Hundert = message_buffer.Hundert_buffer;
 	message.straight_curve = message_buffer.straight_curve_buffer;
 	message.align = message_buffer.align_buffer;
+
+	if(message.align != 'A')
+				{
+					if(message.Direction == 'A')
+					{
+						message.Direction = message_buffer.Hundert_buffer; 		// AR150C // R150CA
+						message.Hundert = message_buffer.Zener_buffer;
+						message.Zener =	message_buffer.Einer_buffer;
+						message.Einer =	message_buffer.straight_curve_buffer;
+						message.straight_curve = message_buffer.align_buffer;
+						message.align = message_buffer.Direction_buffer;
+
+					}else if(message.Einer == 'A')
+					{
+						message.Direction = message_buffer.Zener_buffer; 		// CAR150 // R150CA
+						message.Hundert = message_buffer.Einer_buffer;
+						message.Zener =	message_buffer.straight_curve_buffer;
+						message.Einer =	message_buffer.align_buffer;
+						message.straight_curve = message_buffer.Direction_buffer;
+						message.align = message_buffer.Hundert_buffer;
+
+					}else if(message.Zener == 'A')
+					{
+						message.Direction = message_buffer.Einer_buffer; 		// 0CAR15 // R150CA
+						message.Hundert = message_buffer.straight_curve_buffer;
+						message.Zener =	message_buffer.align_buffer;
+						message.Einer =	message_buffer.Direction_buffer;
+						message.straight_curve = message_buffer.Hundert_buffer;
+						message.align = message_buffer.Zener_buffer;
+
+					}else if(message.Hundert == 'A')
+					{
+						message.Direction = message_buffer.straight_curve_buffer; 		// 50CAR1 // R150CA
+						message.Hundert = message_buffer.align_buffer;
+						message.Zener =	message_buffer.Direction_buffer;
+						message.Einer =	message_buffer.Hundert_buffer;
+						message.straight_curve = message_buffer.Zener_buffer;
+						message.align = message_buffer.Einer_buffer;
+
+					}else if(message.straight_curve == 'A')
+					{
+						message.Direction = message_buffer.align_buffer; 		// 150CAR // R150CA
+						message.Hundert = message_buffer.Direction_buffer;
+						message.Zener =	message_buffer.Hundert_buffer;
+						message.Einer =	message_buffer.Zener_buffer;
+						message.straight_curve = message_buffer.Einer_buffer;
+						message.align = message_buffer.straight_curve_buffer;
+
+					}
+				}
 
 }
 

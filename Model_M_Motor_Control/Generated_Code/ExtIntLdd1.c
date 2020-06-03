@@ -7,7 +7,7 @@
 **     Version     : Component 02.156, Driver 01.02, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-01-16, 19:11, # CodeGen: 29
+**     Date/Time   : 2020-03-13, 13:45, # CodeGen: 123
 **     Abstract    :
 **         This component, "ExtInt_LDD", provide a low level API 
 **         for unified access of external interrupts handling
@@ -18,7 +18,7 @@
 **          Component name                                 : ExtIntLdd1
 **          Pin                                            : PTA12/TPM1_CH0
 **          Pin signal                                     : 
-**          Generate interrupt on                          : rising edge
+**          Generate interrupt on                          : falling edge
 **          Interrupt                                      : INT_PORTA
 **          Interrupt priority                             : medium priority
 **          Initialization                                 : 
@@ -134,12 +134,12 @@ LDD_TDeviceData* ExtIntLdd1_Init(LDD_TUserData *UserDataPtr)
                 )) | (uint32_t)(
                  PORT_PCR_MUX(0x01)
                 ));
-  /* PORTA_PCR12: ISF=1,IRQC=9 */
+  /* PORTA_PCR12: ISF=1,IRQC=0x0A */
   PORTA_PCR12 = (uint32_t)((PORTA_PCR12 & (uint32_t)~(uint32_t)(
-                 PORT_PCR_IRQC(0x06)
+                 PORT_PCR_IRQC(0x05)
                 )) | (uint32_t)(
                  PORT_PCR_ISF_MASK |
-                 PORT_PCR_IRQC(0x09)
+                 PORT_PCR_IRQC(0x0A)
                 ));
   /* NVIC_IPR7: PRI_30=0x80 */
   NVIC_IPR7 = (uint32_t)((NVIC_IPR7 & (uint32_t)~(uint32_t)(
@@ -173,7 +173,7 @@ void ExtIntLdd1_Enable(LDD_TDeviceData *DeviceDataPtr)
   (void)DeviceDataPtr;                 /* Parameter is not used, suppress unused argument warning */
   PORT_PDD_ClearPinInterruptFlag(PORTA_BASE_PTR, ExtIntLdd1_PIN_INDEX);
   PORT_PDD_SetPinInterruptConfiguration(PORTA_BASE_PTR,
-    ExtIntLdd1_PIN_INDEX, PORT_PDD_INTERRUPT_ON_RISING);
+    ExtIntLdd1_PIN_INDEX, PORT_PDD_INTERRUPT_ON_FALLING);
 }
 
 /*
