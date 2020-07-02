@@ -224,7 +224,7 @@ void LinksINT_OnInterrupt(void)
 				if(avg_counter_links > 0)
 				{
 					velocity_links_avg = velocity_links_avg - (LPF_Beta * (velocity_links_avg - velocity_Links));
-					//printf("Speed_links: %f\n\n",velocity_links_avg);
+					 //printf("Speed_links: %f\n\n",velocity_links_avg);
 					velocity_Links = 0;
 					avg_counter_links = 0;
 				}

@@ -36,6 +36,7 @@ int data_eepromm[ARRAY_EEPROMM_SIZE];
 
 bool debug_active = false;
 bool current_lamp_status = 0;
+uint16_t pin_counter = 0;
 uint8_t black_or_white_at_25[63];
 uint8_t black_or_white_at_75[63];
 uint8_t black_or_white_at_120[63];
@@ -95,25 +96,35 @@ unsigned long last_symbol_time = 0;
 String last_symbol = "nothing";
 
 void debug(String s , String s1) {
-  if (digitalRead(PIN_BT) == HIGH)
+  if (!digitalRead(PIN_BT))
   {
-    {
-      if (Serial_monitor_stream == true)
-      {
-        Serial1.print(s);
-        delay(2);
-      }
-      string_counter = 0;
-    }
-    if (Serial_monitor_stream == false && s1 != "")
-    {
-      //Serial.println(s1);
-      Serial1.print(s1);
-      //Serial.println("Stop");
-      delay(20);
-    }
-    string_counter++;
+    pin_counter++;
+  }else
+  {
+    pin_counter = 0;
   }
+  if (pin_counter > 500)
+//  if(false)
+//if (digitalRead(PIN_BT) == HIGH)
+    {
+      pin_counter = 500;
+      {
+        if (Serial_monitor_stream == true)
+        {
+          Serial1.print(s);
+          delay(2);
+        }
+        string_counter = 0;
+      }
+      if (Serial_monitor_stream == false && s1 != "")
+      {
+        //Serial.println(s1);
+        Serial1.print(s1);
+        //Serial.println("Stop");
+        delay(20);
+      }
+      string_counter++;
+    }
   // if changing Serial number don't forget to change it in setup() as well!
 }
 void KL25z_data(String s) {
@@ -160,28 +171,28 @@ String prepare_speed_data(int speed) {
   debug("speed data for speed " + String(speed) + " is " + speed_s + "\n", "");
   return speed_s;
 }
-
 void Serial_receive()
 {
-  if (digitalRead(PIN_BT) == HIGH)
+ if (!digitalRead(PIN_BT))
   {
     if (Serial1.available() > 0) {
       // Lies das eingehende Byte:
       String incomingData = Serial1.readStringUntil('&');
       incomingData.trim();
-      if (incomingData == "Stop")
+      Serial.println(incomingData);
+      if (incomingData == "#3!")
       {
         Serial_monitor_stream = true;
         //set_LED(0, 255, 255);
       }
-      else if (incomingData == "Start")
+      else if (incomingData == "#4!")
       {
         Serial_monitor_stream = false;
         //set_LED(255, 0, 255);
       }
-      if(incomingData.length() <= 9)
+      if (incomingData.length() <= 9)
       {
-        String mode_s = incomingData.substring(6,7);
+        String mode_s = incomingData.substring(6, 7);
         mode = mode_s.toInt();
         Serial.println(mode);
         switch (mode)
@@ -202,7 +213,7 @@ void Serial_receive()
             set_LED(255, 0, 0);
             break;
           case 5:
-            set_LED(0,255,0);
+            set_LED(0, 255, 0);
             break;
           default:
             break;
@@ -243,7 +254,7 @@ void Serial_receive()
         Speed_data.replace(",", ".");
         float Speed_data_float = Speed_data.toFloat();
         int Speed_data_int = Speed_data_float * 100;
-        
+
         Led_Brightness = 21 - Led_Brightness_data.toInt();
         data_eepromm[0] = Led_Brightness;
         int Brightness = Brightness_data.toInt();
@@ -456,8 +467,8 @@ void setup() {
   digitalWrite(PIN_LED_1, HIGH);
   digitalWrite(PIN_LED_2, HIGH);
   digitalWrite(PIN_LED_3, HIGH);
-  Serial.begin(230400);
-  pinMode(PIN_BT, INPUT);
+  Serial.begin(500000);
+  pinMode(PIN_BT, INPUT_PULLUP);
   pinMode(PIN_RELAY, OUTPUT);
   pinMode(TRIGGER_PIN_LEFT, OUTPUT);
   pinMode(ECHO_PIN_LEFT, INPUT);
@@ -490,7 +501,7 @@ void setup() {
 
   load_eeprom();
   //Serial1.begin(38400); // Default communication rate of the Bluetooth module
-  Serial1.begin(1382400);
+  Serial1.begin(500000);
 
   Serial4.begin(115200);
 }
@@ -564,42 +575,42 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
     debug("MIN_TRACK_WIDTH: " + String(MIN_TRACK_WIDTH) + "\n", "");
     debug("abs(index_of_right_line - index_of_left_line): " + String(abs(index_of_right_line - index_of_left_line)) + "\n", "");
     if (abs(index_of_right_line - index_of_left_line) < MIN_TRACK_WIDTH && (mode == 0 || mode == 1)) {
-      if(millis() - last_symbol_time > 1000) {
+      if (millis() - last_symbol_time > 1000) {
         int rgb_average = 0;
-        if(which_line == 75) {
-         for(int i = 0; i < 63; i++)
+        if (which_line == 75) {
+          for (int i = 0; i < 63; i++)
             rgb_average += rgb_75[i];
-        } else if(which_line == 120) {
-          for(int i = 0; i < 63; i++)
+        } else if (which_line == 120) {
+          for (int i = 0; i < 63; i++)
             rgb_average += rgb_120[i];
-        } else if(which_line == 165) {
-          for(int i = 0; i < 63; i++)
+        } else if (which_line == 165) {
+          for (int i = 0; i < 63; i++)
             rgb_average += rgb_165[i];
         }
         rgb_average /= 63;
         debug("RGB average on line " + String(which_line) + " is: " + String(rgb_average) + "\n", "");
-        if(rgb_average > RGB_THRESHOLD_FOR_SYMBOLS) {
+        if (rgb_average > RGB_THRESHOLD_FOR_SYMBOLS) {
           last_symbol_time = millis();
           debug("+++++ FOUND SYMBOL ON TRACK +++++\n", "");
           int num_lines = count_lines(array);
           debug("number of lines: " + String(num_lines) + "\n", "");
-          if(mode == 0) {
-            if(num_lines >= 2) {
+          if (mode == 0) {
+            if (num_lines >= 2) {
               debug("seeing finish line\n", "");
               set_LED(0, 255, 255);
               delay(250);
               Start_Stop = 2;
             }
-          } else if(mode == 1) {
-            if((last_symbol == "slow" || num_lines >= 5) && last_symbol != "fast") {
-            //if((last_symbol == "slow" || num_lines >= 5)) {
+          } else if (mode == 1) {
+            if ((last_symbol == "slow" || num_lines >= 5) && last_symbol != "fast") {
+              //if((last_symbol == "slow" || num_lines >= 5)) {
               debug("seeing faster line\n", "");
               set_LED(255, 0, 255);
               String speed = prepare_speed_data(SOLL_SPEED);
               //debug(speed + "\n", "");
               KL25z_data(speed);
               last_symbol = "fast";
-            } else if(last_symbol == "fast" || num_lines < 5) {
+            } else if (last_symbol == "fast" || num_lines < 5) {
               debug("seeing slower line\n", "");
               set_LED(255, 255, 0);
               String speed = prepare_speed_data(SLOW_SPEED);
@@ -608,7 +619,7 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
               last_symbol = "slow";
             }
           }
-           
+
         }
         // TODO: continue with last steering angle
         index_of_left_line = 0;
@@ -662,17 +673,17 @@ uint8_t count_lines(uint8_t array[63]) {
       indexes_of_lines[number_of_lines] = index_of_last_line;
       number_of_lines++;
       currently_in_line = true;
-    }
-    if ( (array[i] == 1 || array[i] == 255) && currently_in_line) {
+      }
+      if ( (array[i] == 1 || array[i] == 255) && currently_in_line) {
       currently_in_line = false;
       index_of_last_line = i;
-    }*/
-    if(abs(array[i] - array[i - 1]) > THRESHOLD_GRAY) {
-      if(array[i] > array[i - 1]) {
+      }*/
+    if (abs(array[i] - array[i - 1]) > THRESHOLD_GRAY) {
+      if (array[i] > array[i - 1]) {
         //debug("line edge at " + String(i) + "\n", "");
         i += 2;
         number_of_lines++;
-      } else if(array[i] < array[i - 1]) {
+      } else if (array[i] < array[i - 1]) {
         //debug("line edge at " + String(i) + "\n", "");
         i += 2;
         number_of_lines++;
@@ -682,7 +693,7 @@ uint8_t count_lines(uint8_t array[63]) {
 
   }
 
-  if(number_of_lines % 2 == 1)
+  if (number_of_lines % 2 == 1)
     number_of_lines++;
 
   number_of_lines = number_of_lines / 2;
@@ -817,7 +828,7 @@ void loop() {
 
   for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
 
-    if (digitalRead(PIN_BT) == HIGH) {
+    if (!digitalRead(PIN_BT)) {
       pixy.video.getRGB(i, 25, &r, &g, &b, false);
       gray = 0.299 * r + 0.587 * g + 0.114 * b;
       if (DEBUG_GRAY_VALUES)
@@ -879,7 +890,7 @@ void loop() {
 
   differences_75[62] = 0;
   //connect_line_edges(differences_75, 62);
-  if (digitalRead(PIN_BT) == HIGH) {
+  if (!digitalRead(PIN_BT)) {
     differences_120[62] = 0;
     //connect_line_edges(differences_120, 62);
     differences_165[62] = 0;
@@ -1037,7 +1048,7 @@ void loop() {
 
   debug(current_angle_string, "");
 
-  if (digitalRead(PIN_BT) == HIGH)
+  if (!digitalRead(PIN_BT))
   {
     String s_25;
     String s_75;
@@ -1068,7 +1079,7 @@ void loop() {
     US_data += " ";
     US_data += String(round(abs(distanceCmRight)), DEC);
     US_data += " ";
-    mainString = (" # " + s_25 + " $ " + s_75 + " ! " + s_120 + " % " + s_165 + " / " + US_data + " ( " + Speed + " ; " + line_indexes + " ? " + "\n" + "&");
+    mainString = (" # " + s_25 + " $ " + s_75 + " ! " + s_120 + " % " + s_165 + " / " + US_data + " ( " + Speed + " ; " + line_indexes + " ) " + "\n" + "&");
     debug(mainString, mainString);
 
   }
@@ -1085,18 +1096,18 @@ void loop() {
     counter_ultrasonics_triggered = 0;
   }
 
-  if(mode == 2) {
-    if(distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
+  if (mode == 2) {
+    if (distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
       dodge_to_the_left = false;
       dodge_to_the_right = true;
       timer_of_dodge_to_the_right = millis();
       debug("DODGE TO THE RIGHT!\n", "");
-      } else if(distanceCmLeft > LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD) {
+    } else if (distanceCmLeft > LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD) {
       dodge_to_the_left = true;
       dodge_to_the_right = false;
       timer_of_dodge_to_the_left = millis();
       debug("DODGE TO THE LEFT!\n", "");
-    } 
+    }
   }
 
   if (dodge_to_the_left && millis() - timer_of_dodge_to_the_left > DURATION_OF_DODGE) {

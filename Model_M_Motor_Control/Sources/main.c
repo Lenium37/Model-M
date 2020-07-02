@@ -396,8 +396,8 @@ int main(void)
 	Rev_Links_Off();
 	float S_multi_rechts = 1.0;
 	float S_multi_links = 1.0;
-	uint16_t Kp_drive_rechts = 175;
-	uint16_t Kp_drive_links = 175;
+	uint16_t Kp_drive_rechts = 275;
+	uint16_t Kp_drive_links = 275;
 	uint16_t add_rechts_speed = 1000;
 	//RechtsClock_Enable();
 	servo_value_regulated = Mitte;
@@ -412,17 +412,14 @@ int main(void)
 		//uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,2.0,0,65535);
 		float Speed_Ms_links = Speed_Ms * S_multi_links;
 		float Speed_Ms_rechts = Speed_Ms * S_multi_rechts;
-		Speed_regulated_rechts = Regler_P_rechts(Speed_Ms_rechts,
-				velocity_Rechts_avg, Kp_drive_rechts);
-		Speed_regulated_links = Regler_P_links(Speed_Ms_links,
-				velocity_links_avg, Kp_drive_links);
+		Speed_regulated_rechts = Regler_P_rechts(Speed_Ms_rechts,velocity_Rechts_avg, Kp_drive_rechts);
+		Speed_regulated_links = Regler_P_links(Speed_Ms_links,velocity_links_avg, Kp_drive_links);
 		//
 		//printf("Speed_rechts: %0.2f Soll_rechts: %0.2f\n",velocity_Rechts_avg,Speed_Ms_rechts);
 		//printf("Speed_rechts: %0.2f\n",velocity_Rechts_avg);
 		//printf("\n");
 		//PID_left(Speed_Ms_links,velocity_links_avg,1200,0,500);
-		Speed_regulated_rechts = map(Speed_regulated_rechts, 0, 65300, 65300,
-				0);
+		Speed_regulated_rechts = map(Speed_regulated_rechts, 0, 65300, 65300,0);
 		Speed_regulated_links = map(Speed_regulated_links, 0, 65300, 65300, 0);
 		//Speed_regulated_rechts = 100;
 		//Speed_regulated_links = PID_VAL;
@@ -554,8 +551,7 @@ int main(void)
 			}
 		}
 
-		if ((TasterA_GetVal() == 1 && SW1_GetVal() == 0)
-				|| message.Direction == 'V') {
+		if ((TasterA_GetVal() == 1 && SW1_GetVal() == 0)|| message.Direction == 'V') {
 			float Maxspeed = 0.0;
 			//printf("data: %c%c%c%c%c\n",message.Direction,message.Hundert,message.Zener,message.Einer,message.straight_curve,message.align);
 			if (message.Direction != 'V') {
@@ -664,15 +660,13 @@ int main(void)
 		//data[3] = '0';
 		//data[4] = '0';
 	}
-
-	/*** Don't write any code pass this line, or it will be deleted during code generation. ***/
-	/*** RTOS startup code. Macro PEX_RTOS_START is defined by the RTOS component. DON'T MODIFY THIS CODE!!! ***/
-#ifdef PEX_RTOS_START
-	PEX_RTOS_START(); /* Startup of the selected RTOS. Macro is defined by the RTOS component. */
-#endif
-	/*** End of RTOS startup code.  ***/
-	/*** Processor Expert end of main routine. DON'T MODIFY THIS CODE!!! ***/
-	for (;;) {
-	}
-	/*** Processor Expert end of main routine. DON'T WRITE CODE BELOW!!! ***/
 }
+	/*** Don't write any code pass this line, or it will be deleted during code generation. ***/
+  /*** RTOS startup code. Macro PEX_RTOS_START is defined by the RTOS component. DON'T MODIFY THIS CODE!!! ***/
+  #ifdef PEX_RTOS_START
+    PEX_RTOS_START();                  /* Startup of the selected RTOS. Macro is defined by the RTOS component. */
+  #endif
+  /*** End of RTOS startup code.  ***/
+  /*** Processor Expert end of main routine. DON'T MODIFY THIS CODE!!! ***/
+ // for(;;){}
+  /*** Processor Expert end of main routine. DON'T WRITE CODE BELOW!!! ***/
