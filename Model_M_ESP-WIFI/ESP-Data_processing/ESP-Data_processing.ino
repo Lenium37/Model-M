@@ -2,7 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
-const char *APssid = "Model M1";
+const char *APssid = "Model M";
 const char *APpassword = "iawz6194"; 
 
 IPAddress APlocal_IP(192, 168, 4, 1);
@@ -57,9 +57,15 @@ void loop()
   if (Data == "Start_stream")
   {
     Serial.println("#3!&");
+    Serial.println("#3!&");
+    Serial.println("#3!&");
+    Serial.println("#3!&");
   }
   if (Data == "Stop_stream")
   {
+    Serial.println("#4!&");
+    Serial.println("#4!&");
+    Serial.println("#4!&");
     Serial.println("#4!&");
   }
   if (Data == "Stop")

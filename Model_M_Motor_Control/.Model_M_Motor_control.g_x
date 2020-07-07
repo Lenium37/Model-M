@@ -58,7 +58,7 @@
       <File Name="Generated_Code/BitsIoLdd1.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="29" />
       <File Name="Generated_Code/Servo.c" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="17" />
       <File Name="Generated_Code/ExtIntLdd2.c" FileDate="2020-03-13, 13:58:28" FileAge="1584104308000" FileType="45637" CompNumb="218" />
-      <File Name="Sources/Events.c" FileDate="2020-06-05, 23:30:04" FileAge="1591392604000" FileType="131328" />
+      <File Name="Sources/Events.c" FileDate="2020-06-06, 00:17:50" FileAge="1591395470000" FileType="131328" />
       <File Name="Generated_Code/BitIoLdd10.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="345" />
       <File Name="Generated_Code/BitsIoLdd1.c" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="29" />
       <File Name="Documentation/doxygen/RoutingReport_component.txt" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="16" />
@@ -88,7 +88,7 @@
       <File Name="Generated_Code/LEDpin2.c" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="319" />
       <File Name="Generated_Code/BitIoLdd9.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="342" />
       <File Name="Generated_Code/BitIoLdd9.c" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="342" />
-      <File Name="Documentation/Model_M_Motor_control_SIGNALS.txt" FileDate="2020-06-05, 23:31:15" FileAge="1591392675000" FileType="3072" />
+      <File Name="Documentation/Model_M_Motor_control_SIGNALS.txt" FileDate="2020-07-06, 21:31:18" FileAge="1594063878000" FileType="3072" />
       <File Name="Generated_Code/TU4.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="232" />
       <File Name="Generated_Code/BitIoLdd7.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="331" />
       <File Name="Documentation/doxygen/PwmLdd2_component.txt" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="250" />
@@ -219,7 +219,7 @@
       <File Name="Generated_Code/BitIoLdd2.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="320" />
       <File Name="Generated_Code/BitIoLdd2.c" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="320" />
       <File Name="Documentation/doxygen/pex.doxyfile" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="16" />
-      <File Name="Sources/main.c" FileDate="2020-06-05, 23:31:15" FileAge="1591392675000" FileType="128" />
+      <File Name="Sources/main.c" FileDate="2020-07-06, 21:31:18" FileAge="1594063878000" FileType="128" />
       <File Name="Documentation/doxygen/pex.css" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="16384" CompNumb="16" />
       <File Name="Generated_Code/Cpu.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="16" />
       <File Name="Generated_Code/PE_Const.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" />
@@ -233,5 +233,5 @@
       <File Name="Generated_Code/CI2C1.h" FileDate="2020-02-26, 22:17:57" FileAge="1582751877000" FileType="45637" CompNumb="351" />
     </GeneratedByPE>
   </GeneratedFilesList>
-  <CodeGenReference>127</CodeGenReference>
+  <CodeGenReference>129</CodeGenReference>
 </CodeGenerationInfo>

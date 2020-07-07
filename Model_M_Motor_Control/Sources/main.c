@@ -166,7 +166,7 @@ uint32_t higer_speed_after_curve = 300;
 volatile int64_t Counter_OVF;
 float Speed_Ms = 0;
 float Time_left = 0;
-uint8_t kp_Teiler = 26;
+uint8_t kp_Teiler = 16;
 float pid_i = 0.0;
 float pid_d = 0.0;
 float previous_error = 0.0;
@@ -520,7 +520,7 @@ int main(void)
 					prev_S = FALSE;
 				}
 				if (message.Direction == 'L' && Break_Active == FALSE) {
-					S_multi_rechts = 1.3;
+					S_multi_rechts = 1.2;
 					S_multi_links = 0;
 					/*if(velocity_Rechts_avg > 2)
 					 {
@@ -594,7 +594,7 @@ int main(void)
 			Break_Active = TRUE;
 			brake_left_out = TRUE;
 			brake_right_out = TRUE;
-			Break_period = 300;
+			Break_period = 1000;
 			Break_intens = 50000;
 			LED1_Off();
 			//EN_Off();
@@ -609,7 +609,7 @@ int main(void)
 			servo_value = map_long(SerVal, 0, 819, Mitte, Rechts);
 			//Winkel_prev_R = diff;
 		}
-
+		//printf("data: %c%c%c%c%c\n",message.Direction,message.Hundert,message.Zener,message.Einer,message.straight_curve,message.align);
 		Servo_SetRatio16(servo_value);
 		Servo_Enable();
 
@@ -668,5 +668,5 @@ int main(void)
   #endif
   /*** End of RTOS startup code.  ***/
   /*** Processor Expert end of main routine. DON'T MODIFY THIS CODE!!! ***/
- // for(;;){}
+  //for(;;){}
   /*** Processor Expert end of main routine. DON'T WRITE CODE BELOW!!! ***/

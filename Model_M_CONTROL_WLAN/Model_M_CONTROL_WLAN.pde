@@ -31,7 +31,7 @@ Textarea myTextarea;
 Textlabel Left_US;
 Textlabel Right_US;
 Textlabel Speed_kl25z;
-//Println Console;
+Println Console;
 Table table;
 
 DropdownList d1, d2;
@@ -500,7 +500,7 @@ void setup() {
     .setLabel("    BT      WLAN");
   ;
 
-  //Console = cp5.addConsole(myTextarea);
+  Console = cp5.addConsole(myTextarea);
 
   cp9.setVisible(false); 
   cp10.setVisible(false);
@@ -559,7 +559,7 @@ void customize2(DropdownList ddl) {
 void UDP_Setup(int Port_setup)
 {
   udp = new UDP( this, Port_setup); // create a new datagram connection on port 8888
-  udp.log( true ); // <– printout the connection activity
+  //udp.log( true ); // <– printout the connection activity
   udp.listen( true ); // and wait for incoming message
 }
 
@@ -739,7 +739,7 @@ void Connect()
     {
       IP_ADRESS = "";
       IP_ADRESS = IP_1 + "." + IP_2 + "." + IP_3 + "." + IP_4;  
-      println(IP_ADRESS);
+      print(IP_ADRESS);
       Port_int = int(IP_5);
       if (udp_setup)
       {
@@ -797,10 +797,10 @@ void receive(byte[] data) { // <– default handler
 
   data = subset(data, 0, data.length);
   message = new String( data );
-
-  int p1 = message.indexOf("#");
-  int p2 = message.indexOf("!");
-  message = trim(message.substring(p1+1, p2));
+  //println(message);
+  //int p1 = message.indexOf("#");
+  int p2 = message.indexOf(")");
+  message = trim(message.substring(0, p2));
   portStream = message;
   acknowledged = int(message);
 }
@@ -823,10 +823,10 @@ void draw() {
 
   if (Connected)
   {
-    if (message != null)
-      println(message);
-    //   if ((portStream != null)&&press_start == true) {
-    if (false) {
+    if (message != null);
+     // println(message);
+     if ((portStream != null)&&press_start == true) {
+   // if (false) {
       setGradient(0, 0, 629, 39, c4, c5, Y_AXIS);
       setGradient(0, 110, 629, 19, c5, c4, Y_AXIS);
       setGradient(0, 140, 629, 19, c4, c5, Y_AXIS);
@@ -844,19 +844,31 @@ void draw() {
       int p5 = portStream.indexOf(" ( ");
       int p6 = portStream.indexOf(" ; ");
       int p7 = portStream.indexOf(" ? ");
+      
+     /* print(p1);
+      print(" ");
+      print(p2);
+      print(" ");
+      print(p3);
+      print(" ");
+      print(p4);
+      print(" ");
+      print(p5);
+      print(" ");
+      print(p6);
+      print(" ");
+      println(p7); */
+      
       if (Console_status == 0)
       {
-        // Console.pause();
+         Console.pause();
       } else if (Console_status == 1)
       {
-        // Console.play();
+         Console.play();
       } else if (Console_status == 2)
       {
-        // Console.clear();
+         Console.clear();
       }
-
-
-
       //if (Serial_Monitor != -1 && p1 != -1 && p2 != -1 && p3 != -1 && p3 != -1&& p4 != -1&& p5 != -1 && p6 != -1)
       if (Serial_Monitor >= 0 && (p1 >= 0 && p1 > Serial_Monitor) && (p2 >= 0 && p2 > p1) && (p3 >= 0 && p3 > p2) && (p4 >= 0&& p4 > p3) && (p5 >= 0 && p5 > p4)&& (p6 >= 0&&p6>p5) && p6 < portStream.length())
       {
@@ -873,7 +885,7 @@ void draw() {
         reset_counter++;
         if (reset_counter == 1)
         {         
-          // Console.clear();
+           Console.clear();
           reset_counter = 0;
         }
 
@@ -1141,7 +1153,7 @@ public void Start() {
 
     press_start = true;
     button_counter = 1;
-    println("Start");
+    print("Start");
   }
 }
 public void Stop() {
@@ -1181,7 +1193,7 @@ public void Stop() {
     //wlanbt.setState(false);
     Connected = false;
     IP_ADRESS = "";
-    println("Stop");
+    print("Stop");
     udp.close();
     //reset();
   }
@@ -1222,22 +1234,6 @@ void Serial_Monitor(boolean theFlag) {
     myTextarea.setSize(300, 540);
     if (!toggle_flag)
     {
-      udp.send( "Stop_stream", IP_ADRESS, Port_int);
-    }
-    if (toggle_flag)
-    {
-      myPort.write("Stop ");
-      myPort.write('&');
-    }
-
-    //Console.clear();
-    //Console.play();
-  } 
-  if (theFlag==false) {
-    surface.setSize(630, 560);
-
-    if (!toggle_flag)
-    {
       udp.send( "Start_stream", IP_ADRESS, Port_int);
     }
     if (toggle_flag)
@@ -1245,23 +1241,39 @@ void Serial_Monitor(boolean theFlag) {
       myPort.write("Start ");
       myPort.write('&');
     }
-    //Console.clear();
-    // Console.pause();
+
+    Console.clear();
+    Console.play();
+  } 
+  if (theFlag==false) {
+    surface.setSize(630, 560);
+
+    if (!toggle_flag)
+    {
+      udp.send( "Stop_stream", IP_ADRESS, Port_int);
+    }
+    if (toggle_flag)
+    {
+      myPort.write("Stop ");
+      myPort.write('&');
+    }
+    Console.clear();
+     Console.pause();
   }
 }
 void Settings(boolean theFlag) {
   if (theFlag==true) {
     surface.setSize(630, 720);
-    // Console.clear();
-    // Console.pause();
+     Console.clear();
+     Console.pause();
   } 
   if (theFlag==false) {
     surface.setSize(630, 560);
   }
 }
 void Apply(boolean theFlag) {
-  //Console.pause();
-  //Console.clear();
+  Console.pause();
+  Console.clear();
 
   Data_send =  str(Brightness);
   Data_send += "!";
@@ -1417,7 +1429,6 @@ void norminal_speed(float norminal_speed_value) {
 void Modus(int theValue) {
   if (prev_modus != theValue)
   {
-
     if (!toggle_flag)
     {
       udp.send("Modus "+ theValue + "&", IP_ADRESS, Port_int);
