@@ -16,8 +16,8 @@
 #define TRIGGER_PIN_RIGHT 4
 #define ECHO_PIN_RIGHT 2
 #define ARRAY_EEPROMM_SIZE 13
-#define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 20
-#define DURATION_OF_DODGE 1000
+#define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 5
+#define DURATION_OF_DODGE 350
 #define RGB_THRESHOLD_FOR_SYMBOLS 75
 
 Pixy2 pixy;
@@ -79,6 +79,8 @@ uint8_t Start_Stop = 1;
 float Speed_left = 0.0;
 float Speed_right = 0.0;
 uint8_t counter_ultrasonics_triggered = 0;
+uint8_t counter_ultrasonics_triggered_left = 0;
+uint8_t counter_ultrasonics_triggered_right = 0;
 int number_of_lines = 0;
 int track_center = 30;
 bool dodge_to_the_left = false;
@@ -611,11 +613,29 @@ void detect_lines(uint8_t array[63], uint8_t which_line) {
       track_center = (index_of_left_line + index_of_right_line) / 2;
     }
   } else if (left_one_found && !right_one_found) {
-    index_of_right_line = index_of_left_line + track_width_at_current_line;
-    track_center = (index_of_left_line + index_of_right_line) / 2;
+    if(dodge_to_the_right && index_of_left_line > track_width_at_current_line / 2) {
+      index_of_right_line = index_of_left_line;
+      index_of_left_line = index_of_right_line - track_width_at_current_line;
+      track_center = (index_of_left_line + index_of_right_line) / 2;
+      left_one_found = !left_one_found;
+      right_one_found = !right_one_found;
+      debug("detected left line but dodging to the right. so this has to be the right line!\n","");
+    } else {
+      index_of_right_line = index_of_left_line + track_width_at_current_line;
+      track_center = (index_of_left_line + index_of_right_line) / 2;
+    }
   } else if (!left_one_found && right_one_found) {
-    index_of_left_line = index_of_right_line - track_width_at_current_line;
-    track_center = (index_of_left_line + index_of_right_line) / 2;
+    if(dodge_to_the_left && index_of_right_line < track_width_at_current_line / 2) {
+      index_of_left_line = index_of_right_line;
+      index_of_right_line = index_of_left_line + track_width_at_current_line;
+      track_center = (index_of_left_line + index_of_right_line) / 2;
+      left_one_found = !left_one_found;
+      right_one_found = !right_one_found;
+      debug("detected right line but dodging to the left. so this has to be the left line!\n","");
+    } else {
+      index_of_left_line = index_of_right_line - track_width_at_current_line;
+      track_center = (index_of_left_line + index_of_right_line) / 2;
+    }
   }
 
   debug("found " + String(number_of_lines) + " lines\n", "");
@@ -1068,7 +1088,7 @@ void loop() {
   if (mode == 3)
   {
     // check ultrasonic values, if something is close: break
-    if (distanceCmLeft <= LEFT_DISTANCE_THRESHOLD)// && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD)
+    if (distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD)
       counter_ultrasonics_triggered++;
     else
       counter_ultrasonics_triggered = 0;
@@ -1082,17 +1102,31 @@ void loop() {
        Start_Stop = 2;*/
   }
   if (mode == 2) {
-    if (distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD) {
+    if (distanceCmLeft <= LEFT_DISTANCE_THRESHOLD && distanceCmRight > RIGHT_DISTANCE_THRESHOLD)
+      counter_ultrasonics_triggered_right++;
+    else
+      counter_ultrasonics_triggered_right = 0;
+
+    if (counter_ultrasonics_triggered_right >= NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP) {
       dodge_to_the_left = false;
       dodge_to_the_right = true;
       timer_of_dodge_to_the_right = millis();
       debug("DODGE TO THE RIGHT!\n", "");
-    } else if (distanceCmLeft > LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD) {
+      counter_ultrasonics_triggered_right = 0;
+    }
+    
+    if (distanceCmLeft > LEFT_DISTANCE_THRESHOLD && distanceCmRight <= RIGHT_DISTANCE_THRESHOLD)
+      counter_ultrasonics_triggered_left++;
+    else
+      counter_ultrasonics_triggered_left = 0;
+    if (counter_ultrasonics_triggered_left >= NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP) {
       dodge_to_the_left = true;
       dodge_to_the_right = false;
       timer_of_dodge_to_the_left = millis();
       debug("DODGE TO THE LEFT!\n", "");
+      counter_ultrasonics_triggered_left = 0;
     }
+
   }
 
   if (dodge_to_the_left && millis() - timer_of_dodge_to_the_left > DURATION_OF_DODGE) {
