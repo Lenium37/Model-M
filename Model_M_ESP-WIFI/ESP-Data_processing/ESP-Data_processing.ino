@@ -20,7 +20,7 @@ void setup()
   *((volatile uint32_t*) 0x60000900) &= ~(1);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  Serial.begin(500000);
+  Serial.begin(115200);
   WiFi.mode(WIFI_AP); 
   WiFi.softAPConfig(APlocal_IP, APgateway, APsubnet);
   WiFi.softAP(APssid, APpassword);

@@ -62,8 +62,8 @@ String IP_ADRESS = "";
 String message = "";
 String label = "";
 String IP_1;
-String IP_2; 
-String IP_3; 
+String IP_2;
+String IP_3;
 String IP_4;
 String IP_5;
 int Port_int;
@@ -133,7 +133,7 @@ int button3_counter = 0;
 int drop_counter = 0;
 int Console_status = 3;
 // The serial port
-Serial myPort;       
+Serial myPort;
 String Line_top;
 String Data_send;
 String[] save_Data;
@@ -193,7 +193,7 @@ void setup() {
 
   if (table != null)
   {
-    RowCount = table.getRowCount();       
+    RowCount = table.getRowCount();
     Brightness_table = table.getInt(RowCount-1, "Brightness");
     Offset_at_75_to_Center_table = table.getInt(RowCount-1, "Offset_at_75_to_Center");
     Offset_at_120_to_Center_table = table.getInt(RowCount-1, "Offset_at_120_to_Center");
@@ -209,9 +209,9 @@ void setup() {
     norminal_speed_table = table.getFloat(RowCount-1, "norminal_speed");
     Threshold_Gray_bar = Threshold_Gray_table;
   }
-  f = createFont("Arial", 16, true);  
-  // Initialize headline offscreen to the right 
-  x = 0; 
+  f = createFont("Arial", 16, true);
+  // Initialize headline offscreen to the right
+  x = 0;
   //size(630,560);
   c4 = color(132, 195, 232);
   c5 = color(244, 244, 244);
@@ -228,10 +228,10 @@ void setup() {
   cp6 = new ControlP5(this);
   cp7 = new ControlP5(this);
   cp8 = new ControlP5(this);
-  cp9 = new ControlP5(this);    
-  cp10 = new ControlP5(this);  
-  cp11 = new ControlP5(this); 
-  cp12 = new ControlP5(this); 
+  cp9 = new ControlP5(this);
+  cp10 = new ControlP5(this);
+  cp11 = new ControlP5(this);
+  cp12 = new ControlP5(this);
 
   cp14 = new ControlP5(this);
   cp15 = new ControlP5(this);
@@ -249,7 +249,7 @@ void setup() {
 
   Left_US = cp21.addTextlabel("Left_US")
     .setPosition(45, 5)
-    .setColorValue(255)   
+    .setColorValue(255)
     .setFont(createFont("Georgia", 20))
     .setVisible(true);
   ;
@@ -262,37 +262,37 @@ void setup() {
   Speed_kl25z = cp21.addTextlabel("Speed_kl25z")
     .setPosition(280, 5)
     .setColorValue(50)
-    .setFont(createFont("Georgia", 20))   
+    .setFont(createFont("Georgia", 20))
     .setVisible(true);
   ;
   cp17.addToggle("Serial_Monitor")
     .setPosition(540, 520)
     .setSize(63, 20)
     .setColorLabel(100)
-    ;   
+    ;
   cp17.addToggle("Settings")
     .setPosition(20, 520)
     .setSize(63, 20)
     .setColorLabel(100)
-    ;   
+    ;
   cp18.addButton("Apply")
     .setPosition(20, 680)
     .setSize(63, 20)
     .setColorLabel(255)
-    ;  
+    ;
   b6 = cp18.addButton("Go")
     .setPosition(100, 680)
     .setSize(63, 20)
     .setColorLabel(255)
     .setLabel("Go")
-    ;   
+    ;
   cp9.addSlider("Line_4")
     .setPosition(215, 490)
     .setSize(200, 10)
     .setRange(0, 200)
     .setColorLabel(100)
-    .setValue(128)  
-    .setVisible(false); 
+    .setValue(128)
+    .setVisible(false);
   ;
   cp10.addSlider("Line_1")
     .setPosition(215, 130)
@@ -300,7 +300,7 @@ void setup() {
     .setRange(0, 200)
     .setColorLabel(100)
     .setValue(128)
-    .setVisible(false); 
+    .setVisible(false);
   ;
   cp11.addSlider("Line_2")
     .setPosition(215, 250)
@@ -308,7 +308,7 @@ void setup() {
     .setRange(0, 200)
     .setColorLabel(100)
     .setValue(128)
-    .setVisible(false); 
+    .setVisible(false);
   ;
   cp12.addSlider("Line_3")
     .setPosition(215, 370)
@@ -316,7 +316,7 @@ void setup() {
     .setRange(0, 200)
     .setColorLabel(100)
     .setValue(128)
-    .setVisible(false); 
+    .setVisible(false);
   ;
   cp12.addSlider("Brightness")
     .setPosition(20, 560)
@@ -324,7 +324,7 @@ void setup() {
     .setRange(0, 255)
     .setColorLabel(100)
     .setValue(Brightness_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Offset_at_75_to_Center")
     .setPosition(20, 580)
@@ -332,7 +332,7 @@ void setup() {
     .setRange(0, 40)
     .setColorLabel(100)
     .setValue(Offset_at_75_to_Center_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Offset_at_120_to_Center")
     .setPosition(20, 600)
@@ -340,14 +340,14 @@ void setup() {
     .setRange(0, 40)
     .setColorLabel(100)
     .setValue(Offset_at_120_to_Center_table)
-    .setVisible(true); 
+    .setVisible(true);
   cp12.addSlider("Offset_at_165_to_Center")
     .setPosition(20, 620)
     .setSize(200, 10)
     .setRange(0, 40)
     .setColorLabel(100)
     .setValue(Offset_at_165_to_Center_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Threshold_Gray")
     .setPosition(20, 640)
@@ -355,7 +355,7 @@ void setup() {
     .setRange(0, 255)
     .setColorLabel(100)
     .setValue(Threshold_Gray_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Min_Track_width")
     .setPosition(20, 660)
@@ -363,7 +363,7 @@ void setup() {
     .setRange(0, 40)
     .setColorLabel(100)
     .setValue(Min_Track_width_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("LEFT_DISTANCE")
     .setPosition(350, 640)
@@ -371,7 +371,7 @@ void setup() {
     .setRange(0, 200)
     .setColorLabel(100)
     .setValue(LEFT_DISTANCE_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("RIGHT_DISTANCE")
     .setPosition(350, 660)
@@ -379,7 +379,7 @@ void setup() {
     .setRange(0, 200)
     .setColorLabel(100)
     .setValue(RIGHT_DISTANCE_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("norminal_speed")
     .setPosition(350, 680)
@@ -387,7 +387,7 @@ void setup() {
     .setRange(0.0, 5.0)
     .setColorLabel(100)
     .setValue(norminal_speed_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Red")
     .setPosition(350, 560)
@@ -395,7 +395,7 @@ void setup() {
     .setRange(0, 255)
     .setColorLabel(100)
     .setValue(Red_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Green")
     .setPosition(350, 580)
@@ -403,7 +403,7 @@ void setup() {
     .setRange(0, 255)
     .setColorLabel(100)
     .setValue(Green_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Blue")
     .setPosition(350, 600)
@@ -411,7 +411,7 @@ void setup() {
     .setRange(0, 255)
     .setColorLabel(100)
     .setValue(Blue_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
   cp12.addSlider("Led_Brightness")
     .setPosition(350, 620)
@@ -419,48 +419,48 @@ void setup() {
     .setRange(1, 20)
     .setColorLabel(100)
     .setValue(Led_Brightness_table)
-    .setVisible(true); 
+    .setVisible(true);
   ;
 
   b1 = cp24.addButton("Start")
     .setValue(1)
     .setPosition(215, 100)
     .setSize(200, 19)
-    .setVisible(false); 
+    .setVisible(false);
 
   b2 = cp7.addButton("Stop")
     .setValue(1)
     .setPosition(215, 520)
     .setSize(200, 19)
-    .setVisible(false); 
+    .setVisible(false);
   b3 = cp14.addButton("Pause")
     .setValue(1)
     .setPosition(631, 540)
     .setSize(99, 20)
-    .setVisible(true); 
+    .setVisible(true);
   b4 = cp15.addButton("Play")
     .setValue(1)
     .setPosition(730, 540)
     .setSize(100, 20)
-    .setVisible(true); 
+    .setVisible(true);
   b5 = cp16.addButton("Clear")
     .setValue(1)
     .setPosition(830, 540)
     .setSize(100, 20)
-    .setVisible(true); 
+    .setVisible(true);
 
   d1 = cp6.addDropdownList("Port_dropdown")
     .setPosition(320, 67)
     .setSize(200, 80)
-    .close() 
-    ;        
+    .close()
+    ;
   customize(d1); // customize the first list
 
   d2 = cp8.addDropdownList("Baud_Dropdown")
     .setPosition(110, 67)
     .setSize(200, 80)
-    .close() 
-    ;        
+    .close()
+    ;
   customize2(d2); // customize the first list
 
   myTextarea = cp5.addTextarea("txt")
@@ -471,7 +471,7 @@ void setup() {
     .setColor(color(200))
     .setColorBackground(color(0, 100))
     .setColorForeground(color(255, 100));
-  ; 
+  ;
   Modus = cp20.addKnob("Modus")
     .setRange(0, 4)
     .setValue(0)
@@ -493,7 +493,7 @@ void setup() {
 
   wlanbt = cp22.addToggle("WLANBT")
     .setPosition(550, 100)
-    .setVisible(false) 
+    .setVisible(false)
     .setSize(50, 20)
     .setValue(true)
     .setMode(ControlP5.SWITCH)
@@ -502,10 +502,10 @@ void setup() {
 
   Console = cp5.addConsole(myTextarea);
 
-  cp9.setVisible(false); 
+  cp9.setVisible(false);
   cp10.setVisible(false);
   cp11.setVisible(false);
-  cp12.setVisible(false); 
+  cp12.setVisible(false);
   wlanbt.setVisible(true);
   Modus.setVisible(false);
   surface.setResizable(false);
@@ -513,10 +513,10 @@ void setup() {
 
   smooth(2);
   surface.setSize(630, 150); //+140
-  cp18.setVisible(false); 
-  cp17.setVisible(false); 
-  Left_US.setVisible(false); 
-  Right_US.setVisible(false); 
+  cp18.setVisible(false);
+  cp17.setVisible(false);
+  Left_US.setVisible(false);
+  Right_US.setVisible(false);
   Speed_kl25z.setVisible(false);
   //String portName = Serial.list()[4];
   // myPort initialisieren, Übertragungsrate wie bei Arduino Sketch einstellen
@@ -531,7 +531,7 @@ void customize(DropdownList ddl) {
   ddl.setBarHeight(15);
   ddl.getCaptionLabel().set("Port");
   for (int i=0; i<Serial.list().length; i++) {
-    String ports = Serial.list()[i]; 
+    String ports = Serial.list()[i];
     Port = i;
     ddl.addItem(ports, i);
   }
@@ -574,7 +574,7 @@ void IP_SETUP()
     .setPosition(260+IP_POSTION[0], 100+IP_POSTION[1])
     .setSize(80, 25)
     .align(ControlP5.CENTER, ControlP5.CENTER, ControlP5.CENTER, ControlP5.CENTER)
-    .setVisible(true); 
+    .setVisible(true);
   ;
 
   IP1 = cp23.addTextfield("Ip-Adresse")
@@ -591,7 +591,7 @@ void IP_SETUP()
     .setSize(35, 25)
     .setFont(font)
     //.setFocus(true)
-    .setLabelVisible(false) 
+    .setLabelVisible(false)
     .setMax(3)
     .setColor(color(255, 0, 0))
     ;
@@ -600,7 +600,7 @@ void IP_SETUP()
     .setSize(35, 25)
     .setFont(font)
     //.setFocus(true)
-    .setLabelVisible(false) 
+    .setLabelVisible(false)
     .setMax(3)
     .setColor(color(255, 0, 0))
     ;
@@ -639,6 +639,11 @@ void IP_SETUP()
   IP4.setLabel("");
   IP4.setLabel("");
   IP5.setLabel("Port");
+  IP1.setText("192"); // Setzt den vordefinierten Text
+  IP2.setText("168"); // Setzt den vordefinierten Text
+  IP3.setText("4"); // Setzt den vordefinierten Text
+  IP4.setText("1"); // Setzt den vordefinierten Text
+  IP5.setText("8888"); // Setzt den vordefinierten Text
   Warning_flied.setLabel("");
   Warning_flied.setColorBackground(0);
   Warning_flied.setVisible(true);
@@ -691,33 +696,33 @@ void keyPressed() {
     taped++;
     switch(taped)
     {
-    case 1: 
+    case 1:
       IP1.setFocus(false);
       IP2.setFocus(true);
       IP5.setFocus(false);
       break;
-    case 2: 
+    case 2:
       IP2.setFocus(false);
-      IP3.setFocus(true);    
+      IP3.setFocus(true);
       break;
-    case 3: 
+    case 3:
       IP3.setFocus(false);
-      IP4.setFocus(true);    
+      IP4.setFocus(true);
       break;
-    case 4: 
+    case 4:
       IP5.setFocus(true);
-      IP4.setFocus(false);    
+      IP4.setFocus(false);
       break;
-    case 5: 
+    case 5:
       IP5.setFocus(false);
-      IP1.setFocus(true);    
+      IP1.setFocus(true);
       taped = 0;
       break;
     }
   }
   if (key == ENTER)
   {
-    Connecting = true;  
+    Connecting = true;
     wait_connect = false;
   }
 }
@@ -728,17 +733,17 @@ void Connect()
     IP_1 = cp23.get(Textfield.class, "Ip-Adresse").getText();
     IP_2 = cp23.get(Textfield.class, "input1").getText();
     IP_3 = cp23.get(Textfield.class, "input2").getText();
-    IP_4 = cp23.get(Textfield.class, "input3").getText();      
+    IP_4 = cp23.get(Textfield.class, "input3").getText();
     first_try = false;
     clear();
-  }  
+  }
   //
   if (IP_1.length() <= 3 && IP_2.length() <= 3 && IP_3.length() <= 3 && IP_4.length() <= 3 && IP_5.length() <= 5)
   {
     if (IP_1.length() != 0 && IP_2.length() != 0  && IP_3.length() != 0  && IP_4.length() != 0 && IP_5.length() != 5)
     {
       IP_ADRESS = "";
-      IP_ADRESS = IP_1 + "." + IP_2 + "." + IP_3 + "." + IP_4;  
+      IP_ADRESS = IP_1 + "." + IP_2 + "." + IP_3 + "." + IP_4;
       print(IP_ADRESS);
       Port_int = int(IP_5);
       if (udp_setup)
@@ -749,17 +754,17 @@ void Connect()
       if (acknowledged == 1)
       {
         wait_connect = true;
-        Connecting = false; 
+        Connecting = false;
         Connected = true;
-        b1.setVisible(true);  
+        b1.setVisible(true);
         Visible(false);
-        wlanbt.setVisible(false); 
+        wlanbt.setVisible(false);
         first_try = true;
         udp_setup = true;
         acknowledged = 0;
       } else
       {
-        label = "Connecting......";       
+        label = "Connecting......";
         udp.send("Connect", IP_ADRESS, Port_int);
         time_out++;
         //delay(10);
@@ -800,7 +805,20 @@ void receive(byte[] data) { // <– default handler
   //println(message);
   //int p1 = message.indexOf("#");
   int p2 = message.indexOf(")");
-  message = trim(message.substring(0, p2));
+  try {
+    if (p2 >= 0 && p2 <= message.length()) {
+      message = message.trim().substring(0, p2);
+    } else {
+      System.out.println("Warnung: Ungültiger Index p2: " + p2);
+      // Optional: Standardwert setzen oder andere Logik
+      message = message.trim(); // Fallback: vollständiger String
+    }
+  }
+  catch (StringIndexOutOfBoundsException e) {
+    System.out.println("Fehler: " + e.getMessage());
+    // Optional: Logik für Fehlerbehandlung
+    message = ""; // Setze den String auf leer, falls ein Fehler auftritt
+  }
   portStream = message;
   acknowledged = int(message);
 }
@@ -824,9 +842,9 @@ void draw() {
   if (Connected)
   {
     if (message != null);
-     // println(message);
-     if ((portStream != null)&&press_start == true) {
-   // if (false) {
+    // println(message);
+    if ((portStream != null)&&press_start == true) {
+      // if (false) {
       setGradient(0, 0, 629, 39, c4, c5, Y_AXIS);
       setGradient(0, 110, 629, 19, c5, c4, Y_AXIS);
       setGradient(0, 140, 629, 19, c4, c5, Y_AXIS);
@@ -835,7 +853,7 @@ void draw() {
       setGradient(0, 350, 630, 19, c5, c4, Y_AXIS);
       setGradient(0, 380, 630, 490, c4, c5, Y_AXIS);
 
-      int Serial_Monitor = portStream.indexOf("#");    
+      int Serial_Monitor = portStream.indexOf("#");
 
       int p1 = portStream.indexOf(" $ ");
       int p2 = portStream.indexOf(" ! ");
@@ -844,30 +862,30 @@ void draw() {
       int p5 = portStream.indexOf(" ( ");
       int p6 = portStream.indexOf(" ; ");
       int p7 = portStream.indexOf(" ? ");
-      
-     /* print(p1);
-      print(" ");
-      print(p2);
-      print(" ");
-      print(p3);
-      print(" ");
-      print(p4);
-      print(" ");
-      print(p5);
-      print(" ");
-      print(p6);
-      print(" ");
-      println(p7); */
-      
+
+      /* print(p1);
+       print(" ");
+       print(p2);
+       print(" ");
+       print(p3);
+       print(" ");
+       print(p4);
+       print(" ");
+       print(p5);
+       print(" ");
+       print(p6);
+       print(" ");
+       println(p7); */
+
       if (Console_status == 0)
       {
-         Console.pause();
+        Console.pause();
       } else if (Console_status == 1)
       {
-         Console.play();
+        Console.play();
       } else if (Console_status == 2)
       {
-         Console.clear();
+        Console.clear();
       }
       //if (Serial_Monitor != -1 && p1 != -1 && p2 != -1 && p3 != -1 && p3 != -1&& p4 != -1&& p5 != -1 && p6 != -1)
       if (Serial_Monitor >= 0 && (p1 >= 0 && p1 > Serial_Monitor) && (p2 >= 0 && p2 > p1) && (p3 >= 0 && p3 > p2) && (p4 >= 0&& p4 > p3) && (p5 >= 0 && p5 > p4)&& (p6 >= 0&&p6>p5) && p6 < portStream.length())
@@ -877,15 +895,28 @@ void draw() {
         Line_top = portStream.substring(Serial_Monitor+1, p1);
         Line_top_middel = portStream.substring(p1+1, p2);
         Line_bottom_middel = portStream.substring(p2+1, p3);
-        Line_bottom = portStream.substring(p3+1, p4);
+          try {
+            // Validierung der Indizes vor `substring`
+            if (p3 + 1 >= 0 && p4 <= portStream.length() && p3 + 1 < p4) {
+              Line_bottom = portStream.substring(p3 + 1, p4);
+            } else {
+              System.out.println("Warnung: Ungültige Indizes für substring. p3: " + p3 + ", p4: " + p4);
+              Line_bottom = ""; // Fallback: Setze leeren String
+            }
+          }
+          catch (StringIndexOutOfBoundsException e) {
+            System.out.println("Fehler: " + e.getMessage());
+            // Fallback-Logik bei Ausnahme
+            Line_bottom = ""; // Alternativ: Standardwert zuweisen
+          }
         US_data  = portStream.substring(p4+1, p5);
         String Speed_str = portStream.substring(p5+2, p6);
         line_detection_data = portStream.substring(p6+2, portStream.length());
         print(Serial_Monitor_stream);
         reset_counter++;
         if (reset_counter == 1)
-        {         
-           Console.clear();
+        {
+          Console.clear();
           reset_counter = 0;
         }
 
@@ -979,7 +1010,7 @@ void draw() {
               if (y < 50)
               {
                 if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 165)
-                  set(x, y+90, White);   
+                  set(x, y+90, White);
                 else if (nums_line_detection[1] == 75)
                 {
                   //if ((nums_line_detection[2]*10 > x-9 || nums_line_detection[2]*10 < x) && (nums_line_detection[3]*10 > x-9 || nums_line_detection[3]*10 < x));
@@ -1021,7 +1052,7 @@ void draw() {
               if (y < 50+120)//240
               {
                 if (nums_line_detection[1] == 0 || nums_line_detection[1] == 75 || nums_line_detection[1] == 165)
-                  set(x, y+90, White);   
+                  set(x, y+90, White);
                 else if (nums_line_detection[1] == 120)
                 {
                   if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
@@ -1061,7 +1092,7 @@ void draw() {
               if (y < 50+240)
               {
                 if (nums_line_detection[1] == 0 || nums_line_detection[1] == 120 || nums_line_detection[1] == 75)
-                  set(x, y+90, White);   
+                  set(x, y+90, White);
                 else if (nums_line_detection[1] == 165)
                 {
                   if ((x < nums_line_detection[2]*10 || x > nums_line_detection[2]*10 + 9) && (x < nums_line_detection[3]*10 || x > nums_line_detection[3]*10 + 9))
@@ -1097,7 +1128,7 @@ void draw() {
             }
           }
         }
-      }    
+      }
       //portStream = "";
       //myPort.clear();
       ready_stream = true;
@@ -1112,10 +1143,10 @@ void draw() {
     //myPort.clear();
     /*if (ready_stream == true && press_start == true)
      {
-     myPort.write("Ready &"); 
-     myPort.write("Ready &"); 
-     myPort.write("Ready &"); 
-     myPort.write("Ready &"); 
+     myPort.write("Ready &");
+     myPort.write("Ready &");
+     myPort.write("Ready &");
+     myPort.write("Ready &");
      ready_stream = false;*
      }*/
     //}
@@ -1131,25 +1162,29 @@ public void Start() {
   button_counter++;
   if (button_counter == 3)
   {
-    //myPort.write("((!!!!!))&");
-    udp.send("Start", IP_ADRESS, Port_int);   
-    surface.setSize(630, 560);
-    Left_US.setVisible(true); 
-    Right_US.setVisible(true); 
+    println("((!!!!!))&");
+    udp.send("Start", IP_ADRESS, Port_int);
+    udp.send("Start", IP_ADRESS, Port_int);
+    udp.send("Start", IP_ADRESS, Port_int);
+    udp.send("Start", IP_ADRESS, Port_int);
+    udp.send("Start", IP_ADRESS, Port_int);
+    surface.setSize(930, 720); //630, 560
+    Left_US.setVisible(true);
+    Right_US.setVisible(true);
     Speed_kl25z.setVisible(true);
     Modus.setVisible(true);
-    cp17.setVisible(true); 
-    cp18.setVisible(true); 
-    cp9.setVisible(true); 
+    cp17.setVisible(true);
+    cp18.setVisible(true);
+    cp9.setVisible(true);
     cp10.setVisible(true);
     cp11.setVisible(true);
     cp12.setVisible(true);
-    b1.setVisible(false); 
-    b2.setVisible(true); 
-    d1.setVisible(false); 
-    d2.setVisible(false); 
+    b1.setVisible(false);
+    b2.setVisible(true);
+    d1.setVisible(false);
+    d2.setVisible(false);
     //wlanbt.setState(false);
-    wlanbt.setVisible(false); 
+    wlanbt.setVisible(false);
 
     press_start = true;
     button_counter = 1;
@@ -1161,28 +1196,28 @@ public void Stop() {
   if (button2_counter == 2)
   {
     udp.send("Stop", IP_ADRESS, Port_int);
-    wlanbt.setVisible(true); 
+    wlanbt.setVisible(true);
     surface.setSize(630, 150);
-    Left_US.setVisible(false); 
+    Left_US.setVisible(false);
     Right_US.setVisible(false);
     Modus.setVisible(false);
     Speed_kl25z.setVisible(false);
-    cp17.setVisible(false); 
-    cp18.setVisible(false); 
-    cp9.setVisible(false); 
+    cp17.setVisible(false);
+    cp18.setVisible(false);
+    cp9.setVisible(false);
     cp10.setVisible(false);
     cp11.setVisible(false);
-    cp12.setVisible(false); 
-    b2.setVisible(false); 
-    // b1.setVisible(true); 
+    cp12.setVisible(false);
+    b2.setVisible(false);
+    // b1.setVisible(true);
     if (toggle_flag)
     {
-      d1.setVisible(true); 
+      d1.setVisible(true);
       d2.setVisible(true);
       Visible(false);
     } else
     {
-      d1.setVisible(false); 
+      d1.setVisible(false);
       d2.setVisible(false);
       Visible(true);
     }
@@ -1198,11 +1233,11 @@ public void Stop() {
     //reset();
   }
 }
-public void Pause() 
+public void Pause()
 {
   Console_status = 0;
 }
-public void Go() 
+public void Go()
 {
   button3_counter++;
   if (button3_counter == 1)
@@ -1217,17 +1252,17 @@ public void Go()
     b6.setLabel("Go");
   }
 }
-public void Play() 
+public void Play()
 {
   Console_status = 1;
 }
-public void Clear() 
+public void Clear()
 {
   Console_status = 2;
 }
 void Serial_Monitor(boolean theFlag) {
   if (theFlag==true) {
-    surface.setSize(930, 560);
+    //surface.setSize(930, 560);
     b3.setPosition(631, 540);
     b4.setPosition(730, 540);
     b5.setPosition(830, 540);
@@ -1244,9 +1279,9 @@ void Serial_Monitor(boolean theFlag) {
 
     Console.clear();
     Console.play();
-  } 
+  }
   if (theFlag==false) {
-    surface.setSize(630, 560);
+    //surface.setSize(630, 560);
 
     if (!toggle_flag)
     {
@@ -1258,17 +1293,20 @@ void Serial_Monitor(boolean theFlag) {
       myPort.write('&');
     }
     Console.clear();
-     Console.pause();
+    Console.pause();
   }
 }
 void Settings(boolean theFlag) {
+
+  println("Settings");
+
   if (theFlag==true) {
-    surface.setSize(630, 720);
-     Console.clear();
-     Console.pause();
-  } 
+    //surface.setSize(630, 720);
+    Console.clear();
+    Console.pause();
+  }
   if (theFlag==false) {
-    surface.setSize(630, 560);
+    //surface.setSize(630, 560);
   }
 }
 void Apply(boolean theFlag) {
@@ -1339,19 +1377,19 @@ void controlEvent(ControlEvent theEvent) {
   } else if (theEvent.isController()) {
   }
 }
-public void Port_dropdown(ControlEvent theEvent) { 
+public void Port_dropdown(ControlEvent theEvent) {
   Drop_down_button = theEvent.getController().getValue();
   address = Math.round(Drop_down_button); // 3
   String portName = Serial.list()[address];
   myPort = new Serial(this, portName, baud);
   myPort.bufferUntil('&');
-  b1.setVisible(true);  
-  d1.setVisible(false);  
+  b1.setVisible(true);
+  d1.setVisible(false);
   d2.setVisible(false);
   wlanbt.setVisible(false);
   Connected = true;
 }
-public void Dropdown(ControlEvent theEvent) { 
+public void Dropdown(ControlEvent theEvent) {
   Drop_down_button_baud = theEvent.getController().getValue();
   baud = Math.round(Drop_down_button_baud); // 3
   if (baud == 0)
@@ -1439,19 +1477,19 @@ void Modus(int theValue) {
     }
     switch(theValue)
     {
-    case 0: 
+    case 0:
       Modus.setLabel("Normal");
       break;
-    case 1: 
+    case 1:
       Modus.setLabel("Slow/Fast Zone");
       break;
-    case 2: 
+    case 2:
       Modus.setLabel("Obstacle avoidance");
       break;
-    case 3: 
+    case 3:
       Modus.setLabel("Emergency brake");
       break;
-    case 4: 
+    case 4:
       Modus.setLabel("Eight");
       break;
     }

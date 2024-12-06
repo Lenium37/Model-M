@@ -21,7 +21,6 @@ WiFiUDP Udp;
 void setup() {
   ESP.wdtDisable();
   *((volatile uint32_t*) 0x60000900) &=~(1);
-  pinMode(START_PIN,OUTPUT);
   pinMode(LED_BUILTIN,OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
   Serial.begin(115200);
@@ -38,9 +37,9 @@ void loop() {
     ESP.getFreeHeap();
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
     Data = String(packetBuffer);
-    digitalWrite(START_PIN, LOW);
+    //digitalWrite(START_PIN, LOW);
     for(int i=0;i<UDP_TX_PACKET_MAX_SIZE;i++) packetBuffer[i] = 0;
-    //Serial.println(Data);
+    Serial.println(Data);
     if (Data == "Connect")
     {
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
@@ -51,8 +50,10 @@ void loop() {
   if(Data == "Start")
     {
       Serial.println("#2!&");
+      Serial.println("#2!&");
+      Serial.println("#2!&");
       digitalWrite(LED_BUILTIN, LOW);
-      digitalWrite(START_PIN, HIGH);
+      //digitalWrite(START_PIN, HIGH);
     }
     if(Data == "Start_stream")
     {
@@ -71,7 +72,7 @@ void loop() {
     if(Data == "Stop")
     {
       digitalWrite(LED_BUILTIN, HIGH);
-      digitalWrite(START_PIN, LOW);
+      //digitalWrite(START_PIN, LOW);
       Serial.println("#1!&");
     } Data = "";
   serial();
