@@ -26,6 +26,7 @@ ControlP5 cp22;
 ControlP5 cp23;
 ControlP5 cp24;
 ControlP5 cp25;
+ControlP5 cp100;
 
 Textarea myTextarea;
 Textlabel Left_US;
@@ -110,6 +111,19 @@ int LEFT_DISTANCE_table = 0;
 int RIGHT_DISTANCE_table = 0;
 float norminal_speed_table = 0;
 
+int MEDIAN_FILTER_table = 0;
+float NOISE_FILTER_table = 0;
+int THERSHOLD_PREV_table = 0;
+
+int THERSHOLD_PREV_buf = 0;
+
+int MEDIAN_FILTER = 0;
+float NOISE_FILTER = 0;
+int THERSHOLD_PREV = 0;
+
+float LENK_FILTER = 0;
+float LENK_FILTER_table = 0;
+
 int Y_AXIS = 1;
 int X_AXIS = 2;
 color c4, c5;
@@ -189,6 +203,10 @@ void setup() {
   table.addColumn("LEFT_DISTANCE", Table.INT);
   table.addColumn("RIGHT_DISTANCE", Table.INT);
   table.addColumn("norminal_speed", Table.FLOAT);
+  table.addColumn("MEDIAN_FILTER", Table.INT);
+  table.addColumn("NOISE_FILTER", Table.INT);
+  table.addColumn("THERSHOLD_PREV", Table.INT);
+  table.addColumn("LENK_FILTER", Table.FLOAT);
   table = loadTable("Settings.csv", "header");
 
   if (table != null)
@@ -207,6 +225,10 @@ void setup() {
     LEFT_DISTANCE_table = table.getInt(RowCount-1, "LEFT_DISTANCE");
     RIGHT_DISTANCE_table = table.getInt(RowCount-1, "RIGHT_DISTANCE");
     norminal_speed_table = table.getFloat(RowCount-1, "norminal_speed");
+    MEDIAN_FILTER_table = table.getInt(RowCount-1, "MEDIAN_FILTER");
+    NOISE_FILTER_table = table.getFloat(RowCount-1, "NOISE_FILTER");
+    THERSHOLD_PREV_table = table.getInt(RowCount-1, "THERSHOLD_PREV");
+    LENK_FILTER_table = table.getFloat(RowCount-1, "LENK_FILTER");
     Threshold_Gray_bar = Threshold_Gray_table;
   }
   f = createFont("Arial", 16, true);
@@ -232,6 +254,11 @@ void setup() {
   cp10 = new ControlP5(this);
   cp11 = new ControlP5(this);
   cp12 = new ControlP5(this);
+<<<<<<< Updated upstream
+=======
+
+  cp100 = new ControlP5(this);
+>>>>>>> Stashed changes
 
   cp14 = new ControlP5(this);
   cp15 = new ControlP5(this);
@@ -349,7 +376,7 @@ void setup() {
     .setValue(Offset_at_165_to_Center_table)
     .setVisible(true);
   ;
-  cp12.addSlider("Threshold_Gray")
+  cp100.addSlider("Threshold_Gray")
     .setPosition(20, 640)
     .setSize(200, 10)
     .setRange(0, 255)
@@ -405,6 +432,59 @@ void setup() {
     .setValue(Green_table)
     .setVisible(true);
   ;
+
+  cp12.addSlider("MEDIAN_FILTER")
+    .setPosition(650, 580)
+    .setSize(200, 10)
+    .setRange(1, 19) // Slider von 1 bis 19 (ungerade Zahlen liegen in diesem Bereich)
+    .setColorLabel(100)
+    .setValue(MEDIAN_FILTER_table)
+    .setVisible(true)
+    .addListener(new ControlListener() { // Listener für Änderungen
+    public void controlEvent(ControlEvent event) {
+      int sliderValue = round(event.getController().getValue()); // Slider-Wert abrufen
+      if (sliderValue % 2 == 0) {
+        sliderValue++; // Falls gerade, zum nächsten ungeraden Wert ändern
+        event.getController().setValue(sliderValue); // Slider aktualisieren
+      }
+      MEDIAN_FILTER_table = sliderValue; // Variable aktualisieren
+    }
+  }
+  );
+
+  cp12.addSlider("NOISE_FILTER")
+    .setPosition(650, 600)
+    .setSize(200, 10)
+    .setRange(0, 50)
+    .setColorLabel(100)
+    .setValue(NOISE_FILTER_table)
+    .setVisible(true);
+  ;
+  cp12.addSlider("THERSHOLD_PREV")
+    .setPosition(650, 620)
+    .setSize(200, 10)
+    .setRange(0, 255)
+    .setColorLabel(100)
+    .setValue(THERSHOLD_PREV_table)
+    .setVisible(true)
+    .addListener(new ControlListener() { // Listener für Änderungen
+    public void controlEvent(ControlEvent event) {
+      int sliderValue = round(event.getController().getValue()); // Slider-Wert abrufen
+      THERSHOLD_PREV_buf = sliderValue;
+    }
+  }
+  );
+  ;
+
+  cp12.addSlider("LENK_FILTER")
+    .setPosition(650, 640)
+    .setSize(200, 10)
+    .setRange(0, 1)
+    .setColorLabel(100)
+    .setValue(LENK_FILTER_table)
+    .setVisible(true);
+  ;
+
   cp12.addSlider("Blue")
     .setPosition(350, 600)
     .setSize(200, 10)
@@ -828,6 +908,7 @@ public void input(String theText) {
 // Wie loop() beim Arduino wird draw() immer wieder aufgerufen, solange das Programm ausgeführt wird.
 void draw() {
   smooth(2);
+  println(LENK_FILTER);
   if (press_start == false)
   {
     setGradient(0, 0, 315, 700, c4, c5, X_AXIS);
@@ -895,6 +976,7 @@ void draw() {
         Line_top = portStream.substring(Serial_Monitor+1, p1);
         Line_top_middel = portStream.substring(p1+1, p2);
         Line_bottom_middel = portStream.substring(p2+1, p3);
+<<<<<<< Updated upstream
           try {
             // Validierung der Indizes vor `substring`
             if (p3 + 1 >= 0 && p4 <= portStream.length() && p3 + 1 < p4) {
@@ -909,9 +991,32 @@ void draw() {
             // Fallback-Logik bei Ausnahme
             Line_bottom = ""; // Alternativ: Standardwert zuweisen
           }
+=======
+        try {
+          // Validierung der Indizes vor `substring`
+          if (p3 + 1 >= 0 && p4 <= portStream.length() && p3 + 1 < p4) {
+            Line_bottom = portStream.substring(p3 + 1, p4);
+          } else {
+            System.out.println("Warnung: Ungültige Indizes für substring. p3: " + p3 + ", p4: " + p4);
+            Line_bottom = ""; // Fallback: Setze leeren String
+          }
+        }
+        catch (StringIndexOutOfBoundsException e) {
+          System.out.println("Fehler: " + e.getMessage());
+          // Fallback-Logik bei Ausnahme
+          Line_bottom = ""; // Alternativ: Standardwert zuweisen
+        }
+>>>>>>> Stashed changes
         US_data  = portStream.substring(p4+1, p5);
         String Speed_str = portStream.substring(p5+2, p6);
-        line_detection_data = portStream.substring(p6+2, portStream.length());
+        try {
+          line_detection_data = portStream.substring(p6 + 2, portStream.length());
+        }
+        catch (StringIndexOutOfBoundsException e) {
+          System.out.println("String index out of bounds: " + e.getMessage());
+          line_detection_data = ""; // Assign a default value or handle the error appropriately
+        }
+
         print(Serial_Monitor_stream);
         reset_counter++;
         if (reset_counter == 1)
@@ -1335,12 +1440,22 @@ void Apply(boolean theFlag) {
   Data_send += "#";
   Data_send += str(RIGHT_DISTANCE);
   Data_send += "+";
-  Data_send += nf(norminal_speed, 1, 2);
+  Data_send += str(norminal_speed);
   Data_send += "*";
   Data_send += str(Offset_at_165_to_Center);
   Data_send += "-";
   Data_send += str(Stop_Start);
   Data_send += ";";
+  Data_send += str(MEDIAN_FILTER);
+  Data_send += "]";
+  Data_send += str(NOISE_FILTER);
+  Data_send += ":";
+  Data_send += str(THERSHOLD_PREV);
+  Data_send += "'";
+  Data_send += str(LENK_FILTER);
+  Data_send += ",";
+
+  println(Data_send);
 
   TableRow newRow = table.addRow();
 
@@ -1357,14 +1472,22 @@ void Apply(boolean theFlag) {
   newRow.setInt("LEFT_DISTANCE", LEFT_DISTANCE);
   newRow.setInt("RIGHT_DISTANCE", RIGHT_DISTANCE);
   newRow.setFloat("norminal_speed", norminal_speed);
+  newRow.setInt("MEDIAN_FILTER", MEDIAN_FILTER);
+  newRow.setFloat("NOISE_FILTER", NOISE_FILTER);
+  newRow.setInt("THERSHOLD_PREV", THERSHOLD_PREV);
+  newRow.setFloat("LENK_FILTER", LENK_FILTER);
   saveTable(table, "Settings.csv");
   Threshold_Gray_bar = Threshold_Gray;
   if (!toggle_flag)
   {
     udp.send(Data_send + "&", IP_ADRESS, Port_int);
+    udp.send(Data_send + "&", IP_ADRESS, Port_int);
+    udp.send(Data_send + "&", IP_ADRESS, Port_int);
+    udp.send(Data_send + "&", IP_ADRESS, Port_int);
   }
   if (toggle_flag)
   {
+    myPort.write(Data_send);
     myPort.write(Data_send);
     myPort.write('&');
   }
