@@ -2,15 +2,7 @@
 #include <EEPROM.h>
 #include <FastLED.h>
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-#define NUM_LEDS 12
-=======
 #define NUM_LEDS 47
->>>>>>> Stashed changes
-=======
-#define NUM_LEDS 47
->>>>>>> Stashed changes
 #define DATA_PIN 8
 
 CRGB leds[NUM_LEDS];
@@ -29,15 +21,7 @@ CRGB leds[NUM_LEDS];
 #define ECHO_PIN_LEFT 20
 #define TRIGGER_PIN_RIGHT 3
 #define ECHO_PIN_RIGHT 4
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-#define ARRAY_EEPROMM_SIZE 13
-=======
 #define ARRAY_EEPROMM_SIZE 18
->>>>>>> Stashed changes
-=======
-#define ARRAY_EEPROMM_SIZE 18
->>>>>>> Stashed changes
 #define NUMBER_OF_ULTRASONICS_TRIGGERS_FOR_STOP 5
 #define DURATION_OF_DODGE 350
 #define RGB_THRESHOLD_FOR_SYMBOLS 75
@@ -46,19 +30,6 @@ Pixy2 pixy;
 
 uint16_t LEFT_DISTANCE_THRESHOLD = 10;
 uint16_t RIGHT_DISTANCE_THRESHOLD = 10;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-uint8_t SOLL_SPEED = 100;
-uint8_t SLOW_SPEED = SOLL_SPEED / 2;
-uint8_t THRESHOLD_GRAY = 100;
-uint8_t OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER = 23;
-uint8_t OFFSET_FROM_ONE_LINE_AT_120_TO_CENTER = 29;
-uint8_t OFFSET_FROM_ONE_LINE_AT_165_TO_CENTER = 35;
-uint8_t MIN_TRACK_WIDTH = OFFSET_FROM_ONE_LINE_AT_75_TO_CENTER * 1.7;
-uint8_t THRESHOLD_DIFFERENCE = 40;
-=======
-=======
->>>>>>> Stashed changes
 uint16_t SOLL_SPEED = 100;
 uint16_t SLOW_SPEED = SOLL_SPEED / 2;
 uint16_t THRESHOLD_GRAY = 100;
@@ -73,10 +44,6 @@ float NOISE_FILTER_global = 0;
 int THERSHOLD_PREV_global = 0;
 float LENK_FILTER_global = 0;
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 int data_eepromm[ARRAY_EEPROMM_SIZE];
 
 bool debug_active = false;
@@ -164,15 +131,7 @@ void debug(String s, String s1) {
 }
 void KL25z_data(String s) {
   //Serial.println("Start_Stop: " + String(Start_Stop));
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  //Serial.println(s);
-=======
   // Serial.println(s);
->>>>>>> Stashed changes
-=======
-  // Serial.println(s);
->>>>>>> Stashed changes
   if (Start_Stop == 1) {
     Serial4.print(s + "A");
     flag_serial4 = false;
@@ -187,8 +146,21 @@ void KL25z_data(String s) {
 void Serial_KL25z_receive() {
   if (Serial4.available() > 0) {
     // Lies das eingehende Byte:
-    byte buffer[4];
-    Serial4.readBytesUntil('&', buffer, 4);
+    byte buffer[6];
+    //Serial4.readBytesUntil('&', buffer, 6);
+    String myString = Serial4.readStringUntil('&');
+
+    // for(int i = 0; i < 6; i++){
+
+    //    myString = myString + String((char)buffer[i]);
+
+    // }
+    if (myString == "start") {
+      Serial.println(myString);
+      Start_Stop = 1;
+      set_LED(255, 255, 255);
+    }
+
     if (buffer[2] == 1) {
       Speed_right = buffer[1];
       Speed_right = (Speed_right + 255) / 100;
@@ -352,6 +324,8 @@ void Serial_receive() {
         THERSHOLD_PREV_global = data_eepromm[15];
         LENK_FILTER_global = LENK_FILTER;
 
+        //Serial.println(data_eepromm[14]);
+
         //setMedianFilterSize(MEDIAN_FILTER_global);
 
         data_eepromm[13] = MEDIAN_FILTER;
@@ -361,13 +335,16 @@ void Serial_receive() {
         data_eepromm[17] = 0;
 
         //Serial.println(MEDIAN_FILTER);
-        //Serial.println(NOISE_FILTER);
+        //Serial.println(NOISE_FILTER_int);
         //Serial.println(THERSHOLD_PREV);
         //Serial.println(LENK_FILTER);
 
         //Serial.println(incomingData.length());
-        for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++) {
-          EEPROM_write_read(i, data_eepromm[i], true);
+        int data_counter = 0;
+        for (int i = 0; i < ARRAY_EEPROMM_SIZE * 4; i = i + 4) {
+
+          EEPROM_write_read(i, data_eepromm[data_counter], true);
+          data_counter++;
           //Serial.print(" ");
           //Serial.print(data_eepromm[i]);
         }
@@ -381,18 +358,25 @@ void Serial_receive() {
     }
   }
 }
-uint8_t EEPROM_write_read(int address, uint8_t data, bool read_write) {
-  int data_read = 0;
+uint32_t EEPROM_write_read(int address, uint32_t data, bool read_write) {
+  uint32_t data_read = 0;
+  //Serial.println(data);
   if (read_write) {
-    EEPROM.write(address + 10, data);
+    // Schreiben: Zerlege 32-Bit-Daten in 4 Bytes
+    EEPROM.put(address, data);  // Niedrigstes Byte
+
+    // Schreibe Sicherheitswert, falls erforderlich
     if (EEPROM.read(200) != 230) {
       EEPROM.write(200, 230);
     }
+  } else {
+    // Lesen: Setze die 4 Bytes zu einem 32-Bit-Wert zusammen
+    EEPROM.get(address, data_read);
 
-  } else if (!read_write) {
-    return data_read = EEPROM.read(address + 10);
+    return data_read;
   }
-  return 0;
+
+  return 0;  // Für Schreibvorgänge wird kein Rückgabewert benötigt
 }
 int prev_millis = 0;
 bool seen_symbol = false;
@@ -413,6 +397,27 @@ CRGB schweif_inv[5] = {
   CRGB(5, 0, 0)
 };
 
+int prev_angle = 0;
+
+int mapQuadratic(int x, int in_min, int in_max, int out_min, int out_max, bool invert = false) {
+  // Normiere x auf den Bereich 0 bis 1
+  int normalized = (x - in_min) / (in_max - in_min);
+
+  // Quadratische Transformation (invertiert bei Bedarf)
+  int transformed = invert ? (1.0 - normalized) * (1.0 - normalized) : normalized * normalized;
+
+  // Skalierung auf den Zielbereich
+  return out_min + transformed * (out_max - out_min);
+}
+
+float dampenOscillations(float current_value, float previous_smoothed_value, float alpha) {
+  return alpha * current_value + (1.0 - alpha) * previous_smoothed_value;
+}
+
+float adaptiveAlpha(float diff, float max_diff) {
+  return 1.0 - exp(-abs(diff) / max_diff);
+}
+
 void generate_steer_angle_string(int steer_angle) {
 
   if ((steer_angle >= 0 && steer_angle < 225) || (steer_angle <= 0 && steer_angle > -225)) {
@@ -430,11 +435,13 @@ void generate_steer_angle_string(int steer_angle) {
     currently_in_curve = true;
   }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
+  // if (steer_angle < 0)
+  //   steer_angle = (steer_angle * steer_angle) * -1;
+  // else if (steer_angle > 0)
+  //   steer_angle = (steer_angle * steer_angle);
+  // steer_angle = map(steer_angle, -202500, 202500, -450, 450);
+
+  // Serial.println(steer_angle);
   /*if (seen_symbol == true) {
     steer_angle = 0;
     seen_symbol = false;
@@ -445,19 +452,22 @@ void generate_steer_angle_string(int steer_angle) {
     steer_angle = 0;
   }*/
 
+  // if(abs(prev_angle - steer_angle) > 600)
+  //   steer_angle = prev_angle;
+  float diff = abs(steer_angle - prev_angle);
+  float alpha = adaptiveAlpha(diff, 100.0);  // Dämpfung abhängig von Differenz
+  steer_angle = dampenOscillations(steer_angle, prev_angle, alpha);
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+  prev_angle = steer_angle;
+
   if (steer_angle < 0) {  // steer left
     //if(last_steering_direction == "right")
     //steer_angle = steer_angle / 2;
+    if (steer_angle < -450)  //550
+        steer_angle = -450;    //550
 
     if (steer_angle > -10) {
-      steer_angle = steer_angle * 1.25;
-      if (steer_angle > 450)  //550
-        steer_angle = 450;    //550
+
 
       if (currently_in_curve)
         current_angle_string = "L00" + String(abs(steer_angle)) + "C";
@@ -477,11 +487,12 @@ void generate_steer_angle_string(int steer_angle) {
   } else if (steer_angle > 0) {  // steer right
     //if(last_steering_direction == "left")
     //steer_angle = steer_angle / 2;
-    steer_angle = steer_angle * 1.25;
+    //
     if (steer_angle > 450)  //550
-      steer_angle = 450;    //550
+        steer_angle = 450;    //550
 
     if (steer_angle < 10) {
+      
       if (currently_in_curve)
         current_angle_string = "R00" + String(steer_angle) + "C";
       else
@@ -516,8 +527,11 @@ void Ultrasonic_RIGHT_ISR() {
 }
 void load_eeprom() {
   if (EEPROM.read(200) == 230) {
-    for (int i = 0; i < ARRAY_EEPROMM_SIZE; i++) {
-      data_eepromm[i] = EEPROM_write_read(i, 0, false);
+    int data_counter = 0;
+    for (int i = 0; i < ARRAY_EEPROMM_SIZE * 4; i = i + 4) {
+
+      data_eepromm[data_counter] = EEPROM_write_read(i, 0, false);
+      data_counter++;
       //Serial.print(" ");
       //Serial.print(data_eepromm[i]);
     }
@@ -542,24 +556,17 @@ void load_eeprom() {
     THERSHOLD_PREV_global = data_eepromm[15];
     LENK_FILTER_global = (float(data_eepromm[16])) / 100;
 
-    // Serial.println(MEDIAN_FILTER_global);
-    // Serial.println(NOISE_FILTER_global);
-    // Serial.println(THERSHOLD_PREV_global);
-    // Serial.println(LENK_FILTER_global);
+    Serial.println(Brightness);
+    Serial.println(MEDIAN_FILTER_global);
+    Serial.println(NOISE_FILTER_global);
+    Serial.println(THERSHOLD_PREV_global);
+    Serial.println(LENK_FILTER_global);
 
     setMedianFilterSize(MEDIAN_FILTER_global);
 
     set_LED(Red, Green, Blue);
     pixy.setCameraBrightness(Brightness);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    Serial.println("");
-=======
     //Serial.println("");
->>>>>>> Stashed changes
-=======
-    //Serial.println("");
->>>>>>> Stashed changes
   }
 }
 void setup() {
@@ -569,23 +576,12 @@ void setup() {
   //pinMode(PIN_LED_2, OUTPUT);
   //digitalWrite(PIN_LED_2, LOW);
   //pinMode(PIN_LED_3, OUTPUT);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
-=======
-=======
->>>>>>> Stashed changes
   initializeBuffers();
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
   for (int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CRGB(0, 0, 0);
   }
   FastLED.show();
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   //digitalWrite(PIN_LED_3, LOW);
   //digitalWrite(PIN_LED_1, HIGH);
   //digitalWrite(PIN_LED_2, HIGH);
@@ -615,52 +611,10 @@ void setup() {
   int counter_nightrider = 0;
   int LED_POS = 0;
   bool invert = false;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  while (1) {
-
-    EVERY_N_MILLIS(50) {
-
-      if (invert) {
-        for (int i = 0; i < 12; i++) {
-          if (i == LED_POS)
-            leds[i] = CRGB(255, 0, 0);
-          else
-            leds[i] = CRGB(0, 0, 0);
-        }
-      } else
-        for (int i = 0; i < 12; i++) {
-          if (i == LED_POS)
-            leds[11 - i] = CRGB(255, 0, 0);
-          else
-            leds[11 - i] = CRGB(0, 0, 0);
-        }
-
-      LED_POS++;
-      if (LED_POS >= NUM_LEDS) {
-        LED_POS = 0;
-        invert = !invert;
-      }
-
-      FastLED.show();
-      counter_nightrider++;
-      if(counter_nightrider >= 200)
-        break;
-    }
-  }
-  pixy.init();
-
-=======
   int invert_leds = 0;
   while (pixy.init() != 0)
     ;
 
-=======
-  int invert_leds = 0;
-  while (pixy.init() != 0)
-    ;
-
->>>>>>> Stashed changes
   while (1) {
 
     EVERY_N_MILLIS(20) {
@@ -670,30 +624,29 @@ void setup() {
         if (LED_POS < 25) {
           for (int y = 0; y < 5; y++) {
             leds[LED_POS + y] = schweif[y];
-            leds[(19-LED_POS) + 24 + y] = schweif_inv[y];
+            leds[(19 - LED_POS) + 24 + y] = schweif_inv[y];
           }
         }
-        if (LED_POS >= 0){
+        if (LED_POS >= 0) {
           leds[LED_POS - 1] = CRGB(0, 0, 0);
-          leds[(19-LED_POS) + 24 + 5] = CRGB(0, 0, 0);
+          leds[(19 - LED_POS) + 24 + 5] = CRGB(0, 0, 0);
         }
       } else {
         if (LED_POS < 20) {
           for (int y = 0; y < 5; y++) {
             leds[LED_POS + y] = schweif_inv[y];
-            leds[(19-LED_POS) + 24 + y] = schweif[y];
+            leds[(19 - LED_POS) + 24 + y] = schweif[y];
           }
         }
 
-        if (LED_POS < 25){
+        if (LED_POS < 25) {
           leds[LED_POS + 5] = CRGB(0, 0, 0);
           //Serial.println(LED_POS + 25 + 5);
-          leds[(19-LED_POS) + 28 - 5] = CRGB(0, 0, 0);
+          leds[(19 - LED_POS) + 28 - 5] = CRGB(0, 0, 0);
         }
-        
       }
 
-      if(!invert)
+      if (!invert)
         LED_POS++;
       else
         LED_POS--;
@@ -723,15 +676,11 @@ void setup() {
       //
 
 
-        counter_nightrider++;
-        if (counter_nightrider >= 400)
-          break;
+      counter_nightrider++;
+      if (counter_nightrider >= 20)
+        break;
     }
   }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
   Serial.println(pixy.changeProg("video"));
   current_lamp_status = 1;
@@ -764,7 +713,6 @@ int calculate_pull_towards_ideallinie_in_degrees(int distance_from_ideallinie) {
   if (angle > 450)
     angle = 450;
 
-
   return angle;
 }
 
@@ -773,8 +721,16 @@ int prev_track_center = 0;
 int prev_left_line = 0;
 int prev_index_75 = 0;
 
+int aktueller_mittelpunkt = 0;
+int letzter_mittelpunkt = 30;
 
-int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63]) {
+int indexes[3];
+bool found_left[3];
+bool found_right[3];
+bool last_left_one_found;
+bool last_right_one_found;
+
+int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63], int track_center_local, bool only_detect_lines) {
   number_of_lines = 0;
   uint8_t track_width_at_current_line = 0;
   if (which_line == 75)
@@ -816,7 +772,7 @@ int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63]) {
       }
     }
   }*/
-  for (int i = 0; i < 63; i++) {
+  for (int i = 0; i < track_center_local; i++) {
     if (i >= 0 && i < 63) {
       int count_white = 0;
       if (array[i] >= THRESHOLD_GRAY) /*&& array[constrain(i - 1, 0, 62)] < THERSHOLD_PREV_global && array[constrain(i + 1, 0, 62)] < THERSHOLD_PREV_global)*/ {
@@ -829,25 +785,27 @@ int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63]) {
             count_white = count_white + 1;
 
           } else
-            count_white = count_white - 1;
+            count_white = 0;
         }
-        if (count_white >= 15) {
-          debug("found left line at: " + String(i) + "\n", "");
+        if (count_white >= 2 || only_detect_lines) {
+          debug("found left line at: " + String(which_line) + " " + String(i) + "\n", "");
           //Serial.println("found left line at: " + String(i));
 
           left_one_found = true;
           number_of_lines++;
-          if (which_line == 75)
-            prev_index_75 = index_of_left_line;
-          if (which_line == 120 && prev_index_75 < 25)
-            left_one_found = false;
-          break;
+          // if (which_line == 75)
+          //   prev_index_75 = index_of_left_line;
+          // if (which_line == 120 && prev_index_75 < 25)
+          //   left_one_found = false;
+          // break;
         } else
           count_white = 0;
       }
     }
   }
-  Serial.println("");
+
+
+  //Serial.println("");
 
   // for (int i = track_center; i < 63; i++) {
   //   if (i >= 0 && i < 63) {
@@ -863,41 +821,262 @@ int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63]) {
   //     }
   //   }
   // }
-  int track_center_buf = 0;
 
-  if (!left_one_found)
+  /*if (!left_one_found)
     track_center_buf = 0;
   else
-    track_center_buf = track_center;
+    track_center_buf = track_center;*/
 
-  for (int i = track_center_buf; i < 63; i++) {
+  for (int i = 63; i > track_center_local; i--) {
     if (i >= 0 && i < 63) {
       int count_white = 0;
       if (array[i] >= THRESHOLD_GRAY /*&& abs(i - index_of_left_line) > MIN_TRACK_WIDTH / 2 && array[constrain(i - 1, 0, 62)] <= THERSHOLD_PREV_global && array[constrain(i + 1, 0, 62)] <= THERSHOLD_PREV_global*/) {
         //if(array[i] == 0) {
         index_of_right_line = i;
         for (int y = index_of_right_line; y > index_of_right_line - 20; y--) {
+
           if (y < 0)
             break;
+
           if (rgb[y] > THERSHOLD_PREV_global) {
             count_white = count_white + 1;
 
           } else
-            count_white = count_white - 1;
+            count_white = 0;
         }
-        if (count_white >= 15) {
+        if (count_white >= 2 || only_detect_lines) {
 
-          debug("found right line at: " + String(i) + "\n", "");
+          debug("found right line at: " + String(which_line) + " " + String(i) + "\n", "");
+          debug("line_distance: " + String(abs(index_of_right_line - index_of_left_line)) + "\n", "");
+          // if(abs(index_of_right_line - index_of_left_line) >= 10) {
+          //   right_one_found = true;
+          //   number_of_lines++;
+          //   break;
+          // }
+          // if(!left_one_found) {
+
+          // }
           right_one_found = true;
           number_of_lines++;
-          break;
+          // break;
         }
       }
     }
   }
 
+  if (which_line == 75) {
+    if (!right_one_found && left_one_found) {
+      indexes[0] = index_of_left_line;
+    } else if (right_one_found && !left_one_found) {
+      indexes[0] = index_of_right_line;
+    } else
+      indexes[2] = 0;
+    found_left[0] = left_one_found;
+    found_right[0] = right_one_found;
+  }
 
-  if (left_one_found && right_one_found) {
+  if (which_line == 120) {
+    if (!right_one_found && left_one_found) {
+      indexes[1] = index_of_left_line;
+    } else if (right_one_found && !left_one_found) {
+      indexes[1] = index_of_right_line;
+    } else
+      indexes[2] = 0;
+
+    found_left[1] = left_one_found;
+    found_right[1] = right_one_found;
+  }
+
+  if (which_line == 165) {
+    if (!right_one_found && left_one_found) {
+      indexes[2] = index_of_left_line;
+    } else if (right_one_found && !left_one_found) {
+      indexes[2] = index_of_right_line;
+    } else
+      indexes[2] = 0;
+
+    found_left[2] = left_one_found;
+    found_right[2] = right_one_found;
+  }
+
+  // if (which_line == 75) {
+  //   if (!right_one_found && left_one_found) {
+  //     if(found_right[1] == true && found_left[1] == false)
+  //       Serial.println("test!");
+  //       right_one_found = true;
+  //       left_one_found = false;
+  //       index_of_right_line = index_of_left_line;
+  //       index_of_left_line = index_of_right_line - MIN_TRACK_WIDTH;
+  //       //index_of_left_line = 0;
+  //   }else if (right_one_found && !left_one_found) {
+  //     if(found_right[1] == false && found_left[1] == true)
+  //        Serial.println("test!2");
+  //       right_one_found = false;
+  //       left_one_found = true;
+  //       index_of_left_line = index_of_right_line;
+  //       index_of_right_line = index_of_left_line - MIN_TRACK_WIDTH;
+  //       //index_of_right_line = 0;
+  //   }
+  // }
+
+
+
+  // if (which_line == 75) {
+  //   int index_dif_120 = 0;
+  //   int index_dif_165 = 0;
+  //   if (indexes[1] != 0)
+  //     index_dif_120 = indexes[0] - indexes[1];
+  //   if (indexes[2] != 0)
+  //     index_dif_165 = indexes[0] - indexes[2];
+
+  //   debug("indexdif_120 = " + String(index_dif_120) + "\n", "");
+  //   debug("indexdif_165 = " + String(index_dif_120) + "\n", "");
+  //   //Serial.println(indexes[1]);
+  //   Serial.println(indexes[1]);
+
+
+  //   if (left_one_found && !right_one_found) {        // Linie links erkannt
+  //     if ((index_dif_120 < 0 && index_dif_120 > -15) || (index_dif_165 < 0  && index_dif_165 > -15)) {  // Zeile 120 erkennt rechts
+  //       // Konflikt: Erste Zeile links, zweite Zeile rechts -> Korrigieren
+  //       // Serial.println("Korrektur: Linie in Zeile 75 von links nach rechts angepasst.");
+  //       right_one_found = true;
+  //       left_one_found = false;
+  //       index_of_right_line = index_of_left_line;                    // Linie wird nach rechts verschoben
+  //       index_of_left_line = index_of_right_line - MIN_TRACK_WIDTH;  // Linke Linie anpassen
+  //     }
+  //   } else if (right_one_found && !left_one_found) {  // Linie rechts erkannt
+  //     if ((index_dif_120 > 0 && index_dif_120 < 15) || (index_dif_165 > 0 && index_dif_165 < 15)) {   // Zeile 120 erkennt links
+  //       // Konflikt: Erste Zeile rechts, zweite Zeile links -> Korrigieren
+  //       //Serial.println("Korrektur: Linie in Zeile 75 von rechts nach links angepasst.");
+  //       left_one_found = true;
+  //       right_one_found = false;
+  //       index_of_left_line = index_of_right_line;                    // Linie wird nach links verschoben
+  //       index_of_right_line = index_of_left_line + MIN_TRACK_WIDTH;  // Rechte Linie anpassen
+  //     }
+  //   }
+  // }
+
+  // if (which_line == 75) {
+  //   int index_dif = 0;
+
+  //   if (indexes[1] != 0)
+  //     index_dif = indexes[0] - indexes[1];
+  //   debug("indexdif = " + String(index_dif) + "\n", "");
+  //   Serial.println(index_dif);
+  //   if (left_one_found && !right_one_found) {  // Linie links erkannt
+
+  //     if (/*(found_right[2] && !found_left[2]) && */ index_dif < 3 && index_dif > -15) {  // Zeile 120 erkennt rechts
+  //       // Konflikt: Erste Zeile links, zweite Zeile rechts -> Korrigieren
+  //       // Serial.println("Korrektur: Linie in Zeile 75 von links nach rechts angepasst.");
+  //       right_one_found = true;
+  //       left_one_found = false;
+  //       found_right[2] = true;
+  //       found_left[2] = false;
+  //       index_of_right_line = index_of_left_line;                    // Linie wird nach rechts verschoben
+  //       index_of_left_line = index_of_right_line - MIN_TRACK_WIDTH;  // Linke Linie anpassen
+  //     }
+  //   } else if (right_one_found && !left_one_found) {                                     // Linie rechts erkannt
+  //     if (/*(found_left[2] && !found_right[2]) && */ index_dif > 3 && index_dif < 15) {  // Zeile 120 erkennt links
+  //       // Konflikt: Erste Zeile rechts, zweite Zeile links -> Korrigieren
+  //       //Serial.println("Korrektur: Linie in Zeile 75 von rechts nach links angepasst.");
+  //       found_right[2] = false;
+  //       found_left[2] = true;
+  //       left_one_found = true;
+  //       right_one_found = false;
+  //       index_of_left_line = index_of_right_line;                    // Linie wird nach links verschoben
+  //       index_of_right_line = index_of_left_line + MIN_TRACK_WIDTH;  // Rechte Linie anpassen
+  //     }
+  //   }
+  // }
+
+  if (which_line == 120) {
+    int index_dif = 0;
+
+    if (indexes[2] != 0)
+      index_dif = indexes[1] - indexes[2];
+    debug("indexdif = " + String(index_dif) + "\n", "");
+    if (left_one_found && !right_one_found) {  // Linie links erkannt
+
+      if (/*(found_right[2] && !found_left[2]) && */ index_dif < 0 && index_dif > -15) {  // Zeile 120 erkennt rechts
+        // Konflikt: Erste Zeile links, zweite Zeile rechts -> Korrigieren
+        // Serial.println("Korrektur: Linie in Zeile 75 von links nach rechts angepasst.");
+        right_one_found = true;
+        left_one_found = false;
+        found_right[2] = true;
+        found_left[2] = false;
+        index_of_right_line = index_of_left_line;                    // Linie wird nach rechts verschoben
+        index_of_left_line = index_of_right_line - MIN_TRACK_WIDTH;  // Linke Linie anpassen
+      }
+    } else if (right_one_found && !left_one_found) {                                     // Linie rechts erkannt
+      if (/*(found_left[2] && !found_right[2]) && */ index_dif > 0 && index_dif < 15) {  // Zeile 120 erkennt links
+        // Konflikt: Erste Zeile rechts, zweite Zeile links -> Korrigieren
+        //Serial.println("Korrektur: Linie in Zeile 75 von rechts nach links angepasst.");
+        found_right[2] = false;
+        found_left[2] = true;
+        left_one_found = true;
+        right_one_found = false;
+        index_of_left_line = index_of_right_line;                    // Linie wird nach links verschoben
+        index_of_right_line = index_of_left_line + MIN_TRACK_WIDTH;  // Rechte Linie anpassen
+      }
+    }
+  }
+
+  // if (which_line == 165) {
+
+  //   if (left_one_found && !right_one_found) {                                      // Linie links erkannt
+  //     if (found_right[0] && !found_left[0]) {  // Zeile 120 erkennt rechts
+  //       // Konflikt: Erste Zeile links, zweite Zeile rechts -> Korrigieren
+  //       // Serial.println("Korrektur: Linie in Zeile 75 von links nach rechts angepasst.");
+  //       right_one_found = true;
+  //       left_one_found = false;
+  //       index_of_right_line = index_of_left_line;                    // Linie wird nach rechts verschoben
+  //       index_of_left_line = index_of_right_line - MIN_TRACK_WIDTH;  // Linke Linie anpassen
+  //     }
+  //   } else if (right_one_found && !left_one_found) {                               // Linie rechts erkannt
+  //     if (found_right[0] && !found_left[0]) {  // Zeile 120 erkennt links
+  //       // Konflikt: Erste Zeile rechts, zweite Zeile links -> Korrigieren
+  //       //Serial.println("Korrektur: Linie in Zeile 75 von rechts nach links angepasst.");
+  //       left_one_found = true;
+  //       right_one_found = false;
+  //       index_of_left_line = index_of_right_line;                    // Linie wird nach links verschoben
+  //       index_of_right_line = index_of_left_line + MIN_TRACK_WIDTH;  // Rechte Linie anpassen
+  //     }
+  //   }
+  // }
+
+  //   int index_dif = indexes[0] - indexes[1];
+  //   //Serial.println(index_dif);
+  //   if (!right_one_found && left_one_found) {
+  //     if (index_dif < 0) {
+  //       right_one_found = true;
+  //       left_one_found = false;
+  //       index_of_right_line = index_of_left_line;
+  //     }
+  //     //  if(found_right[1] == true && index_dif >= 0){
+  //     //   right_one_found = false;
+  //     //   left_one_found = true;
+  //     //   index_of_left_line = index_of_right_line;
+
+  //     // }
+  //     Serial.println(index_dif);
+
+
+  //   } else if (right_one_found && !left_one_found) {
+  //     if (index_dif > 0) {
+  //       right_one_found = false;
+  //       left_one_found = true;
+  //       index_of_left_line = index_of_right_line;
+  //     }
+  //     // if(found_left[1] == true && index_dif > 0){
+  //     //   right_one_found = true;
+  //     //   left_one_found = false;
+  //     //   index_of_right_line  = index_of_left_line;
+
+  //     // }
+  //   }
+  // }
+
+  if (left_one_found && right_one_found && only_detect_lines == false) {
     debug("MIN_TRACK_WIDTH: " + String(MIN_TRACK_WIDTH) + "\n", "");
     debug("abs{index_of_right_line - index_of_left_line}: " + String(abs(index_of_right_line - index_of_left_line)) + "\n", "");
     //debug("abs{index_of_right_line - index_of_left_line}: \n", "");
@@ -925,7 +1104,7 @@ int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63]) {
           if (mode == 0) {
             if (num_lines >= 2) {
               if (millis() - last_finish_line > 5000 && millis() - last_finish_line > 4000) {
-                set_LED(0, 255, 255);
+                set_LED(255, 0, 0);
                 delay(250);
                 Start_Stop = 2;
               }
@@ -954,34 +1133,34 @@ int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63]) {
         // TODO: continue with last steering angle
         index_of_left_line = 0;
         index_of_right_line = 63;
-        track_center = (index_of_left_line + index_of_right_line) / 2;
+        track_center_local = (index_of_left_line + index_of_right_line) / 2;
       }
     } else {
-      track_center = (index_of_left_line + index_of_right_line) / 2;
+      track_center_local = (index_of_left_line + index_of_right_line) / 2;
     }
   } else if (left_one_found && !right_one_found) {
     if (dodge_to_the_right && index_of_left_line > track_width_at_current_line / 2) {
       index_of_right_line = index_of_left_line;
       index_of_left_line = index_of_right_line - track_width_at_current_line;
-      track_center = (index_of_left_line + index_of_right_line) / 2;
+      track_center_local = (index_of_left_line + index_of_right_line) / 2;
       left_one_found = !left_one_found;
       right_one_found = !right_one_found;
       debug("detected left line but dodging to the right. so this has to be the right line!\n", "");
     } else {
       index_of_right_line = index_of_left_line + track_width_at_current_line;
-      track_center = (index_of_left_line + index_of_right_line) / 2;
+      track_center_local = (index_of_left_line + index_of_right_line) / 2;
     }
   } else if (!left_one_found && right_one_found) {
     if (dodge_to_the_left && index_of_right_line < track_width_at_current_line / 2) {
       index_of_left_line = index_of_right_line;
       index_of_right_line = index_of_left_line + track_width_at_current_line;
-      track_center = (index_of_left_line + index_of_right_line) / 2;
+      track_center_local = (index_of_left_line + index_of_right_line) / 2;
       left_one_found = !left_one_found;
       right_one_found = !right_one_found;
       debug("detected right line but dodging to the left. so this has to be the left line!\n", "");
     } else {
       index_of_left_line = index_of_right_line - track_width_at_current_line;
-      track_center = (index_of_left_line + index_of_right_line) / 2;
+      track_center_local = (index_of_left_line + index_of_right_line) / 2;
     }
   }
 
@@ -1001,27 +1180,36 @@ int detect_lines(uint8_t array[63], uint8_t which_line, uint8_t rgb[63]) {
 
 
   if (dodge_to_the_left) {
-    index_of_left_line -= (track_width_at_current_line / 4);
-    index_of_right_line -= (track_width_at_current_line / 4);
-    track_center = (index_of_left_line + index_of_right_line) / 2;
+    index_of_left_line -= (track_width_at_current_line / 3.5);
+    index_of_right_line -= (track_width_at_current_line / 3.5);
+    track_center_local = (index_of_left_line + index_of_right_line) / 2;
     debug("dodging to the left\n", "");
-    debug("new center at: " + String(track_center) + "\n", "");
+    debug("new center at: " + String(track_center_local) + "\n", "");
   }
   if (dodge_to_the_right) {
-    index_of_left_line += (track_width_at_current_line / 4);
-    index_of_right_line += (track_width_at_current_line / 4);
-    track_center = (index_of_left_line + index_of_right_line) / 2;
+    index_of_left_line += (track_width_at_current_line / 3.5);
+    index_of_right_line += (track_width_at_current_line / 3.5);
+    track_center_local = (index_of_left_line + index_of_right_line) / 2;
     debug("dodging to the right\n", "");
-    debug("new center at: " + String(track_center) + "\n", "");
+    debug("new center at: " + String(track_center_local) + "\n", "");
   }
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-  return track_center;
->>>>>>> Stashed changes
-=======
-  return track_center;
->>>>>>> Stashed changes
+  // const int HISTORY_SIZE = 5;
+  // static int history[HISTORY_SIZE] = { 0 };
+  // static int history_index = 0;
+
+  // // Mittelpunkt speichern
+  // history[history_index] = track_center_local;
+  // history_index = (history_index + 1) % HISTORY_SIZE;
+
+  // // Median berechnen
+  // int sorted_history[HISTORY_SIZE];
+  // memcpy(sorted_history, history, sizeof(history));
+  // std::sort(sorted_history, sorted_history + HISTORY_SIZE);
+  // aktueller_mittelpunkt = sorted_history[HISTORY_SIZE / 2];
+
+  // track_center_local = aktueller_mittelpunkt;
+
+  return track_center_local;
 }
 
 uint8_t count_lines(uint8_t array[63]) {
@@ -1129,15 +1317,7 @@ void set_LED(uint8_t R, uint8_t G, uint8_t B) {
   //analogWrite(PIN_LED_3, G);
   //analogWrite(PIN_LED_1, B);
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  for (int i = 0; i < 12; i++)
-=======
   for (int i = 0; i < NUM_LEDS; i++)
->>>>>>> Stashed changes
-=======
-  for (int i = 0; i < NUM_LEDS; i++)
->>>>>>> Stashed changes
     leds[i] = CRGB(R, G, B);
 
   FastLED.show();
@@ -1183,10 +1363,6 @@ void Ultrasonic_LEFT() {
     digitalWrite(TRIGGER_PIN_LEFT, LOW);
     durationMicroSec_LEFT_prev = micros();
     triggered_left = false;  // Trigger deaktivieren
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
   }
 
   /*if (distanceCmLeft < 1 || distanceCmLeft > 400) {
@@ -1208,44 +1384,9 @@ void applyBilateralFilterToArrayStatic(uint8_t* input, float* output, int length
       buffer[j] = (float)input[index];
     }
     output[i] = applyBilateralFilter(buffer, windowSize, spatialSigma, intensitySigma);
->>>>>>> Stashed changes
   }
-
-  /*if (distanceCmLeft < 1 || distanceCmLeft > 400) {
-    distanceCmLeft = 1000; // Fehlerwert setzen
-  }*/
 }
 
-<<<<<<< Updated upstream
-float output_75[63];
-float output_120[63];
-float output_165[63];
-float buffer[10];  // Temporärer statischer Puffer
-
-void applyBilateralFilterToArrayStatic(uint8_t* input, float* output, int length, int windowSize, float spatialSigma, float intensitySigma) {
-  for (int i = 0; i < length; i++) {
-    for (int j = 0; j < windowSize; j++) {
-      int index = i + j - windowSize / 2;
-      if (index < 0) index = 0;
-      if (index >= length) index = length - 1;
-      buffer[j] = (float)input[index];
-    }
-    output[i] = applyBilateralFilter(buffer, windowSize, spatialSigma, intensitySigma);
->>>>>>> Stashed changes
-  }
-
-  /*if (distanceCmLeft < 1 || distanceCmLeft > 400) {
-    distanceCmLeft = 1000; // Fehlerwert setzen
-  }*/
-}
-
-<<<<<<< Updated upstream
-int no_echo_time = 1000;
-int no_echo_time_prev = 0;
-
-=======
-=======
->>>>>>> Stashed changes
 
 float applyBilateralFilter(float* buffer, int size, float spatialSigma, float intensitySigma) {
   float filteredValue = 0.0;
@@ -1269,6 +1410,9 @@ uint8_t output_sobel_120[63];
 uint8_t output_sobel_165[63];
 
 void sobelFilter(uint8_t* input, uint8_t* output_sobel, int length, int Gain) {
+  uint8_t sobel[length];   // Zwischenspeicher für Sobel-Ergebnis
+  uint8_t binary[length];  // Binärbild
+  uint8_t temp[length];    // Temporäre Zwischenspeicherung
   // Speicher für das Ausgabe-Array allokieren
   for (int i = 1; i < length - 1; i++) {
     // Gradienten berechnen (Differenz der Nachbarn)
@@ -1281,7 +1425,90 @@ void sobelFilter(uint8_t* input, uint8_t* output_sobel, int length, int Gain) {
   // Ränder setzen
   output_sobel[0] = 0;
   output_sobel[length - 1] = 0;
+
+  // Thresholding
+  //thresholdLine(output_sobel, binary, length, THRESHOLD_GRAY);
+
+  // Morphologische Operation (Closing)
+  //closingLine(binary, temp, output_sobel, length, 20);
 }
+
+// Glättung (Gauß-Filter)
+void gaussianBlur(const uint8_t* input, float* output, int length, int Gain) {
+  for (int i = 1; i < length - 1; i++) {
+    output[i] = (input[i - 1] + 2 * input[i] + input[i + 1]) / 4.0;
+  }
+  output[0] = input[0];
+  output[length - 1] = input[length - 1] * Gain;
+}
+
+// Gradientenberechnung (ähnlich Sobel)
+void calculateGradient(const float* input, float* gradient, int* direction, int length) {
+  for (int i = 1; i < length - 1; i++) {
+    // 1D-Gradient
+    float gx = input[i + 1] - input[i - 1];
+    gradient[i] = fabs(gx);
+    direction[i] = (gx >= 0) ? 1 : -1;  // Richtung (für später)
+  }
+  gradient[0] = gradient[length - 1] = 0;
+}
+
+// Nicht-maximale Unterdrückung
+void nonMaxSuppression(const float* gradient, const int* direction, uint8_t* output, int length) {
+  for (int i = 1; i < length - 1; i++) {
+    if (gradient[i] > gradient[i - direction[i]] && gradient[i] > gradient[i + direction[i]]) {
+      output[i] = (uint8_t)constrain(gradient[i], 0, 255);  // Kante behalten
+    } else {
+      output[i] = 0;  // Kein lokales Maximum
+    }
+  }
+  output[0] = output[length - 1] = 0;
+}
+
+// Hysterese-Schwellenwert
+void hysteresisThresholding(const uint8_t* input, uint8_t* output, int length, uint8_t lowThreshold, uint8_t highThreshold) {
+  for (int i = 0; i < length; i++) {
+    if (input[i] >= highThreshold) {
+      output[i] = 255;  // Starke Kante
+    } else if (input[i] >= lowThreshold) {
+      output[i] = 128;  // Schwache Kante (kann entfernt werden)
+    } else {
+      output[i] = 0;  // Keine Kante
+    }
+  }
+
+  // Verbinde schwache Kanten mit starken
+  for (int i = 1; i < length - 1; i++) {
+    if (output[i] == 128) {
+      if (output[i - 1] == 255 || output[i + 1] == 255) {
+        output[i] = 255;  // Verbunden mit starker Kante
+      } else {
+        output[i] = 0;  // Entfernen
+      }
+    }
+  }
+}
+
+// Hauptfunktion: Canny für 1D-Daten
+void cannyEdgeDetection(uint8_t* input, uint8_t* output, int length, int Gain, uint8_t lowThreshold, uint8_t highThreshold) {
+  float smoothed[length];  // Zwischenspeicher für geglättete Werte
+  float gradient[length];  // Gradientenstärke
+  int direction[length];   // Gradient Richtung
+  uint8_t nonMax[length];  // Nicht-maximale Unterdrückung
+
+  // Schritt 1: Glättung
+  gaussianBlur(input, smoothed, length, Gain);
+
+  // Schritt 2: Gradientenberechnung
+  calculateGradient(smoothed, gradient, direction, length);
+
+  // Schritt 3: Nicht-maximale Unterdrückung
+  nonMaxSuppression(gradient, direction, nonMax, length);
+
+  // Schritt 4: Hysterese-Schwellenwert
+  hysteresisThresholding(nonMax, output, length, lowThreshold, highThreshold);
+}
+
 
 uint8_t* laplaceFilter(uint8_t* input, int length) {
   // Speicher für das Ausgabe-Array allokieren
@@ -1378,7 +1605,7 @@ float prev_tfilter_val_120 = 0;
 float prev_tfilter_val_165 = 0;
 
 float low_pass_filter(float filterValue, float gefiltertestSignal, int eingangsSignal) {
-  return gefiltertestSignal = eingangsSignal * (1 - filterValue) + gefiltertestSignal * filterValue;
+  return gefiltertestSignal = eingangsSignal;  //* (1 - filterValue) + gefiltertestSignal * filterValue;
 }
 
 float prev_hfilter_val_75 = 0;
@@ -1398,10 +1625,10 @@ float high_pass_filter(float filterValue, float gefiltertestSignal, int eingangs
   }
   return gefiltertestSignal;
 }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
+int track_center_165 = 30;
+int track_center_120 = 30;
+
 
 void loop() {
   //debug(String(SOLL_SPEED) + "\n", "");
@@ -1411,11 +1638,6 @@ void loop() {
       triggert_right = true;
       no_echo_time_prev = millis();
     }*/
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
   // if (Serial.available()) {
   //   String input = Serial.readStringUntil('\n');  // Lese Eingabe bis zum Zeilenumbruch
   //   input.trim();  // Entferne Leerzeichen und Zeilenumbrüche
@@ -1432,10 +1654,6 @@ void loop() {
   //     calculateFIRCoefficients(filterCoeffs, filterSize, lowCutoff, highCutoff, 56000000);
   //   }
   // }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   Ultrasonic_RIGHT();
   Ultrasonic_LEFT();
   debug("distanceCMLeft: ", "");
@@ -1481,6 +1699,7 @@ void loop() {
     // if (!digitalRead(PIN_BT)) {
     // Für Zeile 120
     float filteredGray = 0;
+
     pixy.video.getRGB(i, 120, &r, &g, &b, false);
     gray = 0.299 * r + 0.587 * g + 0.114 * b;
 
@@ -1498,27 +1717,7 @@ void loop() {
     // Für Zeile 75
     pixy.video.getRGB(i, 75, &r, &g, &b, false);
     gray = 0.299 * r + 0.587 * g + 0.114 * b;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    if (DEBUG_GRAY_VALUES) {
-      rgb_75[j] = gray;
-
-      if (j >= 1) {
-        differences_75[j - 1] = abs(rgb_75[j - 1] - rgb_75[j]);
-      }
-    }
-    if (gray > THRESHOLD_GRAY)
-      black_or_white_at_75[j] = 1;
-    else
-      black_or_white_at_75[j] = 0;
-
-    //debug(String(gray) + "\n");
-=======
     rgb_75[j] = gray * Gain;
->>>>>>> Stashed changes
-=======
-    rgb_75[j] = gray * Gain;
->>>>>>> Stashed changes
   }
   //NOISE_FILTER_global = NOISE_FILTER_global *2;
   applyBilateralFilterToArrayStatic(rgb_75, output_75, 63, 10, NOISE_FILTER_global, NOISE_FILTER_global);
@@ -1532,9 +1731,9 @@ void loop() {
   }
 
 
-  sobelFilter(rgb_75, output_sobel_75, 63, MEDIAN_FILTER_global);
-  sobelFilter(rgb_120, output_sobel_120, 63, MEDIAN_FILTER_global);
-  sobelFilter(rgb_165, output_sobel_165, 63, MEDIAN_FILTER_global);
+  cannyEdgeDetection(rgb_75, output_sobel_75, 63, MEDIAN_FILTER_global, THRESHOLD_GRAY, THRESHOLD_GRAY / 2);
+  cannyEdgeDetection(rgb_120, output_sobel_120, 63, MEDIAN_FILTER_global, THRESHOLD_GRAY, THRESHOLD_GRAY / 2);
+  cannyEdgeDetection(rgb_165, output_sobel_165, 63, MEDIAN_FILTER_global, THRESHOLD_GRAY, THRESHOLD_GRAY / 2);
 
   for (int i = 0; i < 63; i++) {
     rgb_75[i] = 255 - (uint8_t)constrain(output_sobel_75[i], 0, 255);    // Werte begrenzen und konvertieren
@@ -1552,6 +1751,9 @@ void loop() {
     rgb_165[i] = (uint8_t)constrain(output_165[i], 0, 255);
   }
 
+  rgb_75[61] = 255;
+  rgb_120[61] = 255;
+  rgb_165[61] = 255;
 
   for (int i = 0, j = 0; i < 315; i += 5, j++) {
 
@@ -1573,9 +1775,11 @@ void loop() {
   //Serial.println();
 
   differences_75[62] = 0;
-  //int track_center_165 = detect_lines(differences_165, 165);
-  //int track_center_120 = detect_lines(differences_120, 120);
-  int track_center_75 = detect_lines(differences_75, 75, rgb_75);
+  differences_120[62] = 0;
+  differences_165[62] = 0;
+  track_center_165 = detect_lines(differences_165, 165, rgb_165, track_center_165, true);
+  track_center_120 = detect_lines(differences_120, 120, rgb_120, track_center_120, true);
+  track_center = detect_lines(differences_75, 75, rgb_75, track_center, false);
 
   //Serial.println(track_center_75 - track_center_120);
   //Serial.println(track_center_75 - track_center_165);
@@ -1584,14 +1788,14 @@ void loop() {
 
 
   if (number_of_lines > 0) {
-    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(abs(track_center_75 - 30));
+    int steer_angle = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
     //prev_tfilter_val_75 = low_pass_filter(LENK_FILTER_global, prev_tfilter_val_75, steer_angle);
     //steer_angle = (int)prev_tfilter_val_75;
     //Serial.println(steer_angle);
     //differences_120[62] = 0;
     //int track_center_75_to_120 = detect_lines(differences_120, 120);
     //Serial.println(track_center_75_to_120 - track_center_75);
-    if (track_center_75 >= 30) {
+    if (track_center >= 30) {
       debug("steer right: " + String(steer_angle) + "\n", "");
     } else {
       debug("steer left: " + String(steer_angle) + "\n", "");
@@ -1611,33 +1815,11 @@ void loop() {
   } else {
     debug("did not find a line at 75, now looking at 120\n", "");
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
-
-      pixy.video.getRGB(i, 120, &r, &g, &b, false);
-      gray = 0.299 * r + 0.587 * g + 0.114 * b;
-      if (DEBUG_GRAY_VALUES) {
-        rgb_120[j] = gray;
-
-        if (j >= 1) {
-          differences_120[j - 1] = abs(rgb_120[j - 1] - rgb_120[j]);
-        }
-      }
-      if (gray > THRESHOLD_GRAY)
-        black_or_white_at_120[j] = 1;
-      else
-        black_or_white_at_120[j] = 0;
-    }
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     differences_120[62] = 0;
     //connect_line_edges(differences_120, 62);
 
-
-    detect_lines(differences_120, 120, rgb_120);
+    track_center_165 = detect_lines(differences_165, 165, rgb_165, track_center_165, true);
+    track_center = detect_lines(differences_120, 120, rgb_120, track_center, false);
     current_line = 120;
 
     if (number_of_lines > 0) {
@@ -1673,33 +1855,11 @@ void loop() {
     } else {
       debug("did not find a line at 120, now looking at 165\n", "");
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      for (int i = 0, j = 0; i < 315; i = i + 5, j++) {
-
-        pixy.video.getRGB(i, 165, &r, &g, &b, false);
-        gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        if (DEBUG_GRAY_VALUES) {
-          rgb_165[j] = gray;
-
-          if (j >= 1) {
-            differences_165[j - 1] = abs(rgb_165[j - 1] - rgb_165[j]);
-          }
-        }
-        if (gray > THRESHOLD_GRAY)
-          black_or_white_at_165[j] = 1;
-        else
-          black_or_white_at_165[j] = 0;
-      }
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       differences_165[62] = 0;
       //connect_line_edges(differences_165, 62);
 
 
-      detect_lines(differences_165, 165, rgb_165);
+      track_center = detect_lines(differences_165, 165, rgb_165, track_center, false);
       current_line = 165;
 
       if (number_of_lines > 0) {

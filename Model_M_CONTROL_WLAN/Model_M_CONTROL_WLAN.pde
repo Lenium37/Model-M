@@ -254,16 +254,8 @@ void setup() {
   cp10 = new ControlP5(this);
   cp11 = new ControlP5(this);
   cp12 = new ControlP5(this);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
 
   cp100 = new ControlP5(this);
->>>>>>> Stashed changes
-=======
-
-  cp100 = new ControlP5(this);
->>>>>>> Stashed changes
 
   cp14 = new ControlP5(this);
   cp15 = new ControlP5(this);
@@ -981,25 +973,6 @@ void draw() {
         Line_top = portStream.substring(Serial_Monitor+1, p1);
         Line_top_middel = portStream.substring(p1+1, p2);
         Line_bottom_middel = portStream.substring(p2+1, p3);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-          try {
-            // Validierung der Indizes vor `substring`
-            if (p3 + 1 >= 0 && p4 <= portStream.length() && p3 + 1 < p4) {
-              Line_bottom = portStream.substring(p3 + 1, p4);
-            } else {
-              System.out.println("Warnung: Ungültige Indizes für substring. p3: " + p3 + ", p4: " + p4);
-              Line_bottom = ""; // Fallback: Setze leeren String
-            }
-          }
-          catch (StringIndexOutOfBoundsException e) {
-            System.out.println("Fehler: " + e.getMessage());
-            // Fallback-Logik bei Ausnahme
-            Line_bottom = ""; // Alternativ: Standardwert zuweisen
-          }
-=======
-=======
->>>>>>> Stashed changes
         try {
           // Validierung der Indizes vor `substring`
           if (p3 + 1 >= 0 && p4 <= portStream.length() && p3 + 1 < p4) {
@@ -1014,10 +987,6 @@ void draw() {
           // Fallback-Logik bei Ausnahme
           Line_bottom = ""; // Alternativ: Standardwert zuweisen
         }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
         US_data  = portStream.substring(p4+1, p5);
         String Speed_str = portStream.substring(p5+2, p6);
         try {
