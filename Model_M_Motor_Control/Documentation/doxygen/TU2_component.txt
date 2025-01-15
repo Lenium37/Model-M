@@ -843,7 +843,7 @@ registers of the peripheral(s) configured by the component.
 **            Counter frequency                            : 47.972352 MHz
 **          Counter restart                                : On-match
 **            Period device                                : TPM0_MOD
-**            Period                                       : 100 Âµs
+**            Period                                       : 100 µs
 **            Interrupt                                    : Disabled
 **          Channel list                                   : 2
 **            Channel 0                                    : 

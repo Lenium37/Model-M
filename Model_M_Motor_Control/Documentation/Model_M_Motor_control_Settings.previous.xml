@@ -115,9 +115,9 @@ PE_DEBUGHALT();
     <Enabled v="Y" />
     <Properties>
       <Component_name v="Servo" />
-      <PWM_or_PPG_device v="TPM1_C0V" />
+      <PWM_or_PPG_device v="TPM1_C1V" />
       <Duty_compare v="" />
-      <Output_pin v="ADC0_SE8/TSI0_CH0/PTB0/LLWU_P5/I2C0_SCL/TPM1_CH0" />
+      <Output_pin v="ADC0_SE9/TSI0_CH6/PTB1/I2C0_SDA/TPM1_CH1" />
       <Counter v="TPM1_CNT" />
       <boolgroup name="Interrupt service/event" v="Disabled" />
       <Period v="20 ms" />
@@ -140,8 +140,8 @@ PE_DEBUGHALT();
           <Properties>
             <Component_name v="PwmLdd1" />
             <Period_device v="TPM1_MOD" />
-            <Duty_device v="TPM1_C0V" />
-            <Output_pin v="ADC0_SE8/TSI0_CH0/PTB0/LLWU_P5/I2C0_SCL/TPM1_CH0" />
+            <Duty_device v="TPM1_C1V" />
+            <Output_pin v="ADC0_SE9/TSI0_CH6/PTB1/I2C0_SDA/TPM1_CH1" />
             <Counter v="TPM1_CNT" />
             <boolgroup name="Interrupt service/event" v="Disabled" />
             <Period v="20 ms" />
@@ -1454,12 +1454,12 @@ Autoselect
       <list name="Channel list" v="1">
         <group name="Channel 0">
           <enumgroup name="Mode" v="Compare">
-            <Compare v="TPM1_C0V" />
+            <Compare v="TPM1_C1V" />
             <Offset v="0 ms" />
             <enumgroup name="Output on compare" v="Set">
               <Output_on_overrun v="Clear" />
               <Initial_state v="Low" />
-              <Output_pin v="ADC0_SE8/TSI0_CH0/PTB0/LLWU_P5/I2C0_SCL/TPM1_CH0" />
+              <Output_pin v="ADC0_SE9/TSI0_CH6/PTB1/I2C0_SDA/TPM1_CH1" />
             </enumgroup>
             <boolgroup name="Interrupt" v="Disabled" />
           </enumgroup>
@@ -1838,13 +1838,13 @@ Autoselect
     <Enabled v="Y" />
     <Properties>
       <Component_name v="LinksINT" />
-      <Pin v="PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4" />
+      <Pin v="PTD0/SPI0_PCS0/TPM0_CH0" />
       <inhrbean type="ExtInt_LDD">
         <Enabled v="Y" />
         <Template v="ExtInt_LDD" />
         <Properties>
           <Component_name v="ExtIntLdd2" />
-          <Pin v="PTD4/LLWU_P14/SPI1_PCS0/UART2_RX/TPM0_CH4" />
+          <Pin v="PTD0/SPI0_PCS0/TPM0_CH0" />
           <Generate_interrupt_on v="rising edge" />
           <Interrupt v="INT_PORTD" />
           <Interrupt_priority v="high priority" />

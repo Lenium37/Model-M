@@ -39,6 +39,10 @@ float velocity_Links;
 float velocity_Rechts;
 extern float velocity_Rechts_avg;
 extern float velocity_links_avg;
+
+float velocity_Rechts_prev = 0;
+float velocity_Links_prev = 0;
+
 extern bool first_pulse;
 float Rechts_time = 0;
 float Links_time = 0;
@@ -66,7 +70,7 @@ int8_t first_pulse_rechts = 0;
 int8_t first_pulse_links = 0;
 float Rechst_time_prev = 0;
 float Links_time_prev = 0;
-float LPF_Beta = 0.5;
+float LPF_Beta = 1;
 
 extern struct {
   char Direction;
@@ -112,44 +116,124 @@ void Cpu_OnNMIINT(void) {
  **     Returns     : Nothing
  ** ===================================================================
  */
+#define MOVING_AVERAGE_WINDOW 10 // Größe des Puffers für den gleitenden Durchschnitt
+
+float velocity_Rechts_buffer[MOVING_AVERAGE_WINDOW] = {0}; // Puffer für die letzten Geschwindigkeitswerte
+int buffer_index = 0; // Aktueller Index im Puffer
+int buffer_filled = 0; // Gibt an, ob der Puffer vollständig gefüllt ist
+
 void RechtsINT_OnInterrupt(void)
 {
+    Pulse_counter = 0;
+    Speed_time_Rechts = TU3_GetCounterValue(TU3_Pointer);
+    TU3_CounterValue_rechts = Speed_time_Rechts + (Counter_OVF * 65535);
+    Rechts_time = 0.0000000417 * TU3_CounterValue_rechts;
 
-			Pulse_counter = 0;
-			Speed_time_Rechts = TU3_GetCounterValue(TU3_Pointer);
-			TU3_CounterValue_rechts = Speed_time_Rechts+(Counter_OVF*65535);
-			Rechts_time = 0.0000000417*TU3_CounterValue_rechts;
+    first_pulse_rechts++;
+    if (first_pulse_rechts == 2)
+    {
+        float Rechts_time_real = Rechts_time - Rechst_time_prev;
 
-			first_pulse_rechts++;
-			if(first_pulse_rechts == 2)
-			{
-				float Rechts_time_real = Rechts_time - Rechst_time_prev;
+        velocity_Rechts = Abstand_Mag / Rechts_time_real;
 
-				velocity_Rechts += Abstand_Mag/Rechts_time_real;
-				avg_counter_rechts++;
-				first_pulse_rechts = 1;
-			}
-			if(avg_counter_rechts > 10 && first_pulse_active == TRUE)
-			{
-				first_pulse = TRUE;
-				first_pulse_active = FALSE;
-			}
+        // Gleitenen Durchschnitt aktualisieren
+        velocity_Rechts_buffer[buffer_index] = velocity_Rechts;
+        buffer_index = (buffer_index + 1) % MOVING_AVERAGE_WINDOW;
 
-			if(avg_counter_rechts > 0)
-			{
-				 velocity_Rechts_avg = velocity_Rechts_avg - (LPF_Beta * (velocity_Rechts_avg - velocity_Rechts));
-				//printf("Speed_rechts: %f\n\n",velocity_Rechts_avg);
-				if(velocity_Rechts_avg > 5.5)
-				{
-					velocity_Rechts_avg = 0;
-				}
-				velocity_Rechts = 0;
-				avg_counter_rechts = 0;
-			}
-			//Counter_OVF = 0;
-			Rechst_time_prev = Rechts_time;
-			//TU3_ResetCounter(TU3_Pointer);
-	}
+        if (buffer_index == 0)
+        {
+            buffer_filled = 1; // Puffer ist vollständig gefüllt
+        }
+
+        // Durchschnitt berechnen
+        float velocity_sum = 0;
+        int num_values = buffer_filled ? MOVING_AVERAGE_WINDOW : buffer_index;
+        for (int i = 0; i < num_values; i++)
+        {
+            velocity_sum += velocity_Rechts_buffer[i];
+        }
+        velocity_Rechts_avg = velocity_sum / num_values;
+
+        first_pulse_rechts = 1;
+    }
+
+    if (velocity_Rechts_avg > 5.5)
+    {
+        velocity_Rechts_avg = 0;
+    }
+
+    // Vorbereitungen für den nächsten Interrupt
+    velocity_Rechts = 0;
+    Rechst_time_prev = Rechts_time;
+}
+
+
+/*
+** ===================================================================
+**     Event       :  LinksINT_OnInterrupt (module Events)
+**
+**     Component   :  LinksINT [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+#define MOVING_AVERAGE_WINDOW 10 // Größe des Puffers für den gleitenden Durchschnitt
+
+float velocity_Links_buffer[MOVING_AVERAGE_WINDOW] = {0}; // Puffer für die letzten Geschwindigkeitswerte
+int buffer_index_links = 0; // Aktueller Index im Puffer
+int buffer_filled_links = 0; // Gibt an, ob der Puffer vollständig gefüllt ist
+
+void LinksINT_OnInterrupt(void)
+{
+    Pulse_counter = 0;
+    Speed_time_Links = TU3_GetCounterValue(TU3_Pointer);
+    TU3_CounterValue_links = Speed_time_Links + (Counter_OVF * 65535);
+    Links_time = 0.0000000417 * TU3_CounterValue_links;
+
+    first_pulse_links++;
+    if (first_pulse_links == 2)
+    {
+        float Links_time_real = Links_time - Links_time_prev;
+
+        velocity_Links = Abstand_Mag / Links_time_real;
+
+        // Gleitenden Durchschnitt aktualisieren
+        velocity_Links_buffer[buffer_index_links] = velocity_Links;
+        buffer_index_links = (buffer_index_links + 1) % MOVING_AVERAGE_WINDOW;
+
+        if (buffer_index_links == 0)
+        {
+            buffer_filled_links = 1; // Puffer ist vollständig gefüllt
+        }
+
+        // Durchschnitt berechnen
+        float velocity_sum = 0;
+        int num_values = buffer_filled_links ? MOVING_AVERAGE_WINDOW : buffer_index_links;
+        for (int i = 0; i < num_values; i++)
+        {
+            velocity_sum += velocity_Links_buffer[i];
+        }
+        velocity_links_avg = velocity_sum / num_values;
+
+        first_pulse_links = 1;
+    }
+
+    if (velocity_links_avg > 5.5)
+    {
+        velocity_links_avg = 0;
+    }
+
+    // Debug-Ausgabe
+    //printf("Speed_links: %f\n\n", velocity_links_avg);
+
+    // Vorbereitungen für den nächsten Interrupt
+    velocity_Links = 0;
+    Links_time_prev = Links_time;
+}
+
 /*
  ** ===================================================================
  **     Event       :  FC1_OnInterrupt (module Events)
@@ -186,52 +270,7 @@ void FC1_OnInterrupt(void) {
  */
 
 
-/*
-** ===================================================================
-**     Event       :  LinksINT_OnInterrupt (module Events)
-**
-**     Component   :  LinksINT [ExtInt]
-**     Description :
-**         This event is called when an active signal edge/level has
-**         occurred.
-**     Parameters  : None
-**     Returns     : Nothing
-** ===================================================================
-*/
-void LinksINT_OnInterrupt(void)
-{
-				Pulse_counter = 0;
-				Speed_time_Links = TU3_GetCounterValue(TU3_Pointer);
-				TU3_CounterValue_links = Speed_time_Links+(Counter_OVF*65535);
-				Links_time = 0.0000000417*TU3_CounterValue_links;
-				//printf("Links \n");
-				first_pulse_links++;
-				if(first_pulse_links == 2)
-				{
-					float Links_time_real = Links_time - Links_time_prev;
 
-					velocity_Links += Abstand_Mag/Links_time_real;
-					//printf("SPEED: %f \n",velocity_Rechts);
-					avg_counter_links++;
-					first_pulse_links = 1;
-				}
-				if(avg_counter_links > 10 && first_pulse_active == TRUE)
-				{
-					first_pulse = TRUE;
-					first_pulse_active = FALSE;
-				}
-
-				if(avg_counter_links > 0)
-				{
-					velocity_links_avg = velocity_links_avg - (LPF_Beta * (velocity_links_avg - velocity_Links));
-					 //printf("Speed_links: %f\n\n",velocity_links_avg);
-					velocity_Links = 0;
-					avg_counter_links = 0;
-				}
-				//Counter_OVF = 0;
-				Links_time_prev = Links_time;
-				//TU3_ResetCounter(TU3_Pointer);
-}
 
 /*
 ** ===================================================================
@@ -403,7 +442,7 @@ void AS1_OnFullRxBuf(void)
 	byte err;
 	err = AS1_RecvBlock((byte*)&message_buffer, sizeof(message_buffer), &Received);
 	AS1_ClearRxBuf();
-	flag_buffer_empty = TRUE;
+
 
 	message.Direction = message_buffer.Direction_buffer;
 	message.Einer =	message_buffer.Einer_buffer;
@@ -462,6 +501,8 @@ void AS1_OnFullRxBuf(void)
 					}
 				}
 
+	//printf("data: %c%c%c%c%c\n",message.Direction,message.Hundert,message.Zener,message.Einer,message.straight_curve,message.align);
+
 }
 
 /*
@@ -479,6 +520,7 @@ void AS1_OnFullRxBuf(void)
 void AS1_OnFreeTxBuf(void)
 {
   /* Write your code here ... */
+	flag_buffer_empty = TRUE;
 }
 
 /*

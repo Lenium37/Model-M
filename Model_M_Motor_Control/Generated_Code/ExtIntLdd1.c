@@ -7,7 +7,7 @@
 **     Version     : Component 02.156, Driver 01.02, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-03-13, 13:45, # CodeGen: 123
+**     Date/Time   : 2024-12-06, 18:42, # CodeGen: 139
 **     Abstract    :
 **         This component, "ExtInt_LDD", provide a low level API 
 **         for unified access of external interrupts handling
@@ -16,7 +16,7 @@
 **         selected edge.
 **     Settings    :
 **          Component name                                 : ExtIntLdd1
-**          Pin                                            : PTA12/TPM1_CH0
+**          Pin                                            : PTA13/TPM1_CH1
 **          Pin signal                                     : 
 **          Generate interrupt on                          : falling edge
 **          Interrupt                                      : INT_PORTA
@@ -127,15 +127,15 @@ LDD_TDeviceData* ExtIntLdd1_Init(LDD_TUserData *UserDataPtr)
   /* {Default RTOS Adapter} Set interrupt vector: IVT is static, ISR parameter is passed by the global variable */
   INT_PORTA__DEFAULT_RTOS_ISRPARAM = DeviceDataPrv;
   /* Initialization of Port Control registers */
-  /* PORTA_PCR12: ISF=0,MUX=1 */
-  PORTA_PCR12 = (uint32_t)((PORTA_PCR12 & (uint32_t)~(uint32_t)(
+  /* PORTA_PCR13: ISF=0,MUX=1 */
+  PORTA_PCR13 = (uint32_t)((PORTA_PCR13 & (uint32_t)~(uint32_t)(
                  PORT_PCR_ISF_MASK |
                  PORT_PCR_MUX(0x06)
                 )) | (uint32_t)(
                  PORT_PCR_MUX(0x01)
                 ));
-  /* PORTA_PCR12: ISF=1,IRQC=0x0A */
-  PORTA_PCR12 = (uint32_t)((PORTA_PCR12 & (uint32_t)~(uint32_t)(
+  /* PORTA_PCR13: ISF=1,IRQC=0x0A */
+  PORTA_PCR13 = (uint32_t)((PORTA_PCR13 & (uint32_t)~(uint32_t)(
                  PORT_PCR_IRQC(0x05)
                 )) | (uint32_t)(
                  PORT_PCR_ISF_MASK |

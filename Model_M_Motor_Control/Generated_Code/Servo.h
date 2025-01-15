@@ -7,15 +7,15 @@
 **     Version     : Component 02.241, Driver 01.01, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-01-07, 17:48, # CodeGen: 1
+**     Date/Time   : 2024-11-28, 16:16, # CodeGen: 134
 **     Abstract    :
 **         This component implements a pulse-width modulation generator
 **         that generates signal with variable duty and fixed cycle. 
 **     Settings    :
 **          Component name                                 : Servo
-**          PWM or PPG device                              : TPM1_C0V
+**          PWM or PPG device                              : TPM1_C1V
 **          Duty compare                                   : 
-**          Output pin                                     : ADC0_SE8/TSI0_CH0/PTB0/LLWU_P5/I2C0_SCL/TPM1_CH0
+**          Output pin                                     : ADC0_SE9/TSI0_CH6/PTB1/I2C0_SDA/TPM1_CH1
 **          Output pin signal                              : 
 **          Counter                                        : TPM1_CNT
 **          Interrupt service/event                        : Disabled

@@ -4,6 +4,9 @@
 #include "Events.h"
 #include "Servo.h"
 #include "PwmLdd1.h"
+#include "EN.h"
+#include "LEDpin1.h"
+#include "BitIoLdd1.h"
 #include "TU1.h"
 #include "PwmLdd2.h"
 #include "TU2.h"
@@ -30,9 +33,6 @@
 #include "RechtsINT.h"
 #include "ExtIntLdd1.h"
 #include "MotorRechts.h"
-#include "EN.h"
-#include "LEDpin1.h"
-#include "BitIoLdd1.h"
 #include "Potis.h"
 #include "AdcLdd1.h"
 #include "SW1.h"
@@ -90,7 +90,7 @@ uint16_t Pixel[128];
 uint8_t prev_angle = 0;
 
 word Break_time = 0;
-uint16_t Break_period = 0;
+uint32_t Break_period = 0;
 bool Start_line;
 //Routine Auswertung
 uint16_t Pixel[128];
@@ -127,12 +127,12 @@ uint8_t anzahl_null_bar = 0;
 uint16_t Pixel_Null[7];
 
 //Lenkung
-uint16_t Mitte = 60750;
-uint16_t Links = 61650;
-uint16_t Rechts = 59860;
-uint16_t Angle_reg = 60750;
-uint32_t P_VAL_Lenkung = 60750;
-uint16_t servo_value_regulated = 60750;
+uint16_t Mitte = 59100;//60750;
+uint16_t Links = 59100+1000;
+uint16_t Rechts = 59100-1000; //59860
+uint16_t Angle_reg = 60450;
+uint32_t P_VAL_Lenkung = 60450;
+uint16_t servo_value_regulated = 60450;
 
 float velocity_Rechts_avg;
 float velocity_links_avg;
@@ -147,7 +147,7 @@ bool Regler_Active = TRUE;
 bool first_pulse = FALSE;
 bool CLK_OFF = FALSE;
 bool CLK_ON = FALSE;
-bool flag_buffer_empty = FALSE;
+bool flag_buffer_empty = TRUE;
 bool Speed0 = FALSE;
 bool brake_left_out = FALSE;
 bool brake_right_out = FALSE;
@@ -165,12 +165,14 @@ uint32_t after_curve_counter = 0;
 uint32_t higer_speed_after_curve = 300;
 volatile int64_t Counter_OVF;
 float Speed_Ms = 0;
-float Time_left = 0;
+double Time_left = 0;
+double Time_right = 0;
 uint8_t kp_Teiler = 16;
 float pid_i = 0.0;
 float pid_d = 0.0;
 float previous_error = 0.0;
 float PID_VAL = 0.0;
+char start[7] = {'s','t','a','r','t','&','\0'};
 struct {
 	char Direction;
 	char Hundert;
@@ -249,23 +251,10 @@ uint16_t Regler_P_rechts(float Soll, float Ist, int Kp) {
 		//printf("P_VAL: %d\n",Kp);
 		//printf("P_VAL after calculation: %d\n", P_VAL);
 		return P_VAL_rechts;
+	}else{
+		P_VAL_rechts = 0;
+		return 0;
 	}
-}
-uint16_t PID_left(float Soll, float Ist, float Kp, float ki, float kd) {
-	float TimePrev_left = Time_left; // the previous time is stored before the actual time read
-	Time_left = TU3_GetCounterValue(TU3_Pointer);  //;
-	Time_left = (Time_left + (Counter_OVF * 65535)) * 0.0000000417;
-	float elapsedTime = (Time_left - TimePrev_left) * 1000;
-	float error = Soll - Ist;
-	float pid_p = Kp * error;
-	if (-0.2 < error < 0.2) {
-		pid_i = pid_i + (ki * error);
-	}
-	pid_d = kd * ((error - previous_error) / elapsedTime);
-	PID_VAL = pid_p + pid_i + pid_d;
-	previous_error = error;
-	//PID_VAL = map(PID_VAL,0,10,0,65535);
-	printf("%0.2f\n", PID_VAL);
 }
 uint16_t Regler_P_links(float Soll, float Ist, int Kp) {
 	if (Regler_Active == TRUE) {
@@ -289,7 +278,107 @@ uint16_t Regler_P_links(float Soll, float Ist, int Kp) {
 		//printf("P_VAL: %d\n",Kp);
 		//printf("P_VAL after calculation: %d\n", P_VAL);
 		return P_VAL_links;
+	}else{
+		P_VAL_links = 0;
+		return 0;
 	}
+}
+
+
+double outputSum,outMin = 11500,outMax = 65535,lastInput,lastTime,error,myOutput;
+
+uint16_t PID_links(double myInput,double mySetpoint,double ki_new,double kd_new,double kp_new,double SampleTime)
+{
+   Time_left = TU3_GetCounterValue(TU3_Pointer);  //;
+   Time_left = (Time_left + (Counter_OVF * 65535)) * 0.0000000417;
+   //float timeChange = (Time_left - TimePrev_left) * 1000;
+   double now = Time_left;
+   double timeChange = (now - lastTime)*1000;
+
+
+
+   if(timeChange >= SampleTime*1000)
+   {
+
+      /*Compute all the working error variables*/
+      double input = myInput;
+      double error = mySetpoint - input;
+      double dInput = (input - lastInput);
+      outputSum += (ki_new * error);
+
+      /*Add Proportional on Measurement, if P_ON_M is specified*/
+      outputSum-= kp_new * dInput;
+
+      if(outputSum > outMax) outputSum= outMax;
+      else if(outputSum < outMin) outputSum= outMin;
+
+      /*Add Proportional on Error, if P_ON_E is specified*/
+	  double output;
+      output = kp_new * error;
+
+      /*Compute Rest of PID Output*/
+      output += outputSum - kd_new * dInput;
+
+	    if(output > outMax) output = outMax;
+      else if(output < outMin) output = outMin;
+	    myOutput = output;
+
+      /*Remember some variables for next time*/
+      lastInput = input;
+      lastTime = now;
+      P_VAL_links = (uint32_t)myOutput;
+      //printf("Speed_Links_nach: %d \n", P_VAL_links);
+	    return P_VAL_links;
+   }
+   return P_VAL_links;
+}
+
+double outputSum_rechts,outMin_rechts = 11500,outMax_rechts = 65535,lastInput_rechts,lastTime_rechts,error_rechts,myOutput_rechts;
+
+uint16_t PID_rechts(double myInput,double mySetpoint,double ki_new,double kd_new,double kp_new,double SampleTime)
+{
+   Time_right = TU3_GetCounterValue(TU3_Pointer);  //;
+   Time_right = (Time_right + (Counter_OVF * 65535)) * 0.0000000417;
+   //float timeChange = (Time_left - TimePrev_left) * 1000;
+   double now = Time_right;
+   double timeChange = (now - lastTime_rechts)*1000;
+
+
+
+   if(timeChange >= SampleTime*1000)
+   {
+
+      /*Compute all the working error variables*/
+      double input = myInput;
+      double error_rechts = mySetpoint - input;
+      double dInput = (input - lastInput_rechts);
+      outputSum_rechts += (ki_new * error_rechts);
+
+      /*Add Proportional on Measurement, if P_ON_M is specified*/
+      outputSum_rechts-= kp_new * dInput;
+
+      if(outputSum > outMax_rechts) outputSum_rechts= outMax_rechts;
+      else if(outputSum < outMin_rechts) outputSum_rechts= outMin_rechts;
+
+      /*Add Proportional on Error, if P_ON_E is specified*/
+	  double output;
+      output = kp_new * error_rechts;
+
+      /*Compute Rest of PID Output*/
+      output += outputSum_rechts - kd_new * dInput;
+
+	    if(output > outMax_rechts) output = outMax_rechts;
+      else if(output < outMin_rechts) output = outMin_rechts;
+	    myOutput_rechts = output;
+
+      /*Remember some variables for next time*/
+	  lastInput_rechts = input;
+	  lastTime_rechts = now;
+      P_VAL_rechts = (uint32_t)myOutput_rechts;
+      //printf("Speed_Links_nach: %d \n", P_VAL_links);
+	    return P_VAL_rechts;
+   }
+   return P_VAL_rechts;
 }
 void counter() {
 	Pulse_counter++;
@@ -351,26 +440,25 @@ void Break(uint16_t Rev_Speed, uint16_t Block_Time, bool brake_left,
 		Regler_Active = FALSE;
 		FC321_Enable();
 		FC321_GetTimeMS(&Break_time);
-		Rev_Rechts_On();
-		Rev_Links_On();
+		Rev_Rechts_Off();
+		Rev_Links_Off();
 		if (brake_right == TRUE)
-			MotorRechts_SetRatio16(Rev_Speed);
+			MotorRechts_SetRatio16(65535);
 		if (brake_left == TRUE)
-			MotorLinks_SetRatio16(Rev_Speed);
+			MotorLinks_SetRatio16(65535);
 		if (Break_time > Block_Time) {
 			P_VAL_rechts = Start_point;
 			P_VAL_links = Start_point;
 			Rev_Links_Off();
 			Rev_Rechts_Off();
-			MotorRechts_SetRatio16(Start_point);
-			MotorLinks_SetRatio16(Start_point);
+			MotorRechts_SetRatio16(0);
+			MotorLinks_SetRatio16(0);
 			FC321_Disable();
 			FC321_Reset();
 			Break_period = 0;
 			Break_intens = 0;
-			if (message.Direction
-					== 'X'|| message.Einer == 'X' || Start == FALSE) {
-				EN_Off();
+			if (message.Direction == 'X'|| message.Einer == 'X' || Start == FALSE) {
+				EN_On();
 			}
 			Regler_Active = TRUE;
 			Break_Active = FALSE;
@@ -378,6 +466,8 @@ void Break(uint16_t Rev_Speed, uint16_t Block_Time, bool brake_left,
 		}
 	}
 }
+
+bool reset_speed = FALSE;
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
 int main(void)
 /*lint -restore Enable MISRA rule (6.3) checking. */
@@ -399,8 +489,10 @@ int main(void)
 	uint16_t Kp_drive_rechts = 275;
 	uint16_t Kp_drive_links = 275;
 	uint16_t add_rechts_speed = 1000;
+	uint16_t add_links_speed = 1000;
 	//RechtsClock_Enable();
 	servo_value_regulated = Mitte;
+	Servo_Enable();
 	for (;;) {
 		counter();
 		cal_start_point();
@@ -410,10 +502,42 @@ int main(void)
 		//Rec();
 
 		//uint16_t AVG_Rechts_int = map(velocity_Rechts_avg,0.0,2.0,0,65535);
+
+
 		float Speed_Ms_links = Speed_Ms * S_multi_links;
 		float Speed_Ms_rechts = Speed_Ms * S_multi_rechts;
-		Speed_regulated_rechts = Regler_P_rechts(Speed_Ms_rechts,velocity_Rechts_avg, Kp_drive_rechts);
-		Speed_regulated_links = Regler_P_links(Speed_Ms_links,velocity_links_avg, Kp_drive_links);
+
+		//printf("Speed_Rechts_vor: %d \n", Speed_regulated_rechts);
+		//printf("Speed_Links_vor: %d \n", Speed_regulated_rechts);
+
+		int Kp_drive_speed_correct_links = map(Speed_Ms_links,0,4,0,500);
+		int Kp_drive_speed_correct_rechts = map(Speed_Ms_rechts,0,4,0,500);
+
+		if(Kp_drive_rechts > Kp_drive_speed_correct_rechts)
+			Kp_drive_rechts = Kp_drive_rechts - Kp_drive_speed_correct_rechts;
+		if(Kp_drive_links > Kp_drive_speed_correct_links)
+			Kp_drive_links = Kp_drive_links - Kp_drive_speed_correct_links;
+
+		//Speed_regulated_rechts = Regler_P_rechts(Speed_Ms_rechts,velocity_Rechts_avg, Kp_drive_rechts);
+		Speed_regulated_rechts = PID_rechts(velocity_Rechts_avg,Speed_Ms_rechts,600,5000,8000,0.01);
+		Speed_regulated_links = PID_links(velocity_links_avg,Speed_Ms_links,600,5000,8000,0.01);
+
+		//Speed_regulated_links = Regler_P_links(Speed_Ms_links,velocity_links_avg, Kp_drive_links);
+
+		//printf("Speed_Rechts_nach: %d \n", Kp_drive_speed_correct_links);
+
+
+		if(Start == TRUE){
+			Speed_regulated_rechts = Speed_regulated_rechts;
+			Speed_regulated_links = Speed_regulated_links;
+			Regler_Active = TRUE;
+
+		}else
+		{
+			Speed_regulated_rechts = 0;
+			Speed_regulated_links = 0;
+			Regler_Active = FALSE;
+		}
 		//
 		//printf("Speed_rechts: %0.2f Soll_rechts: %0.2f\n",velocity_Rechts_avg,Speed_Ms_rechts);
 		//printf("Speed_rechts: %0.2f\n",velocity_Rechts_avg);
@@ -435,11 +559,11 @@ int main(void)
 		} else {
 			send_message.Speed_left_ovf = 0;
 		}
-		if (flag_buffer_empty == TRUE) {
-			AS1_SendBlock((byte*) &send_message, sizeof(send_message), &Sent);
+		//if (flag_buffer_empty == TRUE) {
+			//AS1_SendBlock((byte*) &send_message, sizeof(send_message), &Sent);
 			//printf("data %d %d\n", send_message.Speed_Right,send_message.Speed_left);
-			flag_buffer_empty = FALSE;
-		}
+			//flag_buffer_empty = FALSE;
+		//}
 
 		//PID_left(1,1,1,1,1);
 		//printf("Speed_rechts: %0.2f,Speed_links: %0.2f \n", velocity_Rechts_avg,velocity_links_avg);
@@ -459,8 +583,8 @@ int main(void)
 		if (message.straight_curve == 'S' && Break_Active == FALSE) {
 			//Kp_drive = 175;
 			Regler_Active = TRUE;
-			S_multi_links = 1.3;
-			S_multi_rechts = 1.3;
+			S_multi_links = 1.2;
+			S_multi_rechts = 1.2;
 			if (Kp_drive_rechts > 300)
 				Kp_drive_rechts -= 2;
 			else
@@ -471,8 +595,8 @@ int main(void)
 				Kp_drive_links = 300;
 
 			if (prev_C == TRUE) {
-				Kp_drive_rechts = 550;
-				Kp_drive_links = 550;
+				Kp_drive_rechts = 450;
+				Kp_drive_links = 450;
 				after_curve_counter++;
 				if (after_curve_counter > higer_speed_after_curve)
 					prev_C = FALSE;
@@ -486,8 +610,8 @@ int main(void)
 		} else {
 			if (message.Direction == 'S' && Break_Active == FALSE) {
 				Regler_Active = TRUE;
-				Kp_drive_rechts = 350;
-				Kp_drive_links = 350;
+				Kp_drive_rechts = 450;
+				Kp_drive_links = 450;
 				MotorRechts_SetRatio16(Speed_regulated_rechts);
 				MotorLinks_SetRatio16(Speed_regulated_links);
 			}
@@ -495,33 +619,44 @@ int main(void)
 				//S_multi_rechts = 1.0;
 				//S_multi_links = 1.0;
 				prev_C = TRUE;
-				Kp_drive_rechts = 500;
-				Kp_drive_links = 500;
+				Kp_drive_rechts = 450;
+				Kp_drive_links = 450;
 				Regler_Active = TRUE;
 
-				if (prev_S == TRUE
-						&& (velocity_Rechts_avg > 0.9
-								|| velocity_links_avg > 0.9)
-						&& Speed_Ms > 0.7) {
+				if (prev_S == TRUE /*&& (velocity_Rechts_avg > 0.9 || velocity_links_avg > 0.9) && Speed_Ms > 0.7*/) {
 					//Kp_drive = 0;
 					//printf("Brake ");
 					//printf("!!Speed_rechts: %f,Speed_links: %f !!\n", velocity_Rechts_avg,velocity_links_avg);
 					LED1_Off();
-					if (velocity_Rechts_avg > 0.9)
-						Break_intens = map(velocity_Rechts_avg, 0,
-								Speed_Ms_rechts, 20000, 35000);
-					if (velocity_links_avg > 0.9)
-						Break_intens = map(velocity_links_avg, 0,
-								Speed_Ms_links, 20000, 35000);
-					Break_period = 100;
-					brake_left_out = TRUE;
-					brake_right_out = TRUE;
-					Break_Active = TRUE;
+					if (velocity_Rechts_avg >= velocity_links_avg && velocity_Rechts_avg > 1.5 && Angle > 450){
+						Break_intens = map(velocity_Rechts_avg, 0.9,5, 10000, 35000);
+						Break_period = map(velocity_Rechts_avg, 0,5, 0, 100);
+						Break_period = 100;
+					}else
+						Break_period = 0;
+					if (velocity_links_avg > velocity_Rechts_avg && velocity_links_avg > 1.5 && Angle > 450){
+						Break_intens = map(velocity_links_avg, 0.9,5, 10000, 35000);
+						Break_period = map(velocity_links_avg, 0,5, 0, 60);
+						Break_period = 100;
+					}else
+						Break_period = 0;
+
+					if (message.Direction == 'R'){
+							brake_left_out = TRUE;
+							Break_Active = TRUE;
+					}
+					if (message.Direction == 'L'){
+						brake_right_out = TRUE;
+						Break_Active = TRUE;
+					}
+
 					prev_S = FALSE;
 				}
 				if (message.Direction == 'L' && Break_Active == FALSE) {
-					S_multi_rechts = 1.2;
-					S_multi_links = 0;
+					//S_multi_rechts = 1.2;
+					//S_multi_links = 0.6;
+					S_multi_links = map(Angle, 0,450, 1, 0.4);
+					S_multi_rechts  = map(Angle, 0,450, 1, 0.7);
 					/*if(velocity_Rechts_avg > 2)
 					 {
 					 Break_period = 10;
@@ -534,9 +669,12 @@ int main(void)
 					MotorLinks_SetRatio16(Speed_regulated_links);
 				}
 				if (message.Direction == 'R' && Break_Active == FALSE) {
-					S_multi_rechts = 0;
-					S_multi_links = 1.3;
 
+					//S_multi_rechts = 0.6;
+					//S_multi_links = 1.2;
+
+					S_multi_rechts = map(Angle, 0,450, 1, 0.4);
+					S_multi_links  = map(Angle, 0,450, 1, 0.7);
 					/*if(velocity_links_avg > 2)
 					 {
 					 Break_period = 10;
@@ -555,11 +693,11 @@ int main(void)
 			float Maxspeed = 0.0;
 			//printf("data: %c%c%c%c%c\n",message.Direction,message.Hundert,message.Zener,message.Einer,message.straight_curve,message.align);
 			if (message.Direction != 'V') {
-				printf("data: %c\n", message.Direction);
+				//printf("data: %c\n", message.Direction);
 				(void) Potis_MeasureChan(TRUE, 0);
 				(void) Potis_GetChanValue16(0, &value);
 				Speed_Ms = map(value, 0, 65535, 0, 4.0);
-				printf("Speed: %f \n", Speed_Ms);
+				//printf("Speed: %f \n", Speed_Ms);
 
 			} else if (message.Direction == 'V') {
 				Hundred = char_int(message.Hundert);
@@ -567,35 +705,65 @@ int main(void)
 				Zero = char_int(message.Einer);
 				Speed_Ms = Cal_Angle_Speed(Hundred, Ten, Zero);
 				Speed_Ms = Speed_Ms / 100;
-				printf("Speed: %f \n", Speed_Ms);
+				//printf("Speed: %f \n", Speed_Ms);
 				AS1_ClearRxBuf();
 
 				message.Direction = '0';
 			}
 
 		}
-		if (TasterA_GetVal() == 1 && SW1_GetVal() == 0)
+		if (TasterA_GetVal() == 1 && SW1_GetVal() == 0){
+			if (flag_buffer_empty == TRUE) {
+				AS1_SendBlock((byte*) &start, sizeof(start), &Sent);
+				flag_buffer_empty = FALSE;
+			}
+
 			Start = TRUE;
+		}
+
 		if (TasterB_GetVal() == 1) {
 			Start = FALSE;
+			reset_speed = FALSE;
 		}
 		if (Start == TRUE) {
 			if (message.Direction == 'L' || message.Direction == 'R'
 					|| message.Direction == 'S') {
 				LED1_On();
 				EN_On();
+				MotorRechts_SetRatio16(50000);
+				MotorRechts_SetRatio16(50000);
+				if(reset_speed == FALSE){
+					Speed_regulated_rechts = 50000;
+					Speed_regulated_rechts = 50000;
+					Break_period = 1;
+					reset_speed = TRUE;
+				}
+
+
 			}
 		}
+
 		if (message.Einer == 'X' || Start == FALSE) {
 
 			Kp_drive_links = 0;
 			Kp_drive_rechts = 0;
+			S_multi_rechts = 0;
+			S_multi_links = 0;
 			Regler_Active = FALSE;
 			Break_Active = TRUE;
 			brake_left_out = TRUE;
 			brake_right_out = TRUE;
-			Break_period = 1000;
-			Break_intens = 50000;
+			if(velocity_Rechts_avg >= velocity_links_avg){
+				Break_period = map(velocity_Rechts_avg,0,5,500,1000);
+				Break_intens = map(velocity_Rechts_avg,0,5,25000,50000);
+			}else
+			{
+				Break_period = map(velocity_links_avg,0,5,500,1000);
+				Break_intens = map(velocity_links_avg,0,5,25000,50000);
+			}
+			Break_period = 10000;
+			velocity_Rechts_avg = 0;
+			velocity_links_avg = 0;
 			LED1_Off();
 			//EN_Off();
 		}
@@ -604,26 +772,29 @@ int main(void)
 
 		if (message.Direction == 'L') {
 			servo_value = map_long(SerVal, 0, 819, Mitte, Links); //max 62258 min 58981; 819 sind 45° , mitte 60619
+			//printf("MAP: %d NOMAP: %d\n",servo_value,SerVal);
 			//Winkel_prev_L = diff2;
 		} else if (message.Direction == 'R') {
 			servo_value = map_long(SerVal, 0, 819, Mitte, Rechts);
+			//printf("MAP: %d NOMAP: %d\n",servo_value,SerVal);
 			//Winkel_prev_R = diff;
 		}
-		//printf("data: %c%c%c%c%c\n",message.Direction,message.Hundert,message.Zener,message.Einer,message.straight_curve,message.align);
+		-//printf("data: %c%c%c%c%c Serv: %8d\n",message.Direction,message.Hundert,message.Zener,message.Einer,message.straight_curve,message.align,SerVal);
+		//printf(" Serv: %8d\n",SerVal);
 		Servo_SetRatio16(servo_value);
-		Servo_Enable();
+
 
 		if (message.Direction == 'S') {
 			Servo_SetRatio16(Mitte); //3276 //62306 1639
 		}
-		if (SW1_GetVal() == 1 && SW2_GetVal() == 1 && SW3_GetVal() == 1
-				&& SW4_GetVal() == 1) {
+		/*if (SW1_GetVal() == 1 && SW2_GetVal() == 1 && SW3_GetVal() == 0
+				&& SW4_GetVal() == 0) {
 			while (TasterA_GetVal() == 1) {
 				LED2_On();
 				(void) Potis_MeasureChan(TRUE, 1);
 				(void) Potis_GetChanValue16(1, &value2);
 				uint16_t SerVal;
-				SerVal = map_long(value2, 0, 65535, 62258, 59800);
+				SerVal = map_long(value2, 0, 65535, 62258, 58000);
 				Servo_SetRatio16(SerVal);
 				Mitte = SerVal;
 				Angle_reg = Mitte;
@@ -632,9 +803,9 @@ int main(void)
 				Rechts = Mitte - 819;
 			}
 			LED2_Off();
-		}
+		}*/
 		Programmcounter++;
-		/*if (Programmcounter >= 150) {
+		if (Programmcounter >= 150) {
 		 if (data[0] == '0' && data[1] == '0' && data[2] == '0'
 		 && data[3] == '0' && data[4] == '0') {
 		 data[0] = 'X';
@@ -653,7 +824,7 @@ int main(void)
 		 EN_Off();
 		 }
 		 Programmcounter = 0;
-		 }*/
+		 }
 		//data[0] = '0';
 		//data[1] = '0';
 		//data[2] = '0';
@@ -662,11 +833,7 @@ int main(void)
 	}
 }
 	/*** Don't write any code pass this line, or it will be deleted during code generation. ***/
+
   /*** RTOS startup code. Macro PEX_RTOS_START is defined by the RTOS component. DON'T MODIFY THIS CODE!!! ***/
-  #ifdef PEX_RTOS_START
-    PEX_RTOS_START();                  /* Startup of the selected RTOS. Macro is defined by the RTOS component. */
-  #endif
-  /*** End of RTOS startup code.  ***/
-  /*** Processor Expert end of main routine. DON'T MODIFY THIS CODE!!! ***/
-  //for(;;){}
+
   /*** Processor Expert end of main routine. DON'T WRITE CODE BELOW!!! ***/

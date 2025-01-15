@@ -3,7 +3,7 @@
 #include <FastLED.h>
 
 #define NUM_LEDS 47
-#define DATA_PIN 8
+#define DATA_PIN 9
 
 CRGB leds[NUM_LEDS];
 
@@ -464,7 +464,7 @@ void generate_steer_angle_string(int steer_angle) {
     //if(last_steering_direction == "right")
     //steer_angle = steer_angle / 2;
     if (steer_angle < -450)  //550
-        steer_angle = -450;    //550
+      steer_angle = -450;    //550
 
     if (steer_angle > -10) {
 
@@ -489,10 +489,10 @@ void generate_steer_angle_string(int steer_angle) {
     //steer_angle = steer_angle / 2;
     //
     if (steer_angle > 450)  //550
-        steer_angle = 450;    //550
+      steer_angle = 450;    //550
 
     if (steer_angle < 10) {
-      
+
       if (currently_in_curve)
         current_angle_string = "R00" + String(steer_angle) + "C";
       else
@@ -1789,6 +1789,9 @@ void loop() {
 
   if (number_of_lines > 0) {
     int steer_angle = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+    //int steer_angle_120 = calculate_pull_towards_ideallinie_in_degrees(abs(track_center - 30));
+    prev_tfilter_val_75 = low_pass_filter(LENK_FILTER_global, prev_tfilter_val_75, steer_angle);
+    steer_angle = (int)prev_tfilter_val_75;
     //prev_tfilter_val_75 = low_pass_filter(LENK_FILTER_global, prev_tfilter_val_75, steer_angle);
     //steer_angle = (int)prev_tfilter_val_75;
     //Serial.println(steer_angle);

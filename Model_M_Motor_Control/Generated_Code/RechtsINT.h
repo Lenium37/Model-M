@@ -7,7 +7,7 @@
 **     Version     : Component 02.105, Driver 01.00, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-03-13, 13:45, # CodeGen: 123
+**     Date/Time   : 2024-12-06, 18:42, # CodeGen: 139
 **     Abstract    :
 **         This component "ExtInt" implements an external 
 **         interrupt, its control methods and interrupt/event 
@@ -16,7 +16,7 @@
 **         selected edge.
 **     Settings    :
 **          Component name                                 : RechtsINT
-**          Pin                                            : PTA12/TPM1_CH0
+**          Pin                                            : PTA13/TPM1_CH1
 **          Pin signal                                     : 
 **          ExtInt_LDD                                     : ExtInt_LDD
 **          Generate interrupt on                          : falling edge

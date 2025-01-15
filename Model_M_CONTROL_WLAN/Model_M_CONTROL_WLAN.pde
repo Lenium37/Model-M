@@ -1,6 +1,6 @@
 //Processing Sketch
 // Serielle Bibliothek einbinden
-import processing.serial.*;
+import processing.serial.  *;
 import static javax.swing.JOptionPane.*;
 import controlP5.*;
 import hypermedia.net.*;
@@ -987,7 +987,19 @@ void draw() {
           // Fallback-Logik bei Ausnahme
           Line_bottom = ""; // Alternativ: Standardwert zuweisen
         }
-        US_data  = portStream.substring(p4+1, p5);
+        try {
+          // Überprüfe, ob die Indizes gültig sind, bevor du substring() aufrufst
+          if (p4 + 1 >= 0 && p5 > p4 + 1 && p5 <= portStream.length()) {
+            US_data = portStream.substring(p4 + 1, p5);
+          } else {
+            throw new StringIndexOutOfBoundsException("Ungültige Indizes: p4 = " + p4 + ", p5 = " + p5);
+          }
+        }
+        catch (StringIndexOutOfBoundsException e) {
+          // Behandle den Fehler hier
+          System.err.println("Fehler beim Extrahieren von US_data: " + e.getMessage());
+          US_data = ""; // Setze US_data auf einen Standardwert, falls ein Fehler auftritt
+        }
         String Speed_str = portStream.substring(p5+2, p6);
         try {
           line_detection_data = portStream.substring(p6 + 2, portStream.length());

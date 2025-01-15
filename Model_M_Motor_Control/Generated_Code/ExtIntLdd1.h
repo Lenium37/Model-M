@@ -7,7 +7,7 @@
 **     Version     : Component 02.156, Driver 01.02, CPU db: 3.00.000
 **     Repository  : Kinetis
 **     Compiler    : GNU C Compiler
-**     Date/Time   : 2020-03-13, 13:45, # CodeGen: 123
+**     Date/Time   : 2024-12-06, 18:42, # CodeGen: 139
 **     Abstract    :
 **         This component, "ExtInt_LDD", provide a low level API 
 **         for unified access of external interrupts handling
@@ -16,7 +16,7 @@
 **         selected edge.
 **     Settings    :
 **          Component name                                 : ExtIntLdd1
-**          Pin                                            : PTA12/TPM1_CH0
+**          Pin                                            : PTA13/TPM1_CH1
 **          Pin signal                                     : 
 **          Generate interrupt on                          : falling edge
 **          Interrupt                                      : INT_PORTA
@@ -113,8 +113,8 @@ extern "C" {
 #define ExtIntLdd1_OnInterrupt_EVENT_ENABLED /*!< OnInterrupt event of the component ExtIntLdd1 is enabled (generated) */
 
 /* Definition of implementation constants */
-#define ExtIntLdd1_PIN_INDEX 0x0CU     /*!< Index of the used pin from the port */
-#define ExtIntLdd1_PIN_MASK 0x1000U    /*!< Mask of the used pin from the port */
+#define ExtIntLdd1_PIN_INDEX 0x0DU     /*!< Index of the used pin from the port */
+#define ExtIntLdd1_PIN_MASK 0x2000U    /*!< Mask of the used pin from the port */
 
 /*
 ** ===================================================================
