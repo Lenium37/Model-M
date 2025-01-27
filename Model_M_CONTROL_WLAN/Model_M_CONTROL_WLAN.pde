@@ -1409,6 +1409,8 @@ void Settings(boolean theFlag) {
 void Apply(boolean theFlag) {
   Console.pause();
   Console.clear();
+  
+  println("apply");
 
   Data_send =  str(Brightness);
   Data_send += "!";
